@@ -28,12 +28,12 @@ public class Main
     public static final String MODID = "zbb";
 
 
-    public Main()
+    public Main(FMLJavaModLoadingContext context)
     {
         // register config
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
-        IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+        IEventBus bus = context.getModEventBus();
         bus.addListener(this::onConfigEvent);
 
         // event subscription
