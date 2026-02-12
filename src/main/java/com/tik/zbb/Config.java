@@ -192,7 +192,7 @@ public class Config
                         "Interval between dangerous blocks scans (sec).",
                         "[Default: 1]"
                 )
-                .defineInRange("searchDangerousInterval", 1f, 0, 10);
+                .defineInRange("searchDangerousInterval", 1d, 0, 10);
 
         GO_TO_TARGET_INTERVAL = b
                 .comment(
@@ -206,28 +206,28 @@ public class Config
                         "Interval between path check (sec).",
                         "[Default: 2]"
                 )
-                .defineInRange("pathCheckInterval", 2f, 0, 10);
+                .defineInRange("pathCheckInterval", 2d, 0, 10);
 
         STUCK_SECONDS_BEFORE_BREAKANDBUILD = b
                 .comment(
                         "How many seconds the mob must be stuck before it starts breaking and building blocks (sec).",
                         "[Default: 3]"
                 )
-                .defineInRange("stuckSecondsBeforeBreakAndBuild", 3f, 0, 10);
+                .defineInRange("stuckSecondsBeforeBreakAndBuild", 3d, 0, 10);
 
         DAMAGE_STORE_TIME = b
                 .comment(
                         "How long block damage progress is stored in memory (sec).",
                         "[Default: 300]"
                 )
-                .defineInRange("damageStoreTime", 300f, 10, 600);
+                .defineInRange("damageStoreTime", 300d, 10, 600);
 
         BUILT_BLOCKS_PROTECTION_TIME = b
                 .comment(
                         "How long will it take for zombies to break the block they themselves placed (sec).",
                         "[Default: 15]"
                 )
-                .defineInRange("builtBlocksProtectionTime", 15f, 0, 100);
+                .defineInRange("builtBlocksProtectionTime", 15d, 0, 100);
 
         b.pop();
 
