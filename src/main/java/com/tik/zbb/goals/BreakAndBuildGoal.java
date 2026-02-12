@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -229,25 +230,44 @@ public class BreakAndBuildGoal extends Goal
         nextGoToTargetTick = currentTime + secToTicks(Config.GO_TO_TARGET_INTERVAL.get(), 1);
     }
 
+    // Note: In Minecraft 1.21, "path.canReach()" now returns whether the target can be reached, not whether the next point can be reached.
+    // This is why zombies immediately start building with the old function, so I had to change it.
     private void checkPath(LivingEntity target)
     {
         PathNavigation nav = mob.getNavigation();
         Path path = nav.getPath();
 
-        boolean hasPath = path != null && !path.isDone();
-        boolean canReach;
-
-        if (hasPath)
+        if (path == null)
         {
-            canReach = path.canReach();
-        }
-        else
-        {
-            Path newPath = nav.createPath(target, 0);
-            canReach = newPath != null && newPath.canReach();
+            isBreakAndBuild = true;
+            return;
         }
 
-        isBreakAndBuild = !hasPath || !canReach || stuckTicks >= Config.STUCK_SECONDS_BEFORE_BREAKANDBUILD.get() * 20;
+        boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
+        boolean isStuckTooLong = stuckTicks >= (int) (Config.STUCK_SECONDS_BEFORE_BREAKANDBUILD.get() * 20);
+
+        if (hasActivePath && !isStuckTooLong)
+        {
+            Node endNode = path.getEndNode();
+
+            if (endNode != null)
+            {
+                double endNodeDistanceSq = mob.distanceToSqr(endNode.x + 0.5, endNode.y, endNode.z + 0.5);
+
+                if (endNodeDistanceSq > 2 * 2)
+                {
+                    isBreakAndBuild = false;
+                    return;
+                }
+            }
+            else
+            {
+                isBreakAndBuild = false;
+                return;
+            }
+        }
+
+        isBreakAndBuild = true;
     }
 
     private void freeze()
