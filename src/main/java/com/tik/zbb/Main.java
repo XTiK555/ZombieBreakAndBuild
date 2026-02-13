@@ -3,6 +3,7 @@ package com.tik.zbb;
 import com.tik.zbb.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.goals.BreakAndBuildGoal;
 import com.tik.zbb.goals.ThroughWallsNearestTargetGoal;
+import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -49,8 +50,11 @@ public class Main
 
         if (now % interval == 0)
         {
-            BlockStorage.cleanUpDamageData(sl, Config.DAMAGE_STORE_TIME.get().longValue());
-            BlockStorage.cleanUpBuildData(sl, Config.BUILT_BLOCKS_PROTECTION_TIME.get().longValue());
+            long damageTtl = SecondsToTicksUtility.toTicks(Config.DAMAGE_STORE_TIME.get());
+            long buildTtl = SecondsToTicksUtility.toTicks(Config.BUILT_BLOCKS_PROTECTION_TIME.get());
+
+            BlockStorage.cleanUpDamageData(sl, damageTtl);
+            BlockStorage.cleanUpBuildData(sl, buildTtl);
         }
     }
 
