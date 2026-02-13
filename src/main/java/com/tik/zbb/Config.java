@@ -1,7 +1,6 @@
 package com.tik.zbb;
 
-import net.minecraft.ResourceLocationException;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.HashSet;
@@ -40,7 +39,7 @@ public class Config
     public static final ForgeConfigSpec.DoubleValue DAMAGE_STORE_TIME;
     public static final ForgeConfigSpec.DoubleValue BUILT_BLOCKS_PROTECTION_TIME;
 
-    public static Set<ResourceLocation> EXTRA_DANGEROUS_BLOCKS_SET = Set.of();
+    public static Set<Identifier> EXTRA_DANGEROUS_BLOCKS_SET = Set.of();
 
     // Simple resource location validator: "namespace:path[/path...]"
     private static final Pattern RL = Pattern.compile("^[a-z0-9_.-]+:[a-z0-9_/.-]+$");
@@ -236,20 +235,14 @@ public class Config
 
     public static void rebuildDangerousBlocksSet()
     {
-        Set<ResourceLocation> set = new HashSet<>();
+        Set<Identifier> set = new HashSet<>();
 
         for (String s : EXTRA_DANGEROUS_BLOCKS.get())
         {
             if (s == null || s.isBlank()) continue;
 
-            try
-            {
-                ResourceLocation id = ResourceLocation.tryParse(s);
-                set.add(id);
-            } catch (ResourceLocationException e)
-            {
-                // Incorrect ID - just ignore
-            }
+            Identifier id = Identifier.tryParse(s);
+            if (id != null) set.add(id);
         }
 
         EXTRA_DANGEROUS_BLOCKS_SET = Set.copyOf(set);

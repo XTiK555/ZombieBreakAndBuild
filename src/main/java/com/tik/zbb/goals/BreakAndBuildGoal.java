@@ -3,7 +3,7 @@ package com.tik.zbb.goals;
 import com.tik.zbb.BlockStorage;
 import com.tik.zbb.Config;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -13,7 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -54,16 +54,16 @@ public class BreakAndBuildGoal extends Goal
         this.mob = mob;
         this.level = mob.level();
 
-        Block block = ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(Config.BRIDGE_BLOCK_ID.get()));
+        Block block = ForgeRegistries.BLOCKS.getValue(Identifier.tryParse(Config.BRIDGE_BLOCK_ID.get()));
         this.bridgeBlock = block != null ? block : Blocks.GRAVEL;
 
-        SoundEvent sound1 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.PLACE_SOUND_ID.get()));
+        SoundEvent sound1 = ForgeRegistries.SOUND_EVENTS.getValue(Identifier.tryParse(Config.PLACE_SOUND_ID.get()));
         this.placeSound = sound1 != null ? sound1 : SoundEvents.GRAVEL_PLACE;
 
-        SoundEvent sound2 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.HIT_SOUND_ID.get()));
+        SoundEvent sound2 = ForgeRegistries.SOUND_EVENTS.getValue(Identifier.tryParse(Config.HIT_SOUND_ID.get()));
         this.hitSound = sound2 != null ? sound2 : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
 
-        SoundEvent sound3 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.BREAK_SOUND_ID.get()));
+        SoundEvent sound3 = ForgeRegistries.SOUND_EVENTS.getValue(Identifier.tryParse(Config.BREAK_SOUND_ID.get()));
         this.breakSound = sound3 != null ? sound3 : SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
     }
 
@@ -117,7 +117,7 @@ public class BreakAndBuildGoal extends Goal
     {
         if (level.getGameTime() < lastBreakTick + (long) (Config.BREAK_COOLDOWN.get() * 20.0f)) return;
         if (BlockStorage.buildMapContains((ServerLevel) level, pos)) return;
-        if (!level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) return;
+        if (!((ServerLevel) level).getGameRules().get(GameRules.MOB_GRIEFING)) return;
 
         BlockState state = level.getBlockState(pos);
         int blockHealth = getBlockHealth(pos);
@@ -323,7 +323,7 @@ public class BreakAndBuildGoal extends Goal
         if (state.is(Blocks.SWEET_BERRY_BUSH) || state.is(Blocks.WITHER_ROSE)) return true;
         if (state.is(Blocks.POWDER_SNOW)) return true;
 
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        Identifier id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
 
         return Config.EXTRA_DANGEROUS_BLOCKS_SET.contains(id);
     }
@@ -341,7 +341,7 @@ public class BreakAndBuildGoal extends Goal
     {
         BlockState blockState = level.getBlockState(pos);
 
-        boolean mobGriefing = level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
+        boolean mobGriefing = ((ServerLevel) level).getGameRules().get(GameRules.MOB_GRIEFING);
         boolean canReplaced = level.isLoaded(pos) && blockState.canBeReplaced();
         boolean isAir = level.isLoaded(pos) && blockState.isAir();
 

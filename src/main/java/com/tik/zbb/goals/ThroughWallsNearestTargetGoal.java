@@ -6,8 +6,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
+import org.jetbrains.annotations.NotNull;
 
-public class ThroughWallsNearestTargetGoal<T extends LivingEntity> extends NearestAttackableTargetGoal<T>
+public class ThroughWallsNearestTargetGoal<T extends LivingEntity> extends NearestAttackableTargetGoal<@NotNull T>
 {
     public ThroughWallsNearestTargetGoal(Mob mob, Class<T> targetClass)
     {
@@ -17,7 +18,7 @@ public class ThroughWallsNearestTargetGoal<T extends LivingEntity> extends Neare
                 .ignoreLineOfSight()
                 .ignoreInvisibilityTesting()
                 .range(Config.SEARCH_TARGET_RADIUS.get())
-                .selector(target -> isAllowedTarget(mob, target));
+                .selector((target, world) -> isAllowedTarget(mob, target));
     }
 
     private static boolean isAllowedTarget(Mob self, LivingEntity target)

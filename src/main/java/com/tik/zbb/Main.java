@@ -10,13 +10,10 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
@@ -30,21 +27,22 @@ public class Main
 
     public Main(FMLJavaModLoadingContext context)
     {
+        BusGroup modBusGroup = context.getModBusGroup();
+
         // register config
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
 
-        IEventBus bus = context.getModEventBus();
-        bus.addListener(this::onConfigEvent);
+        ModConfigEvent.Loading.getBus(modBusGroup).addListener(this::onConfigEvent);
+        ModConfigEvent.Reloading.getBus(modBusGroup).addListener(this::onConfigEvent);
 
         // event subscription
-        MinecraftForge.EVENT_BUS.register(this);
+        EntityJoinLevelEvent.BUS.addListener(this::onJoin);
+        TickEvent.LevelTickEvent.Post.BUS.addListener(this::onLevelTick);
     }
 
-    @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent e)
+    public void onLevelTick(TickEvent.LevelTickEvent.Post event)
     {
-        if (e.phase != TickEvent.Phase.END) return;
-        if (!(e.level instanceof ServerLevel sl)) return;
+        if (!(event.level() instanceof ServerLevel sl)) return;
 
         long now = sl.getGameTime();
         int interval = 10;
@@ -56,7 +54,6 @@ public class Main
         }
     }
 
-    @SubscribeEvent
     public void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
