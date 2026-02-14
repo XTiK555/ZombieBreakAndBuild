@@ -12,6 +12,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -103,7 +104,7 @@ public class Main
     {
         if (event.getConfig().getSpec() == Config.SPEC)
         {
-            Config.rebuildDangerousBlocksSet();
+            Config.rebuildSets();
         }
     }
 }
