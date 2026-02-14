@@ -14,30 +14,28 @@ public class Config
 
     // Public config values
     public static final ForgeConfigSpec.ConfigValue<String> BRIDGE_BLOCK_ID;
-    public static final ForgeConfigSpec.ConfigValue<String> PLACE_SOUND_ID;
-    public static final ForgeConfigSpec.ConfigValue<String> HIT_SOUND_ID;
-    public static final ForgeConfigSpec.ConfigValue<String> BREAK_SOUND_ID;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTRA_DANGEROUS_BLOCKS;
 
     public static final ForgeConfigSpec.BooleanValue ALWAYS_SEE_NEAREST_PLAYER;
     public static final ForgeConfigSpec.BooleanValue APPLY_TO_ALL_HOSTILES;
-
-    public static final ForgeConfigSpec.IntValue DANGEROUS_SCAN_RADIUS;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTRA_DANGEROUS_BLOCKS;
+    public static final ForgeConfigSpec.BooleanValue ATTACK_ALL_ENTITIES;
+    public static final ForgeConfigSpec.IntValue TARGET_SEARCH_RADIUS;
+    public static final ForgeConfigSpec.IntValue DANGEROUS_BLOCKS_SCAN_RADIUS;
 
     public static final ForgeConfigSpec.DoubleValue BREAK_COOLDOWN;
     public static final ForgeConfigSpec.DoubleValue BUILD_COOLDOWN;
-
-    public static final ForgeConfigSpec.IntValue SEARCH_TARGET_RADIUS;
     public static final ForgeConfigSpec.IntValue DAMAGE_TO_BLOCKS;
     public static final ForgeConfigSpec.DoubleValue FREEZE_TIME;
-    public static final ForgeConfigSpec.IntValue FOLLOW_RANGE_OVERRIDE;
-
     public static final ForgeConfigSpec.DoubleValue SEARCH_DANGEROUS_INTERVAL;
     public static final ForgeConfigSpec.DoubleValue GO_TO_TARGET_INTERVAL;
     public static final ForgeConfigSpec.DoubleValue PATH_CHECK_INTERVAL;
     public static final ForgeConfigSpec.DoubleValue STUCK_SECONDS_BEFORE_BREAKANDBUILD;
     public static final ForgeConfigSpec.DoubleValue DAMAGE_STORE_TIME;
     public static final ForgeConfigSpec.DoubleValue BUILT_BLOCKS_PROTECTION_TIME;
+
+    public static final ForgeConfigSpec.ConfigValue<String> PLACE_SOUND_ID;
+    public static final ForgeConfigSpec.ConfigValue<String> HIT_SOUND_ID;
+    public static final ForgeConfigSpec.ConfigValue<String> BREAK_SOUND_ID;
 
     public static Set<Identifier> EXTRA_DANGEROUS_BLOCKS_SET = Set.of();
 
@@ -54,7 +52,7 @@ public class Config
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
 
         // ======================
-        // [BLOCKS / BRIDGING]
+        // [BLOCKS]
         // ======================
         b.push("blocks");
 
@@ -62,9 +60,9 @@ public class Config
                 .worldRestart()
                 .comment(
                         "Block ID to build bridges with. Example: 'minecraft:gravel' or 'minecraft:oak_planks'.",
-                        "[Default: minecraft:gravel]"
+                        "[Default: minecraft:dirt]"
                 )
-                .define("bridgeBlock", "minecraft:gravel", Config::isResLoc);
+                .define("bridgeBlock", "minecraft:dirt", Config::isResLoc);
 
         EXTRA_DANGEROUS_BLOCKS = b
                 .comment(
@@ -77,44 +75,6 @@ public class Config
                         List.of(),
                         Config::isResLoc
                 );
-
-        DANGEROUS_SCAN_RADIUS = b
-                .comment(
-                        "How far around the mob to scan for dangerous blocks (in blocks). Range: 1–15.",
-                        "[Default: 1]"
-                )
-                .defineInRange("dangerousScanRadius", 1, 1, 15);
-
-        b.pop();
-
-        // ======================
-        // [AUDIO]
-        // ======================
-        b.push("audio");
-
-        PLACE_SOUND_ID = b
-                .worldRestart()
-                .comment(
-                        "Sound when placing a bridge block. Must be a sound event ID 'namespace:path'.",
-                        "[Default: minecraft:block.gravel.place]"
-                )
-                .define("placeSound", "minecraft:block.gravel.place", Config::isResLoc);
-
-        HIT_SOUND_ID = b
-                .worldRestart()
-                .comment(
-                        "Sound when hitting a block.",
-                        "[Default: minecraft:entity.zombie.attack_wooden_door]"
-                )
-                .define("hitSound", "minecraft:entity.zombie.attack_wooden_door", Config::isResLoc);
-
-        BREAK_SOUND_ID = b
-                .worldRestart()
-                .comment(
-                        "Sound when breaking a block.",
-                        "[Default: minecraft:entity.zombie.break_wooden_door]"
-                )
-                .define("breakSound", "minecraft:entity.zombie.break_wooden_door", Config::isResLoc);
 
         b.pop();
 
@@ -137,19 +97,26 @@ public class Config
                 )
                 .define("applyToAllHostiles", true);
 
-        SEARCH_TARGET_RADIUS = b
+        ATTACK_ALL_ENTITIES = b
                 .comment(
-                        "Target search radius (ignoring walls) (in blocks).",
-                        "[Default: 16]"
+                        "Will the zombie attack all non-hostile creatures (true) or will it only attack its default targets (false).",
+                        "[Default: false]"
                 )
-                .defineInRange("targetSearchRadius", 16, 4, 128);
+                .define("attackAllEntities", false);
 
-        FOLLOW_RANGE_OVERRIDE = b
+        TARGET_SEARCH_RADIUS = b
                 .comment(
-                        "The maximum distance a zombie will travel towards its target (blocks).",
-                        "[Default: 128]"
+                        "Target search radius (in blocks).",
+                        "[Default: 35]"
                 )
-                .defineInRange("followRangeOverride", 128, 32, 2048);
+                .defineInRange("targetSearchRadius", 35, 4, 1024);
+
+        DANGEROUS_BLOCKS_SCAN_RADIUS = b
+                .comment(
+                        "How far around the mob to scan for dangerous blocks (in blocks).",
+                        "[Default: 1]"
+                )
+                .defineInRange("dangerousBlocksScanRadius", 1, 1, 15);
 
         b.pop();
 
@@ -177,7 +144,7 @@ public class Config
                         "Damage dealt to blocks (abstract value).",
                         "[Default: 3]"
                 )
-                .defineInRange("damageToBlocks", 3, 1, 100);
+                .defineInRange("damageToBlocks", 3, 1, 1000);
 
         FREEZE_TIME = b
                 .comment(
@@ -217,9 +184,9 @@ public class Config
         DAMAGE_STORE_TIME = b
                 .comment(
                         "How long block damage progress is stored in memory (sec).",
-                        "[Default: 300]"
+                        "[Default: 60]"
                 )
-                .defineInRange("damageStoreTime", 300d, 10, 600);
+                .defineInRange("damageStoreTime", 60d, 10, 600);
 
         BUILT_BLOCKS_PROTECTION_TIME = b
                 .comment(
@@ -227,6 +194,37 @@ public class Config
                         "[Default: 0.75]"
                 )
                 .defineInRange("builtBlocksProtectionTime", 0.75d, 0, 100);
+
+        b.pop();
+
+        // ======================
+        // [AUDIO]
+        // ======================
+        b.push("audio");
+
+        PLACE_SOUND_ID = b
+                .worldRestart()
+                .comment(
+                        "Sound when placing a bridge block. Must be a sound event ID 'namespace:path'.",
+                        "[Default: minecraft:block.dirt.place]"
+                )
+                .define("placeSound", "minecraft:block.dirt.place", Config::isResLoc);
+
+        HIT_SOUND_ID = b
+                .worldRestart()
+                .comment(
+                        "Sound when hitting a block.",
+                        "[Default: minecraft:entity.zombie.attack_wooden_door]"
+                )
+                .define("hitSound", "minecraft:entity.zombie.attack_wooden_door", Config::isResLoc);
+
+        BREAK_SOUND_ID = b
+                .worldRestart()
+                .comment(
+                        "Sound when breaking a block.",
+                        "[Default: minecraft:entity.zombie.break_wooden_door]"
+                )
+                .define("breakSound", "minecraft:entity.zombie.break_wooden_door", Config::isResLoc);
 
         b.pop();
 

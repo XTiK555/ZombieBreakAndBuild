@@ -16,8 +16,7 @@ public class ThroughWallsNearestTargetGoal<T extends LivingEntity> extends Neare
 
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
-                .ignoreInvisibilityTesting()
-                .range(Config.SEARCH_TARGET_RADIUS.get())
+                .range(Config.TARGET_SEARCH_RADIUS.get())
                 .selector((target, world) -> isAllowedTarget(mob, target));
     }
 

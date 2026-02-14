@@ -12,6 +12,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
@@ -65,14 +66,24 @@ public class Main
 
         if (mob instanceof PathfinderMob PFMob)
         {
+            AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
+            int configTargetSearchRadius = Config.TARGET_SEARCH_RADIUS.get();
+            boolean isAttackingAllEntities = Config.ATTACK_ALL_ENTITIES.get();
+
             PFMob.goalSelector.addGoal(2, new BreakAndBuildGoal(PFMob));
-            PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, LivingEntity.class));
             PFMob.targetSelector.addGoal(2, new AlwaysSeeNearestPlayerGoal(PFMob));
 
-            AttributeInstance attributeInstance = mob.getAttribute(Attributes.FOLLOW_RANGE);
-            if (attributeInstance != null)
+            if (isAttackingAllEntities)
             {
-                attributeInstance.setBaseValue(Config.FOLLOW_RANGE_OVERRIDE.get());
+                PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, LivingEntity.class));
+            }
+            else
+            {
+                PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, Player.class));
+            }
+            if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < configTargetSearchRadius)
+            {
+                followRangeAttribute.setBaseValue(configTargetSearchRadius);
             }
         }
     }
