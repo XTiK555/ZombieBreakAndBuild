@@ -56,10 +56,10 @@ public class BreakAndBuildGoal extends Goal
         this.level = mob.level();
 
         Block block = ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(Config.BRIDGE_BLOCK_ID.get()));
-        this.bridgeBlock = block != null ? block : Blocks.GRAVEL;
+        this.bridgeBlock = block != null ? block : Blocks.DIRT;
 
         SoundEvent sound1 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.PLACE_SOUND_ID.get()));
-        this.placeSound = sound1 != null ? sound1 : SoundEvents.GRAVEL_PLACE;
+        this.placeSound = sound1 != null ? sound1 : SoundEvents.ROOTED_DIRT_PLACE;
 
         SoundEvent sound2 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.HIT_SOUND_ID.get()));
         this.hitSound = sound2 != null ? sound2 : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
@@ -78,12 +78,6 @@ public class BreakAndBuildGoal extends Goal
 
         updateStuckState(target, currentTime);
 
-        if (currentTime >= nextSearchDangerousTick)
-        {
-            mitigateNearbyDanger();
-            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
-        }
-
         if (currentTime >= nextPathCheckTick)
         {
             checkPath();
@@ -97,10 +91,16 @@ public class BreakAndBuildGoal extends Goal
             handleForwardObstacles();
         }
 
+        if (currentTime >= nextSearchDangerousTick)
+        {
+            mitigateNearbyDanger();
+            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
+        }
+
         tryMoveToTarget(target, currentTime);
     }
 
-    ///  ================= service functions ==========================
+    ///  ================= local functions ==========================
     private boolean tryBuildBlock(BlockPos blockPos)
     {
         if (level.getGameTime() < lastBuildTick + (long) (Config.BUILD_COOLDOWN.get() * 20.0f)) return false;
@@ -282,7 +282,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void mitigateNearbyDanger()
     {
-        int radius = Config.DANGEROUS_SCAN_RADIUS.get();
+        int radius = Config.DANGEROUS_BLOCKS_SCAN_RADIUS.get();
         BlockPos mobPos = mob.getOnPos();
 
         int baseX = mobPos.getX();
