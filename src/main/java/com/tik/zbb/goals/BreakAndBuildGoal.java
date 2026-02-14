@@ -20,6 +20,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -55,10 +56,10 @@ public class BreakAndBuildGoal extends Goal
         this.level = mob.level();
 
         Block block = ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(Config.BRIDGE_BLOCK_ID.get()));
-        this.bridgeBlock = block != null ? block : Blocks.GRAVEL;
+        this.bridgeBlock = block != null ? block : Blocks.DIRT;
 
         SoundEvent sound1 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.PLACE_SOUND_ID.get()));
-        this.placeSound = sound1 != null ? sound1 : SoundEvents.GRAVEL_PLACE;
+        this.placeSound = sound1 != null ? sound1 : SoundEvents.ROOTED_DIRT_PLACE;
 
         SoundEvent sound2 = ForgeRegistries.SOUND_EVENTS.getValue(ResourceLocation.tryParse(Config.HIT_SOUND_ID.get()));
         this.hitSound = sound2 != null ? sound2 : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
@@ -77,15 +78,9 @@ public class BreakAndBuildGoal extends Goal
 
         updateStuckState(target, currentTime);
 
-        if (currentTime >= nextSearchDangerousTick)
-        {
-            mitigateNearbyDanger();
-            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
-        }
-
         if (currentTime >= nextPathCheckTick)
         {
-            checkPath(target);
+            checkPath();
             nextPathCheckTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.PATH_CHECK_INTERVAL.get(), 1);
         }
 
@@ -96,10 +91,16 @@ public class BreakAndBuildGoal extends Goal
             handleForwardObstacles();
         }
 
+        if (currentTime >= nextSearchDangerousTick)
+        {
+            mitigateNearbyDanger();
+            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
+        }
+
         tryMoveToTarget(target, currentTime);
     }
 
-    ///  ================= service functions ==========================
+    ///  ================= local functions ==========================
     private boolean tryBuildBlock(BlockPos blockPos)
     {
         if (level.getGameTime() < lastBuildTick + (long) (Config.BUILD_COOLDOWN.get() * 20.0f)) return false;
@@ -230,25 +231,42 @@ public class BreakAndBuildGoal extends Goal
         nextGoToTargetTick = currentTime + SecondsToTicksUtility.toTicks(Config.GO_TO_TARGET_INTERVAL.get(), 1);
     }
 
-    private void checkPath(LivingEntity target)
+    private void checkPath()
     {
         PathNavigation nav = mob.getNavigation();
         Path path = nav.getPath();
 
-        boolean hasPath = path != null && !path.isDone();
-        boolean canReach;
-
-        if (hasPath)
+        if (path == null)
         {
-            canReach = path.canReach();
-        }
-        else
-        {
-            Path newPath = nav.createPath(target, 0);
-            canReach = newPath != null && newPath.canReach();
+            isBreakAndBuild = true;
+            return;
         }
 
-        isBreakAndBuild = !hasPath || !canReach || stuckTicks >= Config.STUCK_SECONDS_BEFORE_BREAKANDBUILD.get() * 20;
+        boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
+        boolean isStuckTooLong = stuckTicks >= (int) (Config.STUCK_SECONDS_BEFORE_BREAKANDBUILD.get() * 20);
+
+        if (hasActivePath && !isStuckTooLong)
+        {
+            Node endNode = path.getEndNode();
+
+            if (endNode != null)
+            {
+                double endNodeDistanceSq = mob.distanceToSqr(endNode.x + 0.5, endNode.y, endNode.z + 0.5);
+
+                if (endNodeDistanceSq > 2 * 2)
+                {
+                    isBreakAndBuild = false;
+                    return;
+                }
+            }
+            else
+            {
+                isBreakAndBuild = false;
+                return;
+            }
+        }
+
+        isBreakAndBuild = true;
     }
 
     private void freeze()
@@ -262,7 +280,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void mitigateNearbyDanger()
     {
-        int radius = Config.DANGEROUS_SCAN_RADIUS.get();
+        int radius = Config.DANGEROUS_BLOCKS_SCAN_RADIUS.get();
         BlockPos mobPos = mob.getOnPos();
 
         int baseX = mobPos.getX();

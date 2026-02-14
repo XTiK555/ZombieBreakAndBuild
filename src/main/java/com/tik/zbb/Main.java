@@ -42,10 +42,10 @@ public class Main
     }
 
     @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent e)
+    public void onLevelTick(TickEvent.LevelTickEvent event)
     {
-        if (e.phase != TickEvent.Phase.END) return;
-        if (!(e.level instanceof ServerLevel sl)) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.level instanceof ServerLevel sl)) return;
 
         long now = sl.getGameTime();
         int interval = 10;
@@ -68,14 +68,24 @@ public class Main
 
         if (mob instanceof PathfinderMob PFMob)
         {
+            AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
+            int configTargetSearchRadius = Config.TARGET_SEARCH_RADIUS.get();
+            boolean isAttackingAllEntities = Config.ATTACK_ALL_ENTITIES.get();
+
             PFMob.goalSelector.addGoal(2, new BreakAndBuildGoal(PFMob));
-            PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, LivingEntity.class));
             PFMob.targetSelector.addGoal(2, new AlwaysSeeNearestPlayerGoal(PFMob));
 
-            AttributeInstance attributeInstance = mob.getAttribute(Attributes.FOLLOW_RANGE);
-            if (attributeInstance != null)
+            if (isAttackingAllEntities)
             {
-                attributeInstance.setBaseValue(Config.FOLLOW_RANGE_OVERRIDE.get());
+                PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, LivingEntity.class));
+            }
+            else
+            {
+                PFMob.targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal<>(PFMob, Player.class));
+            }
+            if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < configTargetSearchRadius)
+            {
+                followRangeAttribute.setBaseValue(configTargetSearchRadius);
             }
         }
     }
