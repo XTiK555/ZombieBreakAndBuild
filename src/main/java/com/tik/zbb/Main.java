@@ -103,7 +103,7 @@ public class Main
     {
         if (event.getConfig().getSpec() == Config.SPEC)
         {
-            Config.rebuildDangerousBlocksSet();
+            Config.rebuildSets();
         }
     }
 }

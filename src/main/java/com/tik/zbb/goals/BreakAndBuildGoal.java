@@ -44,7 +44,7 @@ public class BreakAndBuildGoal extends Goal
 
     // carried out from tick() for optimization
     private final BlockPos.MutableBlockPos tickTmpBlockPos = new BlockPos.MutableBlockPos();
-    private final BlockPos.MutableBlockPos tickFrontBlock = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos tickFunctionTmpBlockPos = new BlockPos.MutableBlockPos();
 
     // carried out from mitigateNearbyDanger for optimization
     BlockPos.MutableBlockPos mndBlockPos = new BlockPos.MutableBlockPos();
@@ -86,9 +86,24 @@ public class BreakAndBuildGoal extends Goal
 
         if (isBreakAndBuild)
         {
-            handleVerticalActions(target);
-            handleBridgeGap(target);
-            handleForwardObstacles();
+            int selfX = Mth.floor(mob.getX());
+            int selfY = Mth.floor(mob.getY());
+            int selfZ = Mth.floor(mob.getZ());
+
+            int targetX = Mth.floor(target.getX());
+            int targetZ = Mth.floor(target.getZ());
+            int targetY = Mth.floor(target.getY());
+
+            int dx = targetX - selfX;
+            int dz = targetZ - selfZ;
+
+            int dirX = 0, dirZ = 0;
+            if (Math.abs(dx) > Math.abs(dz)) dirX = Integer.signum(dx);
+            else if (dz != 0) dirZ = Integer.signum(dz);
+
+            handleVerticalActions(tickTmpBlockPos.set(selfX, selfY, selfZ), targetY);
+            handleBridgeGap(tickTmpBlockPos.set(selfX + dirX, selfY, selfZ + dirZ));
+            handleForwardObstacles(tickTmpBlockPos, selfX, selfY, selfZ);
         }
 
         if (currentTime >= nextSearchDangerousTick)
@@ -142,24 +157,20 @@ public class BreakAndBuildGoal extends Goal
         lastBreakTick = level.getGameTime();
     }
 
-    private void handleVerticalActions(LivingEntity target)
+    private void handleVerticalActions(BlockPos mobBlockPos, int targetY)
     {
-        int selfX = Mth.floor(mob.getX());
-        int selfY = Mth.floor(mob.getY());
-        int selfZ = Mth.floor(mob.getZ());
-
-        int targetY = Mth.floor(target.getY());
-
         // target is higher -> we break above/build under
-        if (targetY > selfY + 1)
+        if (targetY > mobBlockPos.getY() + 1)
         {
-            if (!isFreePass(tickTmpBlockPos.set(selfX, selfY + 1, selfZ))) tryBreak(tickTmpBlockPos);
-            if (!isFreePass(tickTmpBlockPos.set(selfX, selfY + 2, selfZ))) tryBreak(tickTmpBlockPos);
+            if (!isFreePass(tickFunctionTmpBlockPos.set(mobBlockPos.getX(), mobBlockPos.getY() + 1, mobBlockPos.getZ())))
+                tryBreak(tickFunctionTmpBlockPos);
+            if (!isFreePass(tickFunctionTmpBlockPos.set(mobBlockPos.getX(), mobBlockPos.getY() + 2, mobBlockPos.getZ())))
+                tryBreak(tickFunctionTmpBlockPos);
 
-            // если сверху свободно — пробуем подстроиться и прыгнуть
-            if (isFreePass(tickTmpBlockPos.set(selfX, selfY + 2, selfZ)))
+            // If there is space above, we try to adjust and jump.
+            if (isFreePass(tickFunctionTmpBlockPos.set(mobBlockPos.getX(), mobBlockPos.getY() + 2, mobBlockPos.getZ())))
             {
-                if (tryBuildBlock(tickTmpBlockPos.set(selfX, selfY, selfZ)))
+                if (tryBuildBlock(tickFunctionTmpBlockPos.set(mobBlockPos.getX(), mobBlockPos.getY(), mobBlockPos.getZ())))
                 {
                     mob.getJumpControl().jump();
                 }
@@ -168,57 +179,51 @@ public class BreakAndBuildGoal extends Goal
         }
 
         // target below -> break the block below you (if it's preventing you from getting down)
-        if (targetY < selfY - 1)
+        if (targetY < mobBlockPos.getY() - 1)
         {
-            if (!isFreePass(tickTmpBlockPos.set(selfX, selfY - 1, selfZ)))
+            if (!isFreePass(tickFunctionTmpBlockPos.set(mobBlockPos.getX(), mobBlockPos.getY() - 1, mobBlockPos.getZ())))
             {
-                tryBreak(tickTmpBlockPos);
+                tryBreak(tickFunctionTmpBlockPos);
             }
         }
     }
 
-    private void handleBridgeGap(LivingEntity target)
+    private void handleBridgeGap(BlockPos frontBlockPos)
     {
-        int selfX = Mth.floor(mob.getX());
-        int selfY = Mth.floor(mob.getY());
-        int selfZ = Mth.floor(mob.getZ());
-
-        int targetX = Mth.floor(target.getX());
-        int targetZ = Mth.floor(target.getZ());
-
-        int dx = targetX - selfX;
-        int dz = targetZ - selfZ;
-
-        int dirX = 0, dirZ = 0;
-        if (Math.abs(dx) > Math.abs(dz)) dirX = Integer.signum(dx);
-        else if (dz != 0) dirZ = Integer.signum(dz);
-
-        tickFrontBlock.set(selfX + dirX, selfY, selfZ + dirZ);
-
         // If there is air in front and air underneath (2 blocks) -> we set the bridge to -1
-        boolean frontAir = level.getBlockState(tickFrontBlock).isAir();
-        boolean belowAir = level.getBlockState(tickTmpBlockPos.set(tickFrontBlock.getX(), tickFrontBlock.getY() - 1, tickFrontBlock.getZ())).isAir();
-        boolean below2Air = level.getBlockState(tickTmpBlockPos.set(tickFrontBlock.getX(), tickFrontBlock.getY() - 2, tickFrontBlock.getZ())).isAir();
+        boolean frontAir = level.getBlockState(frontBlockPos).isAir();
+        boolean belowAir = level.getBlockState(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ())).isAir();
+        boolean below2Air = level.getBlockState(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ())).isAir();
 
         if (frontAir && belowAir && below2Air)
         {
-            tryBuildBlock(tickTmpBlockPos.set(tickFrontBlock.getX(), tickFrontBlock.getY() - 1, tickFrontBlock.getZ()));
+            tryBuildBlock(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()));
         }
     }
 
-    private void handleForwardObstacles()
+    private void handleForwardObstacles(BlockPos frontBlockPos, int mobX, int mobY, int mobZ)
     {
-        // we break the block right in front of us if it is impassable
-        if (!isFreePass(tickFrontBlock))
+        tickFunctionTmpBlockPos.set(mobX, mobY, mobZ);
+        if (!isFreePass(tickFunctionTmpBlockPos))
         {
-            tryBreak(tickFrontBlock);
+            tryBreak(tickFunctionTmpBlockPos);
+        }
+        tickFunctionTmpBlockPos.move(0, 1, 0);
+        if (!isFreePass(tickFunctionTmpBlockPos))
+        {
+            tryBreak(tickFunctionTmpBlockPos);
         }
 
-        // we break the block above the front one if it also interferes
-        tickTmpBlockPos.set(tickFrontBlock.getX(), tickFrontBlock.getY() + 1, tickFrontBlock.getZ());
-        if (!isFreePass(tickTmpBlockPos))
+        // we break the block right in front of us if it is impassable
+        if (!isFreePass(frontBlockPos))
         {
-            tryBreak(tickTmpBlockPos);
+            tryBreak(frontBlockPos);
+        }
+        // we break the block above the front one if it also interferes
+        tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() + 1, frontBlockPos.getZ());
+        if (!isFreePass(tickFunctionTmpBlockPos))
+        {
+            tryBreak(tickFunctionTmpBlockPos);
         }
     }
 
@@ -318,15 +323,18 @@ public class BreakAndBuildGoal extends Goal
     private boolean isDangerous(BlockState state)
     {
         if (!state.getFluidState().isEmpty()) return true;
-        if (state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE)) return true;
-        if (state.is(Blocks.CAMPFIRE) || state.is(Blocks.SOUL_CAMPFIRE)) return state.getValue(CampfireBlock.LIT);
-        if (state.is(Blocks.CACTUS) || state.is(Blocks.MAGMA_BLOCK)) return true;
-        if (state.is(Blocks.SWEET_BERRY_BUSH) || state.is(Blocks.WITHER_ROSE)) return true;
-        if (state.is(Blocks.POWDER_SNOW)) return true;
 
         ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        if (id == null) return false;
 
-        return Config.EXTRA_DANGEROUS_BLOCKS_SET.contains(id);
+        if (!Config.DANGEROUS_BLOCKS_SET.contains(id)) return false;
+
+        if (state.getBlock() instanceof CampfireBlock)
+        {
+            return state.getValue(CampfireBlock.LIT);
+        }
+
+        return true;
     }
 
     private int getBlockHealth(BlockPos blockPos)
@@ -352,7 +360,11 @@ public class BreakAndBuildGoal extends Goal
     private boolean isFreePass(BlockPos pos)
     {
         BlockState blockState = level.getBlockState(pos);
+        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(blockState.getBlock());
+
         if (blockState.isAir()) return true;
+        if (id != null && Config.IMPASSABLE_BLOCKS_SET.contains(id)) return false;
+
         return blockState.getCollisionShape(level, pos).isEmpty();
     }
 
@@ -363,7 +375,7 @@ public class BreakAndBuildGoal extends Goal
 
         if (freezeUntilTick < currentTime)
         {
-            if (distSq < lastDistSq - 0.25)
+            if (distSq < lastDistSq - 0.5)
             {
                 stuckTicks = 0;
                 isBreakAndBuild = false;
