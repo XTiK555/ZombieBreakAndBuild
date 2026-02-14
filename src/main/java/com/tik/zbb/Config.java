@@ -14,7 +14,8 @@ public class Config
 
     // Public config values
     public static final ForgeConfigSpec.ConfigValue<String> BRIDGE_BLOCK_ID;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTRA_DANGEROUS_BLOCKS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DANGEROUS_BLOCKS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> IMPASSABLE_BLOCKS;
 
     public static final ForgeConfigSpec.BooleanValue ALWAYS_SEE_NEAREST_PLAYER;
     public static final ForgeConfigSpec.BooleanValue APPLY_TO_ALL_HOSTILES;
@@ -37,7 +38,8 @@ public class Config
     public static final ForgeConfigSpec.ConfigValue<String> HIT_SOUND_ID;
     public static final ForgeConfigSpec.ConfigValue<String> BREAK_SOUND_ID;
 
-    public static Set<Identifier> EXTRA_DANGEROUS_BLOCKS_SET = Set.of();
+    public static Set<Identifier> DANGEROUS_BLOCKS_SET = Set.of();
+    public static Set<Identifier> IMPASSABLE_BLOCKS_SET = Set.of();
 
     // Simple resource location validator: "namespace:path[/path...]"
     private static final Pattern RL = Pattern.compile("^[a-z0-9_.-]+:[a-z0-9_/.-]+$");
@@ -64,15 +66,40 @@ public class Config
                 )
                 .define("bridgeBlock", "minecraft:dirt", Config::isResLoc);
 
-        EXTRA_DANGEROUS_BLOCKS = b
+        DANGEROUS_BLOCKS = b
                 .comment(
-                        "Additional blocks that should be treated as dangerous. (useful with other mods).",
+                        "Blocks that should be treated as dangerous.",
                         "Each entry must be a resource location 'modid:block'.",
                         "[Example: minecraft:campfire, minecraft:magma_block]"
                 )
                 .defineListAllowEmpty(
-                        List.of("extraDangerousBlocks"),
-                        List.of(),
+                        List.of("dangerousBlocks"),
+                        List.of(
+                                "minecraft:fire",
+                                "minecraft:soul_fire",
+                                "minecraft:campfire",
+                                "minecraft:soul_campfire",
+                                "minecraft:cactus",
+                                "minecraft:magma_block",
+                                "minecraft:sweet_berry_bush",
+                                "minecraft:wither_rose",
+                                "minecraft:powder_snow"
+                        ),
+                        Config::isResLoc
+                );
+
+        IMPASSABLE_BLOCKS = b
+                .comment(
+                        "Blocks that zombies should break in their path, even if they are passable by collision.",
+                        "Each entry must be a resource location 'modid:block'.",
+                        "[Example: minecraft:campfire, minecraft:magma_block]"
+                )
+                .defineListAllowEmpty(
+                        List.of("impassableBlocks"),
+                        List.of(
+                                "minecraft:cobweb",
+                                "minecraft:pointed_dripstone"
+                        ),
                         Config::isResLoc
                 );
 
@@ -206,9 +233,9 @@ public class Config
                 .worldRestart()
                 .comment(
                         "Sound when placing a bridge block. Must be a sound event ID 'namespace:path'.",
-                        "[Default: minecraft:block.dirt.place]"
+                        "[Default: minecraft:block.rooted_dirt.place]"
                 )
-                .define("placeSound", "minecraft:block.dirt.place", Config::isResLoc);
+                .define("placeSound", "minecraft:block.rooted_dirt.place", Config::isResLoc);
 
         HIT_SOUND_ID = b
                 .worldRestart()
@@ -231,18 +258,22 @@ public class Config
         SPEC = b.build();
     }
 
-    public static void rebuildDangerousBlocksSet()
+    public static void rebuildSets()
+    {
+        DANGEROUS_BLOCKS_SET = parseListToSet(DANGEROUS_BLOCKS.get());
+        IMPASSABLE_BLOCKS_SET = parseListToSet(IMPASSABLE_BLOCKS.get());
+    }
+
+    private static Set<Identifier> parseListToSet(List<? extends String> list)
     {
         Set<Identifier> set = new HashSet<>();
-
-        for (String s : EXTRA_DANGEROUS_BLOCKS.get())
+        for (String s : list)
         {
             if (s == null || s.isBlank()) continue;
 
             Identifier id = Identifier.tryParse(s);
             if (id != null) set.add(id);
         }
-
-        EXTRA_DANGEROUS_BLOCKS_SET = Set.copyOf(set);
+        return Set.copyOf(set);
     }
 }
