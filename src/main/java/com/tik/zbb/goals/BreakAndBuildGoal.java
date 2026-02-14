@@ -2,6 +2,7 @@ package com.tik.zbb.goals;
 
 import com.tik.zbb.BlockStorage;
 import com.tik.zbb.Config;
+import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -80,13 +81,13 @@ public class BreakAndBuildGoal extends Goal
         if (currentTime >= nextSearchDangerousTick)
         {
             mitigateNearbyDanger();
-            nextSearchDangerousTick = level.getGameTime() + secToTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
+            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.SEARCH_DANGEROUS_INTERVAL.get(), 1);
         }
 
         if (currentTime >= nextPathCheckTick)
         {
-            checkPath(target);
-            nextPathCheckTick = level.getGameTime() + secToTicks(Config.PATH_CHECK_INTERVAL.get(), 1);
+            checkPath();
+            nextPathCheckTick = level.getGameTime() + SecondsToTicksUtility.toTicks(Config.PATH_CHECK_INTERVAL.get(), 1);
         }
 
         if (isBreakAndBuild)
@@ -227,12 +228,12 @@ public class BreakAndBuildGoal extends Goal
         if (currentTime < nextGoToTargetTick) return;
 
         mob.getNavigation().moveTo(target, 1.0);
-        nextGoToTargetTick = currentTime + secToTicks(Config.GO_TO_TARGET_INTERVAL.get(), 1);
+        nextGoToTargetTick = currentTime + SecondsToTicksUtility.toTicks(Config.GO_TO_TARGET_INTERVAL.get(), 1);
     }
 
     // Note: In Minecraft 1.21, "path.canReach()" now returns whether the target can be reached, not whether the next point can be reached.
     // This is why zombies immediately start building with the old function, so I had to change it.
-    private void checkPath(LivingEntity target)
+    private void checkPath()
     {
         PathNavigation nav = mob.getNavigation();
         Path path = nav.getPath();
@@ -272,7 +273,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void freeze()
     {
-        freezeUntilTick = (level.getGameTime() + secToTicks(Config.FREEZE_TIME.get(), 0));
+        freezeUntilTick = (level.getGameTime() + SecondsToTicksUtility.toTicks(Config.FREEZE_TIME.get()));
 
         mob.getNavigation().stop();
         mob.getMoveControl().setWantedPosition(mob.getX(), mob.getY(), mob.getZ(), 0.0);
@@ -373,11 +374,6 @@ public class BreakAndBuildGoal extends Goal
             }
             lastDistSq = distSq;
         }
-    }
-
-    private static long secToTicks(double sec, long minTicks)
-    {
-        return Math.max(minTicks, (long) Math.ceil(sec * 20.0));
     }
 
     /// ==================================================================================

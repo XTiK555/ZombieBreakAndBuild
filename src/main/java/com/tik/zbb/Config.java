@@ -224,10 +224,10 @@ public class Config
 
         BUILT_BLOCKS_PROTECTION_TIME = b
                 .comment(
-                        "How long will it take for zombies to break the block they themselves placed (sec).",
-                        "[Default: 15]"
+                        "How long will zombies be unable to break a block that has just been placed by other zombies? (sec).",
+                        "[Default: 0.75]"
                 )
-                .defineInRange("builtBlocksProtectionTime", 15d, 0, 100);
+                .defineInRange("builtBlocksProtectionTime", 0.75d, 0, 100);
 
         b.pop();
 
