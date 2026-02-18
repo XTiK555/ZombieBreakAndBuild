@@ -35,6 +35,7 @@ public class ConfigData
     public Boolean isAlwaysSeeNearestPlayer = false;
     public Boolean isApplyingToAllHostiles = true;
     public Boolean isAttackingAllEntities = false;
+    public Boolean isCanSeeTargetsThroughBlocks = true;
 
     public Integer targetSearchRadius = 35;
     public Integer dangerousBlocksSearchRadius = 1;

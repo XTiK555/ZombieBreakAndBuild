@@ -2,7 +2,7 @@ package com.tik.zbb.utilities;
 
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 
-public interface IMobAccessor
+public interface IMobAccessorMixin
 {
     GoalSelector zbb_getGoalSelector();
 
