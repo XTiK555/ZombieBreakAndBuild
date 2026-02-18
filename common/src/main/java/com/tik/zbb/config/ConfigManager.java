@@ -84,6 +84,8 @@ public final class ConfigManager
         if (loaded.isAlwaysSeeNearestPlayer == null) loaded.isAlwaysSeeNearestPlayer = def.isAlwaysSeeNearestPlayer;
         if (loaded.isApplyingToAllHostiles == null) loaded.isApplyingToAllHostiles = def.isApplyingToAllHostiles;
         if (loaded.isAttackingAllEntities == null) loaded.isAttackingAllEntities = def.isAttackingAllEntities;
+        if (loaded.isCanSeeTargetsThroughBlocks == null)
+            loaded.isCanSeeTargetsThroughBlocks = def.isCanSeeTargetsThroughBlocks;
         if (loaded.targetSearchRadius == null) loaded.targetSearchRadius = def.targetSearchRadius;
         if (loaded.dangerousBlocksSearchRadius == null)
             loaded.dangerousBlocksSearchRadius = def.dangerousBlocksSearchRadius;
