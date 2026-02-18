@@ -17,7 +17,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -83,6 +82,7 @@ public class BreakAndBuildGoal extends Goal
     {
         LivingEntity target = mob.getTarget();
         if (target == null) return;
+        if (!(level instanceof ServerLevel)) return;
 
         final long currentTime = level.getGameTime();
 
@@ -96,24 +96,24 @@ public class BreakAndBuildGoal extends Goal
 
         if (isBreakAndBuild)
         {
-            int selfX = Mth.floor(mob.getX());
-            int selfY = Mth.floor(mob.getY());
-            int selfZ = Mth.floor(mob.getZ());
+            final int selfX = Mth.floor(mob.getX());
+            final int selfY = Mth.floor(mob.getY());
+            final int selfZ = Mth.floor(mob.getZ());
 
-            int targetX = Mth.floor(target.getX());
-            int targetZ = Mth.floor(target.getZ());
-            int targetY = Mth.floor(target.getY());
+            final int targetX = Mth.floor(target.getX());
+            final int targetZ = Mth.floor(target.getZ());
+            final int targetY = Mth.floor(target.getY());
 
-            int dx = targetX - selfX;
-            int dz = targetZ - selfZ;
+            final int deltaX = targetX - selfX;
+            final int deltaZ = targetZ - selfZ;
 
             int dirX = 0, dirZ = 0;
-            if (Math.abs(dx) > Math.abs(dz)) dirX = Integer.signum(dx);
-            else if (dz != 0) dirZ = Integer.signum(dz);
+            if (Math.abs(deltaX) > Math.abs(deltaZ)) dirX = Integer.signum(deltaX);
+            else if (deltaZ != 0) dirZ = Integer.signum(deltaZ);
 
             handleVerticalActions(tickTmpBlockPos.set(selfX, selfY, selfZ), targetY);
-            handleBridgeGap(tickTmpBlockPos.set(selfX + dirX, selfY, selfZ + dirZ));
-            handleForwardObstacles(tickTmpBlockPos, selfX, selfY, selfZ);
+            handleBridgeGap(tickTmpBlockPos.set(selfX + dirX, selfY, selfZ + dirZ), selfX, selfZ, targetY);
+            handleForwardObstacles(tickTmpBlockPos, selfX, selfZ);
         }
 
         if (currentTime >= nextSearchDangerousTick)
@@ -198,22 +198,26 @@ public class BreakAndBuildGoal extends Goal
         }
     }
 
-    private void handleBridgeGap(BlockPos frontBlockPos)
+    private void handleBridgeGap(BlockPos frontBlockPos, int mobX, int mobZ, int targetY)
     {
-        // If there is air in front and air underneath (2 blocks) -> we set the bridge to -1
+        boolean belowUsAir = level.getBlockState(tickFunctionTmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ)).isAir();
+        if (belowUsAir && targetY >= frontBlockPos.getY())
+        {
+            tryBuildBlock(tickFunctionTmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ));
+        }
+
         boolean frontAir = level.getBlockState(frontBlockPos).isAir();
         boolean belowAir = level.getBlockState(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ())).isAir();
         boolean below2Air = level.getBlockState(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ())).isAir();
-
         if (frontAir && belowAir && below2Air)
         {
             tryBuildBlock(tickFunctionTmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()));
         }
     }
 
-    private void handleForwardObstacles(BlockPos frontBlockPos, int mobX, int mobY, int mobZ)
+    private void handleForwardObstacles(BlockPos frontBlockPos, int mobX, int mobZ)
     {
-        tickFunctionTmpBlockPos.set(mobX, mobY, mobZ);
+        tickFunctionTmpBlockPos.set(mobX, frontBlockPos.getY(), mobZ);
         if (!isFreePass(tickFunctionTmpBlockPos))
         {
             tryBreak(tickFunctionTmpBlockPos);
