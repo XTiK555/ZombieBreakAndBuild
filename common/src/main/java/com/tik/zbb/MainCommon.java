@@ -7,18 +7,13 @@ import com.tik.zbb.goals.BreakAndBuildGoal;
 import com.tik.zbb.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import com.tik.zbb.utilities.IMobAccessorMixin;
+import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Drowned;
-import net.minecraft.world.entity.monster.Husk;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.monster.ZombieVillager;
-import net.minecraft.world.entity.player.Player;
 
 // This class is part of the common project meaning it is shared between all supported loaders. Code written here can only
 // import and access the vanilla codebase, libraries used by vanilla, and optionally third party libraries that provide
@@ -51,7 +46,7 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
-        if (!shouldApplyTo(mob)) return;
+        if (!ShouldApplyToMobUtility.shouldAttachZbbGoals(mob, config)) return;
         if (!(mob instanceof IMobAccessorMixin pFMobAccessor)) return;
 
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
@@ -68,17 +63,5 @@ public class MainCommon
         {
             followRangeAttribute.setBaseValue(config.targetSearchRadius);
         }
-    }
-
-    private static boolean shouldApplyTo(Mob mob)
-    {
-        boolean isPathFinding = mob instanceof PathfinderMob;
-        boolean applyToAllHostiles = config.isApplyingToAllHostiles;
-        boolean isHostile = mob.getType().getCategory() == MobCategory.MONSTER;
-        boolean isZombie = mob instanceof Zombie || mob instanceof Drowned || mob instanceof Husk || mob instanceof ZombieVillager;
-
-        if (!isPathFinding) return false;
-        if (applyToAllHostiles) return isHostile;
-        return isZombie;
     }
 }
