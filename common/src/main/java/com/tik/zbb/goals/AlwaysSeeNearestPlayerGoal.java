@@ -31,7 +31,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         if (!config.isAlwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
-        if (mob.getTarget() != null && mob.getTarget().isAlive() && isValidPlayer(mob.getTarget())) return false;
+        if (mob.getTarget() != null && isValidPlayer(mob.getTarget())) return false;
 
         target = findNearestValidPlayer(sl.players());
 
