@@ -5,8 +5,12 @@
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_18",
   "mixins": [
-    "MobAccessorMixin",
-    "ThroughWallSeeingMixin"
+    "accessor.MobAccessor",
+    "MobTargetingMixin",
+    "accessor.TargetGoalAccessor",
+    "accessor.NearestAttackableTargetGoalAccessor",
+    "TargetGoalRetargetMixin",
+    "accessor.GoalSelectorAccessor"
   ],
   "client": [
   ],
