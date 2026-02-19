@@ -2,11 +2,10 @@ package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.goals.BreakAndBuildGoal;
 import com.tik.zbb.goals.ThroughWallsNearestTargetGoal;
+import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
-import com.tik.zbb.utilities.IMobAccessorMixin;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -47,17 +46,16 @@ public class MainCommon
     public static void onJoin(Mob mob)
     {
         if (!ShouldApplyToMobUtility.shouldAttachZbbGoals(mob, config)) return;
-        if (!(mob instanceof IMobAccessorMixin pFMobAccessor)) return;
+        if (!(mob instanceof MobAccessor pFMobAccessor)) return;
 
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
         PathfinderMob pFMob = (PathfinderMob) mob;
 
-        pFMobAccessor.zbb_getGoalSelector().addGoal(2, new BreakAndBuildGoal(pFMob));
-        pFMobAccessor.zbb_getTargetSelector().addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
+        pFMobAccessor.zbb$getGoalSelector().addGoal(2, new BreakAndBuildGoal(pFMob));
 
         if (config.attackAllEntities)
         {
-            pFMobAccessor.zbb_getTargetSelector().addGoal(1, new ThroughWallsNearestTargetGoal<>(pFMob, LivingEntity.class));
+            pFMobAccessor.zbb$getTargetSelector().addGoal(1, new ThroughWallsNearestTargetGoal<>(pFMob, LivingEntity.class));
         }
         if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < config.targetSearchRadius)
         {
