@@ -348,7 +348,7 @@ public class BreakAndBuildGoal extends Goal
         Identifier id = blockRegistry.getKey(state.getBlock());
         if (id == null) return false;
 
-        if (!config.dangerousBlocksSet.contains(id)) return false;
+        if (!config.dangerousBlockIdSet.contains(id)) return false;
 
         if (state.getBlock() instanceof CampfireBlock)
         {
@@ -384,7 +384,7 @@ public class BreakAndBuildGoal extends Goal
         Identifier id = blockRegistry.getKey(blockState.getBlock());
 
         if (blockState.isAir()) return true;
-        if (id != null && config.impassableBlocksSet.contains(id)) return false;
+        if (id != null && config.impassableBlockIdSet.contains(id)) return false;
 
         return blockState.getCollisionShape(level, pos).isEmpty();
     }

@@ -55,7 +55,7 @@ public class MainCommon
         pFMobAccessor.zbb_getGoalSelector().addGoal(2, new BreakAndBuildGoal(pFMob));
         pFMobAccessor.zbb_getTargetSelector().addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
 
-        if (config.isAttackingAllEntities)
+        if (config.attackAllEntities)
         {
             pFMobAccessor.zbb_getTargetSelector().addGoal(1, new ThroughWallsNearestTargetGoal<>(pFMob, LivingEntity.class));
         }
