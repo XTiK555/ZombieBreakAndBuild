@@ -13,20 +13,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.function.Predicate;
+
 @Mixin(NearestAttackableTargetGoal.class)
 public abstract class ThroughWallSeeingMixin
 {
     @Shadow
     protected TargetingConditions targetConditions;
 
-    @Inject(method = "<init>(Lnet/minecraft/world/entity/Mob;Ljava/lang/Class;IZZLnet/minecraft/world/entity/ai/targeting/TargetingConditions$Selector;)V", at = @At("RETURN"))
+    @Inject(method = "<init>(Lnet/minecraft/world/entity/Mob;Ljava/lang/Class;IZZLjava/util/function/Predicate;)V", at = @At("RETURN"))
     private void zbb$ignoreLineOfSight(
             Mob mob,
             Class<? extends LivingEntity> targetType,
-            int interval,
+            int randomInterval,
             boolean mustSee,
             boolean mustReach,
-            TargetingConditions.Selector selector,
+            Predicate<LivingEntity> targetPredicate,
             CallbackInfo ci
     )
     {
