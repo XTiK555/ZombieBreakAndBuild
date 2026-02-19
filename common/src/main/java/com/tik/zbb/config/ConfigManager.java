@@ -81,11 +81,11 @@ public final class ConfigManager
         if (loaded.bridgeBlockId == null) loaded.bridgeBlockId = def.bridgeBlockId;
         if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
         if (loaded.impassableBlockIdList == null) loaded.impassableBlockIdList = def.impassableBlockIdList;
-        if (loaded.isAlwaysSeeNearestPlayer == null) loaded.isAlwaysSeeNearestPlayer = def.isAlwaysSeeNearestPlayer;
-        if (loaded.isApplyingToAllHostiles == null) loaded.isApplyingToAllHostiles = def.isApplyingToAllHostiles;
-        if (loaded.isAttackingAllEntities == null) loaded.isAttackingAllEntities = def.isAttackingAllEntities;
-        if (loaded.isCanSeeTargetsThroughBlocks == null)
-            loaded.isCanSeeTargetsThroughBlocks = def.isCanSeeTargetsThroughBlocks;
+        if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
+        if (loaded.applyToAllHostiles == null) loaded.applyToAllHostiles = def.applyToAllHostiles;
+        if (loaded.attackAllEntities == null) loaded.attackAllEntities = def.attackAllEntities;
+        if (loaded.canSeeTargetsThroughBlocks == null)
+            loaded.canSeeTargetsThroughBlocks = def.canSeeTargetsThroughBlocks;
         if (loaded.targetSearchRadius == null) loaded.targetSearchRadius = def.targetSearchRadius;
         if (loaded.dangerousBlocksSearchRadius == null)
             loaded.dangerousBlocksSearchRadius = def.dangerousBlocksSearchRadius;

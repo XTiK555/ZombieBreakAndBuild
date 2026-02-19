@@ -32,10 +32,12 @@ public class ConfigData
     // ======================
     // [AI / BEHAVIOR]
     // ======================
-    public Boolean isAlwaysSeeNearestPlayer = false;
-    public Boolean isApplyingToAllHostiles = true;
-    public Boolean isAttackingAllEntities = false;
-    public Boolean isCanSeeTargetsThroughBlocks = true;
+    public Boolean alwaysSeeNearestPlayer = false;
+    public Boolean attackAllEntities = false;
+    public Boolean canSeeTargetsThroughBlocks = true;
+    public Boolean applyToAllHostiles = true;
+    public List<String> additionalEntityIdList = new ArrayList<>(List.of());
+    public List<String> ignoreHostileEntityIdList = new ArrayList<>(List.of());
 
     public Integer targetSearchRadius = 35;
     public Integer dangerousBlocksSearchRadius = 1;
@@ -67,13 +69,17 @@ public class ConfigData
     // ======================
     // [Runtime caches]
     // ======================
-    public transient Set<ResourceLocation> dangerousBlocksSet = Set.of();
-    public transient Set<ResourceLocation> impassableBlocksSet = Set.of();
+    public transient Set<ResourceLocation> dangerousBlockIdSet = Set.of();
+    public transient Set<ResourceLocation> impassableBlockIdSet = Set.of();
+    public transient Set<ResourceLocation> ignoreHostileEntityIdSet = Set.of();
+    public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
 
     public void rebuildSets()
     {
-        dangerousBlocksSet = parseListToSet(dangerousBlockIdList);
-        impassableBlocksSet = parseListToSet(impassableBlockIdList);
+        dangerousBlockIdSet = parseListToSet(dangerousBlockIdList);
+        impassableBlockIdSet = parseListToSet(impassableBlockIdList);
+        additionalEntityIdSet = parseListToSet(additionalEntityIdList);
+        ignoreHostileEntityIdSet = parseListToSet(ignoreHostileEntityIdList);
     }
 
     private Set<ResourceLocation> parseListToSet(List<String> list)
