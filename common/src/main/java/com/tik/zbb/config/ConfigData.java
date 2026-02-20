@@ -33,7 +33,6 @@ public class ConfigData
     // [AI / BEHAVIOR]
     // ======================
     public Boolean alwaysSeeNearestPlayer = false;
-    public Boolean attackAllEntities = false;
     public Boolean canSeeTargetsThroughBlocks = true;
     public Boolean applyToAllHostiles = true;
     public List<String> additionalEntityIdList = new ArrayList<>(List.of());

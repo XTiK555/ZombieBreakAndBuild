@@ -40,8 +40,7 @@ public abstract class MobTargetingMixin
         ConfigData config = ConfigManager.getConfigData();
 
         if (targetConditions == null) return;
-        if (!ShouldApplyToMobUtility.shouldSeeTargetsThroughWalls(mob, config) && !ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config))
-            return;
+        if (!ShouldApplyToMobUtility.shouldSeeTargetsThroughWalls(mob, config)) return;
 
         this.targetConditions = this.targetConditions.copy().ignoreLineOfSight();
     }
@@ -71,7 +70,10 @@ public abstract class MobTargetingMixin
         double distSqr = nearestPlayer.distanceToSqr(mob);
         double range = Math.sqrt(distSqr) + 1.0D;
 
-        cir.setReturnValue(this.targetConditions.range(range));
+        cir.setReturnValue(this.targetConditions
+                .range(range)
+                .ignoreLineOfSight()
+        );
     }
 
     @Unique
