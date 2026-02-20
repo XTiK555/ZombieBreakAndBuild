@@ -7,6 +7,7 @@ import com.tik.zbb.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -20,16 +21,14 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 // however it will be compatible with all supported mod loaders.
 public class MainCommon
 {
-    private static ConfigData config;
-
     public static void init()
     {
         ConfigManager.init(Constants.MOD_NAME + ".json");
-        config = ConfigManager.getConfigData();
     }
 
     public static void onLevelTick(ServerLevel level)
     {
+        ConfigData config = ConfigManager.getConfigData();
         long now = level.getGameTime();
         int interval = 10;
 
@@ -45,6 +44,8 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
+        ConfigData config = ConfigManager.getConfigData();
+
         if (!ShouldApplyToMobUtility.shouldAttachZbbGoals(mob, config)) return;
         if (!(mob instanceof MobAccessor pFMobAccessor)) return;
 

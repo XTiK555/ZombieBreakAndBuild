@@ -1,8 +1,10 @@
 package com.tik.zbb;
 
+import com.tik.zbb.config.ConfigManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.world.entity.Mob;
 
 public class MainFabric implements ModInitializer
@@ -21,5 +23,7 @@ public class MainFabric implements ModInitializer
         });
 
         ServerTickEvents.END_WORLD_TICK.register(MainCommon::onLevelTick);
+
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> ConfigManager.reload());
     }
 }

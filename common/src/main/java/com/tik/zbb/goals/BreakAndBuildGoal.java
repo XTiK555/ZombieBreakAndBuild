@@ -5,6 +5,7 @@ import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -30,11 +31,11 @@ public class BreakAndBuildGoal extends Goal
 {
     private final PathfinderMob mob;
     private final Level level;
-    private final Block bridgeBlock;
-    private final SoundEvent placeSound, hitSound, breakSound;
-    private final ConfigData config;
     private final Registry<Block> blockRegistry;
     private final Registry<SoundEvent> soundEventRegistry;
+    private Block bridgeBlock;
+    private SoundEvent placeSound, hitSound, breakSound;
+    private ConfigData config;
 
     private long lastBuildTick = Long.MIN_VALUE;
     private long lastBreakTick = Long.MIN_VALUE;
@@ -59,22 +60,10 @@ public class BreakAndBuildGoal extends Goal
     {
         this.mob = mob;
         this.level = mob.level();
-        this.config = ConfigManager.getConfigData();
+        this.blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK);
+        this.soundEventRegistry = level.registryAccess().registryOrThrow(Registries.SOUND_EVENT);
 
-        blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK);
-        soundEventRegistry = level.registryAccess().registryOrThrow(Registries.SOUND_EVENT);
-
-        Block block = blockRegistry.get(ResourceLocation.tryParse(config.bridgeBlockId));
-        this.bridgeBlock = block != null ? block : Blocks.DIRT;
-
-        SoundEvent sound1 = soundEventRegistry.get(ResourceLocation.tryParse(config.placeSoundId));
-        this.placeSound = sound1 != null ? sound1 : SoundEvents.ROOTED_DIRT_PLACE;
-
-        SoundEvent sound2 = soundEventRegistry.get(ResourceLocation.tryParse(config.hitSoundId));
-        this.hitSound = sound2 != null ? sound2 : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
-
-        SoundEvent sound3 = soundEventRegistry.get(ResourceLocation.tryParse(config.breakSoundId));
-        this.breakSound = sound3 != null ? sound3 : SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
+        reloadConfigValues();
     }
 
     @Override
@@ -82,8 +71,10 @@ public class BreakAndBuildGoal extends Goal
     {
         LivingEntity target = mob.getTarget();
         if (target == null) return;
+        if (!(level instanceof ServerLevel)) return;
 
         final long currentTime = level.getGameTime();
+        if (config != ConfigManager.getConfigData()) reloadConfigValues();
 
         updateStuckState(target, currentTime);
 
@@ -399,6 +390,22 @@ public class BreakAndBuildGoal extends Goal
         }
     }
 
+    private void reloadConfigValues()
+    {
+        this.config = ConfigManager.getConfigData();
+
+        Block block = blockRegistry.get(ResourceLocation.tryParse(config.bridgeBlockId));
+        this.bridgeBlock = block != null ? block : Blocks.DIRT;
+
+        SoundEvent sound1 = soundEventRegistry.get(ResourceLocation.tryParse(config.placeSoundId));
+        this.placeSound = sound1 != null ? sound1 : SoundEvents.ROOTED_DIRT_PLACE;
+
+        SoundEvent sound2 = soundEventRegistry.get(ResourceLocation.tryParse(config.hitSoundId));
+        this.hitSound = sound2 != null ? sound2 : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
+
+        SoundEvent sound3 = soundEventRegistry.get(ResourceLocation.tryParse(config.breakSoundId));
+        this.breakSound = sound3 != null ? sound3 : SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
+    }
 
     /// ==================================================================================
 

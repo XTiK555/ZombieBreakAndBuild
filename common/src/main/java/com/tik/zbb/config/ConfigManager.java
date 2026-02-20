@@ -32,6 +32,7 @@ public final class ConfigManager
     public static void reload()
     {
         loadOrCreate();
+        Constants.LOG.info("Reloading Config");
     }
 
     public static void save()
@@ -46,7 +47,7 @@ public final class ConfigManager
         }
         catch (Exception e)
         {
-            Constants.LOG.error("[ZBB] Failed to save config: " + e);
+            Constants.LOG.error("Failed to save config: " + e);
         }
     }
 
@@ -62,7 +63,7 @@ public final class ConfigManager
             }
             catch (Exception e)
             {
-                Constants.LOG.error("[ZBB] Failed to read config, using defaults: " + e);
+                Constants.LOG.error("Failed to read config, using defaults: " + e);
             }
         }
 
@@ -82,8 +83,10 @@ public final class ConfigManager
         if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
         if (loaded.impassableBlockIdList == null) loaded.impassableBlockIdList = def.impassableBlockIdList;
         if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
-        if (loaded.applyToAllHostiles == null) loaded.applyToAllHostiles = def.applyToAllHostiles;
         if (loaded.attackAllEntities == null) loaded.attackAllEntities = def.attackAllEntities;
+        if (loaded.applyToAllHostiles == null) loaded.applyToAllHostiles = def.applyToAllHostiles;
+        if (loaded.additionalEntityIdList == null) loaded.additionalEntityIdList = def.additionalEntityIdList;
+        if (loaded.ignoreHostileEntityIdList == null) loaded.ignoreHostileEntityIdList = def.ignoreHostileEntityIdList;
         if (loaded.canSeeTargetsThroughBlocks == null)
             loaded.canSeeTargetsThroughBlocks = def.canSeeTargetsThroughBlocks;
         if (loaded.targetSearchRadius == null) loaded.targetSearchRadius = def.targetSearchRadius;
