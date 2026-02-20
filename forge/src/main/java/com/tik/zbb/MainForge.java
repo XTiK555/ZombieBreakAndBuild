@@ -1,8 +1,11 @@
 package com.tik.zbb;
 
+import com.tik.zbb.config.ConfigManager;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -33,5 +36,11 @@ public class MainForge
         if (!(event.getEntity() instanceof Mob mob)) return;
 
         MainCommon.onJoin(mob);
+    }
+
+    @SubscribeEvent
+    public static void onAddReloadListeners(AddReloadListenerEvent event)
+    {
+        event.addListener((ResourceManagerReloadListener) resourceManager -> ConfigManager.reload());
     }
 }
