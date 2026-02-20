@@ -83,7 +83,6 @@ public final class ConfigManager
         if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
         if (loaded.impassableBlockIdList == null) loaded.impassableBlockIdList = def.impassableBlockIdList;
         if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
-        if (loaded.attackAllEntities == null) loaded.attackAllEntities = def.attackAllEntities;
         if (loaded.applyToAllHostiles == null) loaded.applyToAllHostiles = def.applyToAllHostiles;
         if (loaded.additionalEntityIdList == null) loaded.additionalEntityIdList = def.additionalEntityIdList;
         if (loaded.ignoreHostileEntityIdList == null) loaded.ignoreHostileEntityIdList = def.ignoreHostileEntityIdList;
