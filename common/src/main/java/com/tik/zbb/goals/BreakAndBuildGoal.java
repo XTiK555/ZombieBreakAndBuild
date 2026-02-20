@@ -31,11 +31,11 @@ public class BreakAndBuildGoal extends Goal
 {
     private final PathfinderMob mob;
     private final Level level;
-    private final Block bridgeBlock;
-    private final SoundEvent placeSound, hitSound, breakSound;
-    private final ConfigData config;
     private final Registry<Block> blockRegistry;
     private final Registry<SoundEvent> soundEventRegistry;
+    private Block bridgeBlock;
+    private SoundEvent placeSound, hitSound, breakSound;
+    private ConfigData config;
 
     private long lastBuildTick = Long.MIN_VALUE;
     private long lastBreakTick = Long.MIN_VALUE;
@@ -60,30 +60,10 @@ public class BreakAndBuildGoal extends Goal
     {
         this.mob = mob;
         this.level = mob.level();
-        this.config = ConfigManager.getConfigData();
-
         this.blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         this.soundEventRegistry = level.registryAccess().lookupOrThrow(Registries.SOUND_EVENT);
 
-        Identifier blockId = Identifier.tryParse(config.bridgeBlockId);
-        if (blockId != null)
-            this.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.DIRT);
-        else this.bridgeBlock = Blocks.DIRT;
-
-        Identifier placeSoundId = Identifier.tryParse(config.placeSoundId);
-        if (placeSoundId != null)
-            this.placeSound = soundEventRegistry.get(placeSoundId).map(Holder.Reference::value).orElse(SoundEvents.ROOTED_DIRT_PLACE);
-        else this.placeSound = SoundEvents.ROOTED_DIRT_PLACE;
-
-        Identifier hitSoundId = Identifier.tryParse(config.hitSoundId);
-        if (hitSoundId != null)
-            this.hitSound = soundEventRegistry.get(hitSoundId).map(Holder.Reference::value).orElse(SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR);
-        else this.hitSound = SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
-
-        Identifier breakSoundId = Identifier.tryParse(config.breakSoundId);
-        if (breakSoundId != null)
-            this.breakSound = soundEventRegistry.get(breakSoundId).map(Holder.Reference::value).orElse(SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR);
-        else this.breakSound = SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
+        reloadConfigValues();
     }
 
     @Override
@@ -94,6 +74,7 @@ public class BreakAndBuildGoal extends Goal
         if (!(level instanceof ServerLevel)) return;
 
         final long currentTime = level.getGameTime();
+        if (config != ConfigManager.getConfigData()) reloadConfigValues();
 
         updateStuckState(target, currentTime);
 
@@ -409,6 +390,30 @@ public class BreakAndBuildGoal extends Goal
         }
     }
 
+    private void reloadConfigValues()
+    {
+        this.config = ConfigManager.getConfigData();
+
+        Identifier blockId = Identifier.tryParse(config.bridgeBlockId);
+        if (blockId != null)
+            this.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.DIRT);
+        else this.bridgeBlock = Blocks.DIRT;
+
+        Identifier placeSoundId = Identifier.tryParse(config.placeSoundId);
+        if (placeSoundId != null)
+            this.placeSound = soundEventRegistry.get(placeSoundId).map(Holder.Reference::value).orElse(SoundEvents.ROOTED_DIRT_PLACE);
+        else this.placeSound = SoundEvents.ROOTED_DIRT_PLACE;
+
+        Identifier hitSoundId = Identifier.tryParse(config.hitSoundId);
+        if (hitSoundId != null)
+            this.hitSound = soundEventRegistry.get(hitSoundId).map(Holder.Reference::value).orElse(SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR);
+        else this.hitSound = SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
+
+        Identifier breakSoundId = Identifier.tryParse(config.breakSoundId);
+        if (breakSoundId != null)
+            this.breakSound = soundEventRegistry.get(breakSoundId).map(Holder.Reference::value).orElse(SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR);
+        else this.breakSound = SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
+    }
 
     /// ==================================================================================
 

@@ -3,10 +3,12 @@ package com.tik.zbb.mixin;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.mixin.accessor.NearestAttackableTargetGoalAccessor;
+import com.tik.zbb.utilities.FindAnyTargetInRangeUtility;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.player.Player;
@@ -33,7 +35,7 @@ public abstract class TargetGoalRetargetMixin
     private void zbb$setRetargetTimer(CallbackInfo ci)
     {
         if (!zbb$shouldAffectThisGoal()) return;
-        zbb$nextRetargetTick = mob.tickCount + 20;
+        zbb$nextRetargetTick = mob.tickCount + 40;
     }
 
     @Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
@@ -41,27 +43,32 @@ public abstract class TargetGoalRetargetMixin
     {
         if (!zbb$shouldAffectThisGoal()) return;
 
-        if (mob.tickCount >= zbb$nextRetargetTick)
-        {
-            zbb$nextRetargetTick = mob.tickCount + 20;
+        if (mob.tickCount < zbb$nextRetargetTick) return;
+        zbb$nextRetargetTick = mob.tickCount + 40;
 
-            LivingEntity cur = mob.getTarget();
-            if (cur instanceof Player)
-            {
-                mob.setTarget(null);
-            }
-
-            cir.setReturnValue(false);
-        }
+        mob.setTarget(null);
+        cir.setReturnValue(false);
     }
 
     @Unique
     private boolean zbb$shouldAffectThisGoal()
     {
+        LivingEntity cur = mob.getTarget();
         ConfigData config = ConfigManager.getConfigData();
 
+        if (!(cur instanceof Player)) return false;
         if (!ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config)) return false;
         if (!((Object) this instanceof NearestAttackableTargetGoal)) return false;
+
+        double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
+        boolean hasOtherTargets = FindAnyTargetInRangeUtility.hasAnyTargetInRange(
+                mob,
+                followRange,
+                tt -> tt == Player.class || tt == ServerPlayer.class,
+                e -> e != cur
+                        && (!(e instanceof Player p) || !p.isSpectator())
+        );
+        if (!hasOtherTargets) return false;
 
         Class<?> tt = ((NearestAttackableTargetGoalAccessor) this).zbb$getTargetType();
         return tt == Player.class || tt == ServerPlayer.class;
