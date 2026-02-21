@@ -62,7 +62,7 @@ public final class FindAnyTargetInRangeUtility
 
             for (LivingEntity e : list)
             {
-                if (cond.test(sl, mob, e))
+                if (cond.test(mob, e))
                 {
                     return Optional.of(e);
                 }
