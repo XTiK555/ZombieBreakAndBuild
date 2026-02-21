@@ -52,7 +52,7 @@ public abstract class MobTargetingMixin
         Mob mob = ((TargetGoalAccessor) (Object) this).zbb$getMob();
         double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
 
-        if (!ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config)) return;
+        if (!ShouldApplyToMobUtility.shouldAlwaysSeeNearestPlayer(mob, config)) return;
         if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
         if (!(mob.level() instanceof ServerLevel)) return;
 

@@ -31,7 +31,7 @@ public final class ShouldApplyToMobUtility
         return true;
     }
 
-    public static boolean shouldIgnorePlayerTargetRange(Mob mob, ConfigData config)
+    public static boolean shouldAlwaysSeeNearestPlayer(Mob mob, ConfigData config)
     {
         if (!matchesZbbMobFilter(mob, config)) return false;
         if (!config.alwaysSeeNearestPlayer) return false;
