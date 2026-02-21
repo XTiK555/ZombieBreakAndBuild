@@ -54,7 +54,7 @@ public abstract class MobTargetingMixin
         ConfigData config = ConfigManager.getConfigData();
         Mob mob = ((TargetGoalAccessor) this).zbb$getMob();
 
-        if (!ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config)) return;
+        if (!ShouldApplyToMobUtility.shouldAlwaysSeeNearestPlayer(mob, config)) return;
         if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
         if (!(mob.level() instanceof ServerLevel)) return;
         if (this.targetConditions == null) return;

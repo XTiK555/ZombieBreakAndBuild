@@ -57,7 +57,7 @@ public abstract class TargetGoalRetargetMixin
         ConfigData config = ConfigManager.getConfigData();
 
         if (!(cur instanceof Player)) return false;
-        if (!ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config)) return false;
+        if (!ShouldApplyToMobUtility.shouldAlwaysSeeNearestPlayer(mob, config)) return false;
         if (!((Object) this instanceof NearestAttackableTargetGoal)) return false;
 
         double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
