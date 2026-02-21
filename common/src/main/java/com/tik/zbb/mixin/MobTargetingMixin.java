@@ -13,6 +13,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,41 +21,57 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 @Mixin(NearestAttackableTargetGoal.class)
 public abstract class MobTargetingMixin
 {
     @Shadow
+    @Final
+    protected Class<? extends LivingEntity> targetType;
+
+    @Shadow
     protected TargetingConditions targetConditions;
 
     @Shadow
-    @Final
-    protected Class<?> targetType;
+    @Nullable
+    protected LivingEntity target;
 
-    @Inject(method = "<init>(Lnet/minecraft/world/entity/Mob;Ljava/lang/Class;IZZLnet/minecraft/world/entity/ai/targeting/TargetingConditions$Selector;)V", at = @At("RETURN"))
-    private void zbb$ignoreLineOfSight(Mob mob, Class<? extends LivingEntity> targetType, int interval, boolean mustSee, boolean mustReach, TargetingConditions.Selector selector, CallbackInfo ci)
+    @Inject(
+            method = "<init>(Lnet/minecraft/world/entity/Mob;Ljava/lang/Class;IZZLjava/util/function/Predicate;)V",
+            at = @At("RETURN")
+    )
+    private void zbb$ignoreLineOfSight(
+            Mob mob,
+            Class<? extends LivingEntity> targetType,
+            int randomInterval,
+            boolean mustSee,
+            boolean mustReach,
+            @Nullable Predicate<LivingEntity> targetPredicate,
+            CallbackInfo ci
+    )
     {
         ConfigData config = ConfigManager.getConfigData();
 
-        if (targetConditions == null) return;
+        if (this.targetConditions == null) return;
         if (!ShouldApplyToMobUtility.shouldSeeTargetsThroughWalls(mob, config)) return;
 
         this.targetConditions = this.targetConditions.copy().ignoreLineOfSight();
     }
 
-    @Inject(method = "getTargetConditions", at = @At("HEAD"), cancellable = true)
-    private void zbb$expandPlayerRange(CallbackInfoReturnable<TargetingConditions> cir)
+    @Inject(method = "findTarget", at = @At("HEAD"), cancellable = true)
+    private void zbb$expandPlayerRange_findTarget(CallbackInfo ci)
     {
         ConfigData config = ConfigManager.getConfigData();
         Mob mob = ((TargetGoalAccessor) (Object) this).zbb$getMob();
-        double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
 
         if (!ShouldApplyToMobUtility.shouldIgnorePlayerTargetRange(mob, config)) return;
-        if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
         if (!(mob.level() instanceof ServerLevel)) return;
+        if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
+
+        double followRange = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
 
         boolean hasOtherTargets = FindAnyTargetInRangeUtility.hasAnyTargetInRange(
                 mob,
@@ -65,15 +82,30 @@ public abstract class MobTargetingMixin
         if (hasOtherTargets) return;
 
         Player nearestPlayer = zbb$findNearestPlayer(mob.level().players(), mob);
-        if (nearestPlayer == null) return;
+        if (nearestPlayer == null)
+        {
+            this.target = null;
+            ci.cancel();
+            return;
+        }
 
         double distSqr = nearestPlayer.distanceToSqr(mob);
         double range = Math.sqrt(distSqr) + 1.0D;
 
-        cir.setReturnValue(this.targetConditions
+        TargetingConditions expanded = this.targetConditions.copy()
                 .range(range)
-                .ignoreLineOfSight()
+                .ignoreLineOfSight();
+
+        // Повторяем то, что делает ванила-ветка Player/ServerPlayer, но с расширенными условиями
+        this.target = mob.level().getNearestPlayer(
+                expanded,
+                mob,
+                mob.getX(),
+                mob.getEyeY(),
+                mob.getZ()
         );
+
+        ci.cancel();
     }
 
     @Unique
