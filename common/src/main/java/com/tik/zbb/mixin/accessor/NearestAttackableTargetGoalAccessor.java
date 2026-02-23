@@ -1,13 +1,9 @@
 package com.tik.zbb.mixin.accessor;
 
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
-import org.spongepowered.asm.mixin.gen.Invoker;
-
-import javax.annotation.Nullable;
 
 @Mixin(NearestAttackableTargetGoal.class)
 public interface NearestAttackableTargetGoalAccessor
@@ -17,7 +13,4 @@ public interface NearestAttackableTargetGoalAccessor
 
     @Accessor("targetConditions")
     TargetingConditions zbb$getTargetConditions();
-
-    @Invoker("setTarget")
-    void zbb$setTarget(@Nullable LivingEntity target);
 }
