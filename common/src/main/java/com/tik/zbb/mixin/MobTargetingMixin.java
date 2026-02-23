@@ -2,6 +2,7 @@ package com.tik.zbb.mixin;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.mixin.accessor.NearestAttackableTargetGoalAccessor;
 import com.tik.zbb.mixin.accessor.TargetGoalAccessor;
 import com.tik.zbb.utilities.FindAnyTargetInRangeUtility;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,6 +22,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -36,6 +39,9 @@ public abstract class MobTargetingMixin
 
     @Unique
     private TargetingConditions zbb$prevTargetConditions;
+
+    @Unique
+    private long zbb$noTargetSinceGameTime = -1L;
 
     @Inject(method = "<init>(Lnet/minecraft/world/entity/Mob;Ljava/lang/Class;IZZLjava/util/function/Predicate;)V", at = @At("RETURN"))
     private void zbb$ignoreLineOfSight(Mob mob, Class<? extends LivingEntity> targetType, int randomInterval, boolean mustSee, boolean mustReach, Predicate<LivingEntity> targetPredicate, CallbackInfo ci)
@@ -91,6 +97,55 @@ public abstract class MobTargetingMixin
             this.targetConditions = this.zbb$prevTargetConditions;
             this.zbb$prevTargetConditions = null;
         }
+    }
+
+    @Inject(method = "getTargetSearchArea", at = @At("HEAD"), cancellable = true)
+    private void zbb$expandPlayerSearchArea(double targetDistance, CallbackInfoReturnable<AABB> cir)
+    {
+        Mob mob = ((TargetGoalAccessor) (Object) this).zbb$getMob();
+        ConfigData config = ConfigManager.getConfigData();
+
+        if (!ShouldApplyToMobUtility.shouldAlwaysSeeNearestPlayer(mob, config)) return;
+        if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
+
+        Player nearest = zbb$findNearestPlayer(mob.level().players(), mob);
+        if (nearest == null) return;
+
+        double distSqr = nearest.distanceToSqr(mob);
+        double need = Math.sqrt(distSqr) + 1.0D;
+
+        double inflate = Math.max(targetDistance, need);
+        cir.setReturnValue(mob.getBoundingBox().inflate(inflate, inflate, inflate));
+    }
+
+    @Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
+    private void zbb$forceNearestPlayerIfNoTargetTooLong(CallbackInfoReturnable<Boolean> cir)
+    {
+        Mob mob = ((TargetGoalAccessor) (Object) this).zbb$getMob();
+        ConfigData config = ConfigManager.getConfigData();
+
+        if (!ShouldApplyToMobUtility.shouldAlwaysSeeNearestPlayer(mob, config)) return;
+        if (!(this.targetType == Player.class) && !(this.targetType == ServerPlayer.class)) return;
+
+        long now = mob.level().getGameTime();
+
+        if (mob.getTarget() != null)
+        {
+            zbb$noTargetSinceGameTime = -1L;
+            return;
+        }
+
+        if (zbb$noTargetSinceGameTime < 0L)
+            zbb$noTargetSinceGameTime = now;
+
+        if (now - zbb$noTargetSinceGameTime < 100L) return;
+
+        Player nearest = zbb$findNearestPlayer(mob.level().players(), mob);
+        if (nearest == null) return;
+
+        ((NearestAttackableTargetGoalAccessor) (Object) this).zbb$setTarget(nearest);
+        zbb$noTargetSinceGameTime = now;
+        cir.setReturnValue(true);
     }
 
     @Unique
