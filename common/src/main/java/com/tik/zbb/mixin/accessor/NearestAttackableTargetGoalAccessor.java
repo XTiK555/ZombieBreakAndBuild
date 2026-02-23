@@ -17,7 +17,4 @@ public interface NearestAttackableTargetGoalAccessor
 
     @Accessor("targetConditions")
     TargetingConditions zbb$getTargetConditions();
-
-    @Invoker("setTarget")
-    void zbb$setTarget(@Nullable LivingEntity target);
 }

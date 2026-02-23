@@ -6,10 +6,8 @@
   "compatibilityLevel": "JAVA_18",
   "mixins": [
     "accessor.MobAccessor",
-    "MobTargetingMixin",
     "accessor.TargetGoalAccessor",
     "accessor.NearestAttackableTargetGoalAccessor",
-    "TargetGoalRetargetMixin",
     "accessor.GoalSelectorAccessor"
   ],
   "client": [
