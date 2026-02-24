@@ -27,7 +27,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     @Override
     public boolean canUse()
     {
-        ConfigData config = ConfigManager.getConfigData();
+        ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         if (!config.alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;

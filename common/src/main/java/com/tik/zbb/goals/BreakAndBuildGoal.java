@@ -2,7 +2,7 @@ package com.tik.zbb.goals;
 
 import com.tik.zbb.BlockStorage;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -34,7 +34,7 @@ public class BreakAndBuildGoal extends Goal
     private final Registry<SoundEvent> soundEventRegistry;
     private Block bridgeBlock;
     private SoundEvent placeSound, hitSound, breakSound;
-    private ConfigData config;
+    private ConfigSnapshot configSnapshot;
 
     private long lastBuildTick = Long.MIN_VALUE;
     private long lastBreakTick = Long.MIN_VALUE;
@@ -73,14 +73,14 @@ public class BreakAndBuildGoal extends Goal
         if (!(level instanceof ServerLevel)) return;
 
         final long currentTime = level.getGameTime();
-        if (config != ConfigManager.getConfigData()) reloadConfigValues();
+        if (configSnapshot.version() != ConfigManager.getConfigSnapshot().version()) reloadConfigValues();
 
         updateStuckState(target, currentTime);
 
         if (currentTime >= nextPathCheckTick)
         {
             checkPath();
-            nextPathCheckTick = level.getGameTime() + SecondsToTicksUtility.toTicks(config.pathCheckInterval, 1);
+            nextPathCheckTick = level.getGameTime() + SecondsToTicksUtility.toTicks(configSnapshot.data().pathCheckInterval, 1);
         }
 
         if (isBreakAndBuild)
@@ -108,7 +108,7 @@ public class BreakAndBuildGoal extends Goal
         if (currentTime >= nextSearchDangerousTick)
         {
             mitigateNearbyDanger();
-            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(config.searchDangerousBlocksInterval, 1);
+            nextSearchDangerousTick = level.getGameTime() + SecondsToTicksUtility.toTicks(configSnapshot.data().searchDangerousBlocksInterval, 1);
         }
 
         tryMoveToTarget(target, currentTime);
@@ -117,7 +117,8 @@ public class BreakAndBuildGoal extends Goal
     ///  ================= local functions ==========================
     private boolean tryBuildBlock(BlockPos blockPos)
     {
-        if (level.getGameTime() < lastBuildTick + SecondsToTicksUtility.toTicks(config.buildCooldown)) return false;
+        if (level.getGameTime() < lastBuildTick + SecondsToTicksUtility.toTicks(configSnapshot.data().buildCooldown))
+            return false;
         if (!canBuild(blockPos)) return false;
 
         level.setBlockAndUpdate(blockPos, bridgeBlock.defaultBlockState());
@@ -130,13 +131,14 @@ public class BreakAndBuildGoal extends Goal
 
     private void tryBreak(BlockPos pos)
     {
-        if (level.getGameTime() < lastBreakTick + SecondsToTicksUtility.toTicks(config.breakCooldown)) return;
+        if (level.getGameTime() < lastBreakTick + SecondsToTicksUtility.toTicks(configSnapshot.data().breakCooldown))
+            return;
         if (BlockStorage.buildMapContains((ServerLevel) level, pos)) return;
         if (!level.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING)) return;
 
         BlockState state = level.getBlockState(pos);
         int blockHealth = getBlockHealth(pos);
-        int damageGave = BlockStorage.addDamage((ServerLevel) level, pos, config.damageToBlocks);
+        int damageGave = BlockStorage.addDamage((ServerLevel) level, pos, configSnapshot.data().damageToBlocks);
 
         if (state.isAir()) return;
         if (blockHealth == Integer.MAX_VALUE) return;
@@ -236,7 +238,7 @@ public class BreakAndBuildGoal extends Goal
         if (currentTime < nextGoToTargetTick) return;
 
         mob.getNavigation().moveTo(target, 1.0);
-        nextGoToTargetTick = currentTime + SecondsToTicksUtility.toTicks(config.goToTargetInterval, 1);
+        nextGoToTargetTick = currentTime + SecondsToTicksUtility.toTicks(configSnapshot.data().goToTargetInterval, 1);
     }
 
     private void checkPath()
@@ -251,7 +253,7 @@ public class BreakAndBuildGoal extends Goal
         }
 
         boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
-        boolean isStuckTooLong = stuckTicks >= SecondsToTicksUtility.toTicks(config.stuckSecondsBeforeBreakAndBuild, 1);
+        boolean isStuckTooLong = stuckTicks >= SecondsToTicksUtility.toTicks(configSnapshot.data().stuckSecondsBeforeBreakAndBuild, 1);
 
         if (hasActivePath && !isStuckTooLong)
         {
@@ -279,7 +281,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void freeze()
     {
-        freezeUntilTick = (level.getGameTime() + SecondsToTicksUtility.toTicks(config.freezeTime));
+        freezeUntilTick = (level.getGameTime() + SecondsToTicksUtility.toTicks(configSnapshot.data().freezeTime));
 
         mob.getNavigation().stop();
         mob.getMoveControl().setWantedPosition(mob.getX(), mob.getY(), mob.getZ(), 0.0);
@@ -288,7 +290,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void mitigateNearbyDanger()
     {
-        int radius = config.dangerousBlocksSearchRadius;
+        int radius = configSnapshot.data().dangerousBlocksSearchRadius;
         BlockPos mobPos = mob.getOnPos();
 
         int baseX = mobPos.getX();
@@ -328,7 +330,7 @@ public class BreakAndBuildGoal extends Goal
         ResourceLocation id = blockRegistry.getKey(state.getBlock());
         if (id == null) return false;
 
-        if (!config.dangerousBlockIdSet.contains(id)) return false;
+        if (!configSnapshot.data().dangerousBlockIdSet.contains(id)) return false;
 
         if (state.getBlock() instanceof CampfireBlock)
         {
@@ -364,7 +366,7 @@ public class BreakAndBuildGoal extends Goal
         ResourceLocation id = blockRegistry.getKey(blockState.getBlock());
 
         if (blockState.isAir()) return true;
-        if (id != null && config.impassableBlockIdSet.contains(id)) return false;
+        if (id != null && configSnapshot.data().impassableBlockIdSet.contains(id)) return false;
 
         return blockState.getCollisionShape(level, pos).isEmpty();
     }
@@ -391,7 +393,7 @@ public class BreakAndBuildGoal extends Goal
 
     private void reloadConfigValues()
     {
-        this.config = ConfigManager.getConfigData();
+        this.configSnapshot = ConfigManager.getConfigSnapshot();
 
         Block block = blockRegistry.get(ResourceLocation.tryParse(config.bridgeBlockId));
         this.bridgeBlock = block != null ? block : Blocks.DIRT;
