@@ -1,4 +1,4 @@
-package com.tik.zbb.goals;
+package com.tik.zbb.ai.goals;
 
 import com.tik.zbb.BlockStorage;
 import com.tik.zbb.config.ConfigManager;
