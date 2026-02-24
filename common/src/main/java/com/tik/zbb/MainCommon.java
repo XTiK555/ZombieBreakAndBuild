@@ -2,9 +2,9 @@ package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.goals.AlwaysSeeNearestPlayerGoal;
-import com.tik.zbb.goals.BreakAndBuildGoal;
-import com.tik.zbb.goals.ThroughWallsNearestTargetGoal;
+import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
+import com.tik.zbb.ai.goals.BreakAndBuildGoal;
+import com.tik.zbb.ai.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
