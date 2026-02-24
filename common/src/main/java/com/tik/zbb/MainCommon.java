@@ -36,7 +36,7 @@ public class MainCommon
 
     public static void onLevelTick(ServerLevel level)
     {
-        ConfigData config = ConfigManager.getConfigData();
+        ConfigData config = ConfigManager.getConfigSnapshot().data();
         long now = level.getGameTime();
         int interval = 10;
 
@@ -52,7 +52,7 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
-        ConfigData config = ConfigManager.getConfigData();
+        ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         if (!ShouldApplyToMobUtility.shouldAttachZbbGoals(mob, config)) return;
         if (!(mob instanceof MobAccessor pFMobAccessor)) return;

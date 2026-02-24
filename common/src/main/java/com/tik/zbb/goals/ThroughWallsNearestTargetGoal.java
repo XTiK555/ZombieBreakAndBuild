@@ -1,8 +1,8 @@
 package com.tik.zbb.goals;
 
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.mixin.accessor.NATGAccessor;
+import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -14,17 +14,18 @@ import java.util.List;
 public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<LivingEntity>
 {
     private final List<NearestAttackableTargetGoal<?>> vanillaTargetGoals;
+    private ConfigSnapshot configSnapshot;
 
     public ThroughWallsNearestTargetGoal(Mob mob, List<NearestAttackableTargetGoal<?>> vanillaTargetGoals)
     {
         super(mob, LivingEntity.class, true);
 
-        ConfigData config = ConfigManager.getConfigData();
+        this.configSnapshot = ConfigManager.getConfigSnapshot();
         this.vanillaTargetGoals = vanillaTargetGoals;
 
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
-                .range(config.targetSearchRadius)
+                .range(configSnapshot.data().targetSearchRadius)
                 .selector((target) -> isAllowedByVanillaGoals(mob, target));
     }
 
@@ -33,8 +34,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         if (target == self) return false;
         if (!target.isAlive()) return false;
 
-        ConfigData config = ConfigManager.getConfigData();
-        double range = config.targetSearchRadius;
+        double range = configSnapshot.data().targetSearchRadius;
 
         for (NearestAttackableTargetGoal<?> g : vanillaTargetGoals)
         {
@@ -61,10 +61,8 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
     @Override
     public boolean canUse()
     {
-        ConfigData config = ConfigManager.getConfigData();
-
-        if (!config.alwaysSeeNearestPlayer) return false;
-        if (!(mob.level() instanceof ServerLevel)) return false;
+        if (!configSnapshot.data().alwaysSeeNearestPlayer) return false;
+        if (!(mob.level() instanceof ServerLevel sl)) return false;
 
         return super.canUse();
     }
