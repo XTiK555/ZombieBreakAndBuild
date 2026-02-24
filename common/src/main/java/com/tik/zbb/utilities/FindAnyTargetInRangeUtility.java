@@ -2,7 +2,7 @@ package com.tik.zbb.utilities;
 
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
-import com.tik.zbb.mixin.accessor.NearestAttackableTargetGoalAccessor;
+import com.tik.zbb.mixin.accessor.NATGAccessor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -42,14 +42,14 @@ public final class FindAnyTargetInRangeUtility
             Goal g = wrappedGoal.getGoal();
             if (!(g instanceof NearestAttackableTargetGoal<?> natg)) continue;
 
-            Class<?> tt = ((NearestAttackableTargetGoalAccessor) (Object) natg).zbb$getTargetType();
+            Class<?> tt = ((NATGAccessor) (Object) natg).zbb$getTargetType();
             if (tt == null) continue;
             if (skipTargetType.test(tt)) continue;
 
             @SuppressWarnings("unchecked")
             Class<? extends LivingEntity> livingClass = (Class<? extends LivingEntity>) tt;
 
-            TargetingConditions cond = ((NearestAttackableTargetGoalAccessor) (Object) natg)
+            TargetingConditions cond = ((NATGAccessor) (Object) natg)
                     .zbb$getTargetConditions()
                     .copy()
                     .range(follow);

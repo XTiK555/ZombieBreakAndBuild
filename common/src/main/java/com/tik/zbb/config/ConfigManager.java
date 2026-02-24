@@ -15,8 +15,9 @@ public final class ConfigManager
 {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private static ConfigData DATA = new ConfigData();
-    private static Path CONFIG_PATH;
+    private static volatile ConfigData DATA = new ConfigData();
+    private static volatile long VERSION = 0;
+    private static volatile Path CONFIG_PATH;
 
     public static void init(String configFileName)
     {
@@ -24,9 +25,9 @@ public final class ConfigManager
         loadOrCreate();
     }
 
-    public static ConfigData getConfigData()
+    public static ConfigSnapshot getConfigSnapshot()
     {
-        return DATA;
+        return new ConfigSnapshot(DATA, VERSION);
     }
 
     public static void reload()
@@ -72,7 +73,7 @@ public final class ConfigManager
             loadedData = new ConfigData();
         }
 
-        DATA = validateNullFields(loadedData, new ConfigData());
+        setData(validateNullFields(loadedData, new ConfigData()));
         DATA.rebuildSets();
         save();
     }
@@ -108,5 +109,11 @@ public final class ConfigManager
         if (loaded.breakSoundId == null) loaded.breakSoundId = def.breakSoundId;
 
         return loaded;
+    }
+
+    private static void setData(ConfigData newData)
+    {
+        DATA = newData;
+        VERSION++;
     }
 }
