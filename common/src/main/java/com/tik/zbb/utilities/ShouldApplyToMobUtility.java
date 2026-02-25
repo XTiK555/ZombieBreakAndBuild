@@ -50,7 +50,7 @@ public final class ShouldApplyToMobUtility
         if (entityId != null && config.ignoreHostileEntityIdSet.contains(entityId)) return false;
         if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
         if (mob.getType().getCategory() != MobCategory.MONSTER) return false;
-        if (config.applyToAllHostiles) return true;
+        if (config.applyToAllMonsters) return true;
 
         return mob instanceof Zombie || mob instanceof Drowned || mob instanceof Husk || mob instanceof ZombieVillager;
     }
