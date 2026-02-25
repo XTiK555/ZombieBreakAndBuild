@@ -34,13 +34,12 @@ public class ConfigData
     // ======================
     public Boolean alwaysSeeNearestPlayer = false;
     public Boolean canSeeTargetsThroughBlocks = true;
-    public Boolean applyToAllHostiles = true;
+    public Boolean applyToAllMonsters = true;
     public List<String> additionalEntityIdList = new ArrayList<>(List.of());
-    public List<String> ignoreHostileEntityIdList = new ArrayList<>(List.of());
+    public List<String> ignoreEntityIdList = new ArrayList<>(List.of());
 
     public Integer targetSearchRadius = 35;
     public Integer dangerousBlocksSearchRadius = 1;
-
 
     // ======================
     // [BALANCE / TIMERS]
@@ -78,7 +77,7 @@ public class ConfigData
         dangerousBlockIdSet = parseListToSet(dangerousBlockIdList);
         impassableBlockIdSet = parseListToSet(impassableBlockIdList);
         additionalEntityIdSet = parseListToSet(additionalEntityIdList);
-        ignoreHostileEntityIdSet = parseListToSet(ignoreHostileEntityIdList);
+        ignoreHostileEntityIdSet = parseListToSet(ignoreEntityIdList);
     }
 
     private Set<Identifier> parseListToSet(List<String> list)
