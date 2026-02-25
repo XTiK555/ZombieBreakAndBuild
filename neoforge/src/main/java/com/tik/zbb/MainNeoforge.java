@@ -15,9 +15,9 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @Mod(Constants.MOD_ID)
-public class MainNeoForge
+public class MainNeoforge
 {
-    public MainNeoForge(IEventBus eventBus)
+    public MainNeoforge(IEventBus eventBus)
     {
         MainCommon.init();
 
