@@ -83,9 +83,9 @@ public final class ConfigManager
         if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
         if (loaded.impassableBlockIdList == null) loaded.impassableBlockIdList = def.impassableBlockIdList;
         if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
-        if (loaded.applyToAllHostiles == null) loaded.applyToAllHostiles = def.applyToAllHostiles;
+        if (loaded.applyToAllMonsters == null) loaded.applyToAllMonsters = def.applyToAllMonsters;
         if (loaded.additionalEntityIdList == null) loaded.additionalEntityIdList = def.additionalEntityIdList;
-        if (loaded.ignoreHostileEntityIdList == null) loaded.ignoreHostileEntityIdList = def.ignoreHostileEntityIdList;
+        if (loaded.ignoreEntityIdList == null) loaded.ignoreEntityIdList = def.ignoreEntityIdList;
         if (loaded.canSeeTargetsThroughBlocks == null)
             loaded.canSeeTargetsThroughBlocks = def.canSeeTargetsThroughBlocks;
         if (loaded.targetSearchRadius == null) loaded.targetSearchRadius = def.targetSearchRadius;
