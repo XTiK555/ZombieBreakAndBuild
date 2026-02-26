@@ -1,7 +1,9 @@
 package com.tik.zbb.ai.action;
 
 import com.tik.zbb.ai.action.actions.BreakAction;
+import com.tik.zbb.ai.action.actions.BuildAction;
 import com.tik.zbb.ai.action.actions.FreezeAction;
+import com.tik.zbb.ai.action.actions.GoToTargetAction;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
@@ -13,17 +15,23 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 public final class ActionExecutor
 {
+    private final BreakAction breakAction = new BreakAction();
+    private final BuildAction buildAction = new BuildAction();
+    private final FreezeAction freezeAction = new FreezeAction();
+    private final GoToTargetAction goToTargetAction = new GoToTargetAction();
+
     private MobActionContext mobActionContext;
     private final ActionTimers actionTimers = new ActionTimers();
-    private ConfigChache configCache;
+    private ConfigCache configCache;
 
-    public ActionExecutor(ConfigSnapshot configSnapshot, PathfinderMob mob)
+    public ActionExecutor(PathfinderMob mob)
     {
         if (!(mob.level() instanceof ServerLevel level))
             throw new IllegalStateException("The mob level is not the serverLevel.");
@@ -42,34 +50,43 @@ public final class ActionExecutor
     public void executeBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
+        breakAction.setup(breakPos, configCache.breakSound, configCache.hitSound);
 
-        BreakAction breakAction = new BreakAction(
-                breakPos,
-                configCache.breakSound,
-                configCache.hitSound
-        );
+        executeAction(breakAction);
+    }
 
-        executeAction(breakAction, mobActionContext);
+    public void executeBuildAction(BlockPos buildPos)
+    {
+        keepDataUpToDate();
+        buildAction.setup(buildPos, configCache.bridgeBlock, configCache.placeSound);
+
+        executeAction(buildAction);
     }
 
     public void executeFreezeAction()
     {
         keepDataUpToDate();
 
-        FreezeAction freezeAction = new FreezeAction();
-
-        executeAction(freezeAction, mobActionContext);
+        executeAction(freezeAction);
     }
 
-    private void executeAction(IMobAction action, MobActionContext context)
+    public void executeGoToTargetAction(LivingEntity target)
     {
-        if (!action.canExecute(context)) return;
+        keepDataUpToDate();
+        goToTargetAction.setup(mobActionContext.mob(), target);
 
-        action.execute(context);
+        executeAction(goToTargetAction);
+    }
+
+    private void executeAction(IMobAction action)
+    {
+        if (!action.canExecute(mobActionContext)) return;
+
+        action.execute(mobActionContext);
     }
 
 
-    // ================ local functions =================
+    // =================================
 
     private void keepDataUpToDate()
     {
@@ -94,7 +111,7 @@ public final class ActionExecutor
 
     private void reloadConfigCache(ServerLevel level, ConfigData configData)
     {
-        if (configCache == null) configCache = new ConfigChache();
+        if (configCache == null) configCache = new ConfigCache();
 
         Registry<SoundEvent> soundEventRegistry = level.registryAccess().lookupOrThrow(Registries.SOUND_EVENT);
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
@@ -120,7 +137,7 @@ public final class ActionExecutor
         else configCache.bridgeBlock = Blocks.DIRT;
     }
 
-    private class ConfigChache
+    private class ConfigCache
     {
         public SoundEvent hitSound;
         public SoundEvent breakSound;
