@@ -14,13 +14,13 @@ public class ActionTimers
     public boolean goToTargetCooldownPassed(long now) {return now >= goToTargetCooldownUntil;}
 
     public boolean freezePassed(long now) {return now >= freezeUntil;}
-    
+
 
     public void setBreakCooldownUntil(long breakCooldownUntil) {this.breakCooldownUntil = breakCooldownUntil;}
 
-    public void setBuildCooldownUntil(long buildCooldownUntil) {this.buildCooldownUntil = breakCooldownUntil;}
+    public void setBuildCooldownUntil(long buildCooldownUntil) {this.buildCooldownUntil = buildCooldownUntil;}
 
-    public void setGoToTargetCooldownUntil(long goToTargetCooldownUntil) {this.goToTargetCooldownUntil = breakCooldownUntil;}
+    public void setGoToTargetCooldownUntil(long goToTargetCooldownUntil) {this.goToTargetCooldownUntil = goToTargetCooldownUntil;}
 
-    public void setFreezeUntil(long freezeUntil) {this.freezeUntil = breakCooldownUntil;}
+    public void setFreezeUntil(long freezeUntil) {this.freezeUntil = freezeUntil;}
 }
