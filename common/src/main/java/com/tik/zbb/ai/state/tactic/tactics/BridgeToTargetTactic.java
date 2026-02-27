@@ -5,6 +5,7 @@ import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.GetHorizontalFrontBlockUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 
 public class BridgeToTargetTactic implements IMobTactic
@@ -19,10 +20,14 @@ public class BridgeToTargetTactic implements IMobTactic
     {
         frontBlockPos = GetHorizontalFrontBlockUtility.getPos(context.getMob().getOnPos(), context.getTarget().getOnPos()).mutable();
 
-        boolean belowUsAir = context.getLevel().getBlockState(tmpBlockPos.set(context.getMob().getX(), frontBlockPos.getY() - 1, context.getMob().getZ())).isAir();
-        if (belowUsAir && context.getTarget().getY() >= frontBlockPos.getY())
+        int mobX = Mth.floor(context.getMob().getX());
+        int mobZ = Mth.floor(context.getMob().getZ());
+        int targetY = Mth.floor(context.getTarget().getY());
+
+        boolean belowUsAir = context.getLevel().getBlockState(tmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ)).isAir();
+        if (belowUsAir && targetY >= frontBlockPos.getY())
         {
-            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(context.getMob().getX(), frontBlockPos.getY() - 1, context.getMob().getZ()));
+            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ));
         }
 
         boolean frontAir = context.getLevel().getBlockState(frontBlockPos).isAir();
