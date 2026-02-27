@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(NearestAttackableTargetGoal.class)
-public interface NearestAttackableTargetGoalAccessor
+public interface NATGAccessor
 {
     @Accessor("targetType")
     Class<?> zbb$getTargetType();
