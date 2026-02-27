@@ -1,11 +1,12 @@
-package com.tik.zbb.ai.action;
+package com.tik.zbb.ai;
 
-public class ActionTimers
+public class AiTimers
 {
     private long breakCooldownUntil = Long.MIN_VALUE;
     private long buildCooldownUntil = Long.MIN_VALUE;
     private long goToTargetCooldownUntil = Long.MIN_VALUE;
     private long freezeUntil = Long.MIN_VALUE;
+    private long checkPathCooldownUntil = Long.MIN_VALUE;
 
     public boolean breakCooldownPassed(long now) {return now >= breakCooldownUntil;}
 
@@ -15,6 +16,8 @@ public class ActionTimers
 
     public boolean freezePassed(long now) {return now >= freezeUntil;}
 
+    public boolean checkPathCooldownPassed(long now) {return now >= checkPathCooldownUntil;}
+
 
     public void setBreakCooldownUntil(long breakCooldownUntil) {this.breakCooldownUntil = breakCooldownUntil;}
 
@@ -23,4 +26,6 @@ public class ActionTimers
     public void setGoToTargetCooldownUntil(long goToTargetCooldownUntil) {this.goToTargetCooldownUntil = goToTargetCooldownUntil;}
 
     public void setFreezeUntil(long freezeUntil) {this.freezeUntil = freezeUntil;}
+
+    public void setCheckPathCooldownUntil(long checkPathCooldownUntil) {this.checkPathCooldownUntil = checkPathCooldownUntil;}
 }

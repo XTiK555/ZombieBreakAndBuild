@@ -1,12 +1,12 @@
 package com.tik.zbb.ai.action;
 
+import com.tik.zbb.ai.AiTimers;
 import com.tik.zbb.ai.action.actions.BreakAction;
 import com.tik.zbb.ai.action.actions.BuildAction;
 import com.tik.zbb.ai.action.actions.FreezeAction;
 import com.tik.zbb.ai.action.actions.GoToTargetAction;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -28,10 +28,9 @@ public final class ActionExecutor
     private final GoToTargetAction goToTargetAction = new GoToTargetAction();
 
     private MobActionContext mobActionContext;
-    private final ActionTimers actionTimers = new ActionTimers();
     private ConfigCache configCache;
 
-    public ActionExecutor(PathfinderMob mob)
+    public ActionExecutor(PathfinderMob mob, AiTimers aiTimers)
     {
         if (!(mob.level() instanceof ServerLevel level))
             throw new IllegalStateException("The mob level is not the serverLevel.");
@@ -41,48 +40,49 @@ public final class ActionExecutor
                 ConfigManager.getConfigSnapshot(),
                 mob,
                 this,
-                actionTimers
+                aiTimers
         );
 
         reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
     }
 
-    public void executeBreakAction(BlockPos breakPos)
+    public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
         breakAction.setup(breakPos, configCache.breakSound, configCache.hitSound);
 
-        executeAction(breakAction);
+        return tryExecuteAction(breakAction);
     }
 
-    public void executeBuildAction(BlockPos buildPos)
+    public boolean tryExecuteBuildAction(BlockPos buildPos)
     {
         keepDataUpToDate();
         buildAction.setup(buildPos, configCache.bridgeBlock, configCache.placeSound);
 
-        executeAction(buildAction);
+        return tryExecuteAction(buildAction);
     }
 
-    public void executeFreezeAction()
+    public boolean tryExecuteFreezeAction()
     {
         keepDataUpToDate();
 
-        executeAction(freezeAction);
+        return tryExecuteAction(freezeAction);
     }
 
-    public void executeGoToTargetAction(LivingEntity target)
+    public boolean tryExecuteGoToTargetAction(LivingEntity target)
     {
         keepDataUpToDate();
         goToTargetAction.setup(mobActionContext.mob(), target);
 
-        executeAction(goToTargetAction);
+        return tryExecuteAction(goToTargetAction);
     }
 
-    private void executeAction(IMobAction action)
+    private boolean tryExecuteAction(IMobAction action)
     {
-        if (!action.canExecute(mobActionContext)) return;
+        if (!action.canExecute(mobActionContext)) return false;
 
         action.execute(mobActionContext);
+        return true;
     }
 
 
@@ -90,17 +90,20 @@ public final class ActionExecutor
 
     private void keepDataUpToDate()
     {
-        boolean levelOutdated = mobActionContext.mob().level() instanceof ServerLevel level && mobActionContext.level() != level;
+        if (!(mobActionContext.mob().level() instanceof ServerLevel level))
+            throw new IllegalStateException("The mob level is not the serverLevel.");
+
+        boolean levelOutdated = mobActionContext.level() != level;
         boolean configDataOutdated = mobActionContext.configSnapshot().version() != ConfigManager.getConfigSnapshot().version();
         boolean needNewContext = levelOutdated || configDataOutdated;
         if (needNewContext)
         {
             mobActionContext = new MobActionContext(
-                    (ServerLevel) mobActionContext.mob().level(),
+                    level,
                     ConfigManager.getConfigSnapshot(),
                     mobActionContext.mob(),
                     this,
-                    actionTimers
+                    mobActionContext.aiTimers()
             );
         }
         if (configDataOutdated)
