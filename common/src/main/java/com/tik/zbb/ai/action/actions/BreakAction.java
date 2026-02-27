@@ -21,7 +21,7 @@ public class BreakAction implements IMobAction
     public boolean canExecute(MobActionContext context)
     {
         boolean isAir = context.level().getBlockState(breakPos).isAir();
-        boolean cooldownPassed = context.actionTimers().breakCooldownPassed(context.level().getGameTime());
+        boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorage.buildMapContains((ServerLevel) context.level(), breakPos);
         boolean unbreakable = getBlockHealth(breakPos, context.level()) == Integer.MAX_VALUE;
 
@@ -46,8 +46,8 @@ public class BreakAction implements IMobAction
             context.level().levelEvent(2001, breakPos, Block.getId(state)); // particles
             context.level().playSound(null, breakPos, hitSound, SoundSource.HOSTILE, 0.25f, 1.0f);
         }
-        context.executor().executeFreezeAction();
-        context.actionTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().breakCooldown, 1));
+        context.executor().tryExecuteFreezeAction();
+        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().breakCooldown, 1));
     }
 
     public void setup(BlockPos breakPos, SoundEvent breakSound, SoundEvent hitSound)

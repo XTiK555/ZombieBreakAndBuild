@@ -23,7 +23,7 @@ public class BuildAction implements IMobAction
 
         boolean canReplaced = context.level().isLoaded(buildPos) && blockState.canBeReplaced();
         boolean isAir = context.level().isLoaded(buildPos) && blockState.isAir();
-        boolean cooldownPassed = context.actionTimers().buildCooldownPassed(context.level().getGameTime());
+        boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
 
         return cooldownPassed && (canReplaced || isAir);
     }
@@ -33,8 +33,8 @@ public class BuildAction implements IMobAction
     {
         context.level().setBlockAndUpdate(buildPos, bridgeBlock.defaultBlockState());
         context.level().playSound(null, buildPos, placeSound, SoundSource.BLOCKS, 0.5f, 1.0f);
-        context.executor().executeFreezeAction();
-        context.actionTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().buildCooldown, 1));
+        context.executor().tryExecuteFreezeAction();
+        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().buildCooldown, 1));
         BlockStorage.addBuild(context.level(), buildPos.immutable());
     }
 
