@@ -16,8 +16,8 @@ public class GoToTargetAction implements IMobAction
     {
         long now = context.level().getGameTime();
 
-        boolean notFreezed = context.actionTimers().freezePassed(now);
-        boolean cooldownPassed = context.actionTimers().goToTargetCooldownPassed(now);
+        boolean notFreezed = context.aiTimers().freezePassed(now);
+        boolean cooldownPassed = context.aiTimers().goToTargetCooldownPassed(now);
 
         return notFreezed && cooldownPassed;
     }
@@ -26,7 +26,7 @@ public class GoToTargetAction implements IMobAction
     public void execute(MobActionContext context)
     {
         mob.getNavigation().moveTo(target, 1.0);
-        context.actionTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().goToTargetInterval, 1));
+        context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().goToTargetInterval, 1));
     }
 
     public void setup(PathfinderMob mob, LivingEntity target)
