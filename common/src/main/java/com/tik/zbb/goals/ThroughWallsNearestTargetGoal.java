@@ -2,7 +2,7 @@ package com.tik.zbb.goals;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.mixin.accessor.NearestAttackableTargetGoalAccessor;
+import com.tik.zbb.mixin.accessor.NATGAccessor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -38,7 +38,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
 
         for (NearestAttackableTargetGoal<?> g : vanillaTargetGoals)
         {
-            var acc = (NearestAttackableTargetGoalAccessor) (Object) g;
+            var acc = (NATGAccessor) (Object) g;
 
             Class<?> tt = acc.zbb$getTargetType();
             if (tt == null) continue;
@@ -64,7 +64,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         ConfigData config = ConfigManager.getConfigData();
 
         if (!config.alwaysSeeNearestPlayer) return false;
-        if (!(mob.level() instanceof ServerLevel sl)) return false;
+        if (!(mob.level() instanceof ServerLevel)) return false;
 
         return super.canUse();
     }

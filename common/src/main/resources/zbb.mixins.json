@@ -7,8 +7,9 @@
   "mixins": [
     "accessor.MobAccessor",
     "accessor.TargetGoalAccessor",
-    "accessor.NearestAttackableTargetGoalAccessor",
-    "accessor.GoalSelectorAccessor"
+    "accessor.NATGAccessor",
+    "accessor.GoalSelectorAccessor",
+    "NATGIgnoreWallsMixin"
   ],
   "client": [
   ],
