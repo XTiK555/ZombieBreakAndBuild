@@ -2,25 +2,20 @@ package com.tik.zbb.ai.state.tactic.tactics;
 
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
+import com.tik.zbb.utilities.HitboxScanUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec3;
 
 import static com.tik.zbb.utilities.IsFreePassUtility.isFreePass;
 
 public class AdjustHeightToTargetTactic implements IMobTactic
 {
-    private Registry<Block> blockRegistry;
-
     private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
 
     @Override
     public void execute(MobStateContext context)
     {
-        if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK);
-
         int mobX = Mth.floor(context.getMob().getX());
         int mobY = Mth.floor(context.getMob().getY());
         int mobZ = Mth.floor(context.getMob().getZ());
@@ -28,11 +23,10 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         if (targetY > mobY + 1)
         {
-            if (!isFreePass(tmpBlockPos.set(mobX, mobY + 2, mobZ), blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-                context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
+            BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), new Vec3(0, 1, 0));
 
-            // If there is space above, we try to adjust and jump.
-            if (isFreePass(tmpBlockPos.set(mobX, mobY + 2, mobZ), blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
+            // If there is space above
+            if (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel()))
             {
                 if (context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, mobY, mobZ)))
                 {
@@ -40,15 +34,6 @@ public class AdjustHeightToTargetTactic implements IMobTactic
                 }
             }
             return;
-        }
-
-        // target below -> break the block below you (if it's preventing you from getting down)
-        if (targetY < mobY - 1)
-        {
-            if (!isFreePass(tmpBlockPos.set(mobX, mobY - 1, mobZ), blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-            {
-                context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
-            }
         }
     }
 }
