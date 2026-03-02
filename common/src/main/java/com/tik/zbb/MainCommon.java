@@ -8,9 +8,13 @@ import com.tik.zbb.ai.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
-import com.tik.zbb.utilities.ShouldApplyToMobUtility;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -18,6 +22,10 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.monster.zombie.Drowned;
+import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.monster.zombie.ZombieVillager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +62,7 @@ public class MainCommon
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
-        if (!ShouldApplyToMobUtility.shouldAttachZbbGoals(mob, config)) return;
+        if (!matchesZbbMobFilter(mob, config)) return;
         if (!(mob instanceof MobAccessor pFMobAccessor)) return;
 
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
@@ -79,5 +87,21 @@ public class MainCommon
         {
             followRangeAttribute.setBaseValue(config.targetSearchRadius);
         }
+    }
+
+    private static boolean matchesZbbMobFilter(Mob mob, ConfigData config)
+    {
+        if (!(mob.level() instanceof ServerLevel)) return false;
+        if (!(mob instanceof PathfinderMob)) return false;
+
+        Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
+        Identifier entityId = entityTypeRegistry.getKey(mob.getType());
+
+        if (entityId != null && config.ignoreHostileEntityIdSet.contains(entityId)) return false;
+        if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
+        if (mob.getType().getCategory() != MobCategory.MONSTER) return false;
+        if (config.applyToAllMonsters) return true;
+
+        return mob instanceof Zombie || mob instanceof Drowned || mob instanceof Husk || mob instanceof ZombieVillager;
     }
 }

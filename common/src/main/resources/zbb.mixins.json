@@ -6,10 +6,8 @@
   "compatibilityLevel": "JAVA_18",
   "mixins": [
     "accessor.MobAccessor",
-    "accessor.TargetGoalAccessor",
     "accessor.NATGAccessor",
-    "accessor.GoalSelectorAccessor",
-    "NATGIgnoreWallsMixin"
+    "accessor.GoalSelectorAccessor"
   ],
   "client": [
   ],
