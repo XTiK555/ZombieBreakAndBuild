@@ -3,6 +3,7 @@ package com.tik.zbb.ai.state.states;
 import com.tik.zbb.ai.state.IMobState;
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.Priority;
+import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.ai.state.tactic.tactics.*;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
@@ -11,11 +12,11 @@ import net.minecraft.world.level.pathfinder.Path;
 
 public class BreakAndBuildState implements IMobState
 {
-    private final AdjustHeightToTargetTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
-    private final BridgeToTargetTactic bridgeToTargetTactic = new BridgeToTargetTactic();
-    private final ClearObstaclesToTargetTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
-    private final GoToTargetTactic goToTargetTactic = new GoToTargetTactic();
-    private final MitigateDangerousBlocksTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
+    private final IMobTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
+    private final IMobTactic bridgeToTargetTactic = new BridgeToTargetTactic();
+    private final IMobTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
+    private final IMobTactic goToTargetTactic = new GoToTargetTactic();
+    private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
     private Priority lastPriority = Priority.Low;
     private int stuckTicks;
