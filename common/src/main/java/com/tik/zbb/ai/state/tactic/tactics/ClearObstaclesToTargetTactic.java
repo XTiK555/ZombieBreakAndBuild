@@ -2,49 +2,29 @@ package com.tik.zbb.ai.state.tactic.tactics;
 
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
-import com.tik.zbb.utilities.GetHorizontalFrontBlockUtility;
-import com.tik.zbb.utilities.IsFreePassUtility;
+import com.tik.zbb.utilities.HitboxScanUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 public class ClearObstaclesToTargetTactic implements IMobTactic
 {
-    private Registry<Block> blockRegistry;
-
-    private BlockPos.MutableBlockPos mobPos = new BlockPos.MutableBlockPos();
-    private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
-    private BlockPos.MutableBlockPos frontBlockPos = new BlockPos.MutableBlockPos();
+    private final double STEP_DISTANCE = 0.6;
 
     @Override
     public void execute(MobStateContext context)
     {
-        if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK);
-        mobPos = context.getMob().blockPosition().mutable();
+        double randomMultiplier = Mth.randomBetween(context.getMob().getRandom(), 0.01f, 1);
+        double randomizedStep = STEP_DISTANCE * randomMultiplier;
 
-        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(mobPos, context.getTarget().blockPosition()).mutable();
+        Vec3 directionToTarget = context.getTarget().position().subtract(context.getMob().position()).normalize();
+        Vec3 hitboxScanOffset = directionToTarget.scale(randomizedStep);
 
-        if (!IsFreePassUtility.isFreePass(mobPos, blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-        {
-            context.getActionExecutor().tryExecuteBreakAction(mobPos);
-        }
-        tmpBlockPos.set(mobPos.getX(), mobPos.getY() + 1, mobPos.getZ());
-        if (!IsFreePassUtility.isFreePass(tmpBlockPos, blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-        {
-            context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
-        }
+        BlockPos blockToBreak = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), hitboxScanOffset);
 
-        // we break the block right in front of us if it is impassable
-        if (!IsFreePassUtility.isFreePass(frontBlockPos, blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
+        if (blockToBreak != null)
         {
-            context.getActionExecutor().tryExecuteBreakAction(frontBlockPos);
-        }
-        // we break the block above the front one if it also interferes
-        tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() + 1, frontBlockPos.getZ());
-        if (!IsFreePassUtility.isFreePass(tmpBlockPos, blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-        {
-            context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
+            context.getActionExecutor().tryExecuteBreakAction(blockToBreak);
         }
     }
 }
