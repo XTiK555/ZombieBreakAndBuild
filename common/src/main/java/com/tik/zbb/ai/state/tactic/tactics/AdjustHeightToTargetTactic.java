@@ -28,8 +28,6 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         if (targetY > mobY + 1)
         {
-            if (!isFreePass(tmpBlockPos.set(mobX, mobY + 1, mobZ), blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
-                context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
             if (!isFreePass(tmpBlockPos.set(mobX, mobY + 2, mobZ), blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
                 context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos);
 
