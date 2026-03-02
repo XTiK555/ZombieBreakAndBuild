@@ -24,6 +24,3 @@ Zombies Break & Build mod enhances zombies (and optionally other hostile mobs) b
 1. Install a compatible mod loader (Fabric/Forge/NeoForge).
 2. Download the mod (from [Modrinth](https://modrinth.com/mod/zombies-break-and-build) or [CurseForge](https://curseforge.com/minecraft/mc-mods/zombies-break-and-build)).
 3. Place the mod `.jar` in your `minecraft/mods/` folder.
-
----
-This mod will make your zombie/apocalypse mod pack more difficult!
