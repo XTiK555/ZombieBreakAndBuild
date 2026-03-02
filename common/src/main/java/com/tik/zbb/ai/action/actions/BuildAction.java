@@ -22,10 +22,9 @@ public class BuildAction implements IMobAction
         BlockState blockState = context.level().getBlockState(buildPos);
 
         boolean canReplaced = context.level().isLoaded(buildPos) && blockState.canBeReplaced();
-        boolean isAir = context.level().isLoaded(buildPos) && blockState.isAir();
         boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
 
-        return cooldownPassed && (canReplaced || isAir);
+        return cooldownPassed && canReplaced;
     }
 
     @Override
