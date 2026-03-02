@@ -37,7 +37,6 @@ public class BridgeToTargetTactic implements IMobTactic
         }
 
         frontBlockPos = getFrontBlock(context.getMob(), context.getTarget()).mutable();
-        context.getLevel().sendParticles(ParticleTypes.END_ROD, frontBlockPos.getX(), frontBlockPos.getY(), frontBlockPos.getZ(), 10, 0, 0, 0, 10000.0);
 
         boolean frontEmpty = IsFreePassUtility.isFreePass(frontBlockPos, context.getLevel());
         boolean belowFrontEmpty = IsFreePassUtility.isFreePass(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()), context.getLevel());
