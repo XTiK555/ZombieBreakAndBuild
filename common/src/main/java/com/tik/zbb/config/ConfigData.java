@@ -22,7 +22,9 @@ public class ConfigData
             "minecraft:magma_block",
             "minecraft:sweet_berry_bush",
             "minecraft:wither_rose",
-            "minecraft:powder_snow"
+            "minecraft:powder_snow",
+            "minecraft:lava",
+            "minecraft:flowing_lava"
     ));
     public List<String> impassableBlockIdList = new ArrayList<>(List.of(
             "minecraft:cobweb",
