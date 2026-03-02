@@ -82,7 +82,6 @@ public final class ConfigManager
     {
         if (loaded.bridgeBlockId == null) loaded.bridgeBlockId = def.bridgeBlockId;
         if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
-        if (loaded.impassableBlockIdList == null) loaded.impassableBlockIdList = def.impassableBlockIdList;
         if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
         if (loaded.applyToAllMonsters == null) loaded.applyToAllMonsters = def.applyToAllMonsters;
         if (loaded.additionalEntityIdList == null) loaded.additionalEntityIdList = def.additionalEntityIdList;

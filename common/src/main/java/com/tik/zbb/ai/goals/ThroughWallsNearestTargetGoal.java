@@ -3,6 +3,7 @@ package com.tik.zbb.ai.goals;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.mixin.accessor.NATGAccessor;
+import com.tik.zbb.utilities.TargetingUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -15,6 +16,8 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
 {
     private final List<NearestAttackableTargetGoal<?>> vanillaTargetGoals;
     private ConfigSnapshot configSnapshot;
+    private double cachedRange = -1;
+    private final java.util.IdentityHashMap<NearestAttackableTargetGoal<?>, TargetingConditions> adjustedCache = new java.util.IdentityHashMap<>();
 
     public ThroughWallsNearestTargetGoal(Mob mob, List<NearestAttackableTargetGoal<?>> vanillaTargetGoals)
     {
@@ -23,38 +26,27 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         this.configSnapshot = ConfigManager.getConfigSnapshot();
         this.vanillaTargetGoals = vanillaTargetGoals;
 
-        this.targetConditions = TargetingConditions.forCombat()
-                .ignoreLineOfSight()
-                .range(configSnapshot.data().targetSearchRadius)
-                .selector((target, serverLevel) ->
-                        TargetingUtility.passesVanillaChecks(mob, target, true, true)
-                                && isAllowedByVanillaGoals(serverLevel, mob, target));
+        rebuildTargetConditions();
     }
 
     private boolean isAllowedByVanillaGoals(Mob self, LivingEntity target)
     {
         if (target == self) return false;
-        if (!target.isAlive()) return false;
 
-        double range = configSnapshot.data().targetSearchRadius;
+        rebuildCacheIfNeeded();
 
-        for (NearestAttackableTargetGoal<?> g : vanillaTargetGoals)
+        for (NearestAttackableTargetGoal<?> goal : vanillaTargetGoals)
         {
-            var acc = (NATGAccessor) (Object) g;
+            var acc = (NATGAccessor) (Object) goal;
 
             Class<?> tt = acc.zbb$getTargetType();
-            if (tt == null) continue;
-            if (!tt.isInstance(target)) continue;
+            if (tt == null || !tt.isInstance(target)) continue;
 
-            TargetingConditions cond = acc.zbb$getTargetConditions();
-            if (cond == null) continue;
-
-            TargetingConditions adjusted = cond.copy()
-                    .ignoreLineOfSight()
-                    .range(range);
-
-            if (adjusted.test(self, target))
+            TargetingConditions adjusted = adjustedCache.get(goal);
+            if (adjusted != null && adjusted.test(level, self, target))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -63,12 +55,46 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
     @Override
     public boolean canUse()
     {
-        if (configSnapshot.version() != ConfigManager.getConfigSnapshot().version())
-            configSnapshot = ConfigManager.getConfigSnapshot();
+        ConfigSnapshot snap = ConfigManager.getConfigSnapshot();
+        if (snap.version() != configSnapshot.version())
+        {
+            configSnapshot = snap;
+            rebuildTargetConditions();
+            cachedRange = -1;
+        }
 
         if (!configSnapshot.data().canSeeTargetsThroughBlocks) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
 
         return super.canUse();
+    }
+
+    private void rebuildCacheIfNeeded()
+    {
+        double range = configSnapshot.data().targetSearchRadius;
+        if (range == cachedRange && !adjustedCache.isEmpty()) return;
+
+        cachedRange = range;
+        adjustedCache.clear();
+
+        for (NearestAttackableTargetGoal<?> goal : vanillaTargetGoals)
+        {
+            var acc = (NATGAccessor) (Object) goal;
+            TargetingConditions cond = acc.zbb$getTargetConditions();
+            if (cond == null) continue;
+
+            TargetingConditions adjusted = cond.copy().ignoreLineOfSight().range(range);
+            adjustedCache.put(goal, adjusted);
+        }
+    }
+
+    private void rebuildTargetConditions()
+    {
+        this.targetConditions = TargetingConditions.forCombat()
+                .ignoreLineOfSight()
+                .range(configSnapshot.data().targetSearchRadius)
+                .selector((target, serverLevel) ->
+                        TargetingUtility.passesVanillaChecks(mob, target, true, true)
+                                && isAllowedByVanillaGoals(serverLevel, mob, target));
     }
 }

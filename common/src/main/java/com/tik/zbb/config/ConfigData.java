@@ -26,10 +26,6 @@ public class ConfigData
             "minecraft:lava",
             "minecraft:flowing_lava"
     ));
-    public List<String> impassableBlockIdList = new ArrayList<>(List.of(
-            "minecraft:cobweb",
-            "minecraft:pointed_dripstone"
-    ));
 
     // ======================
     // [AI / BEHAVIOR]
@@ -70,14 +66,12 @@ public class ConfigData
     // [Runtime caches]
     // ======================
     public transient Set<ResourceLocation> dangerousBlockIdSet = Set.of();
-    public transient Set<ResourceLocation> impassableBlockIdSet = Set.of();
     public transient Set<ResourceLocation> ignoreHostileEntityIdSet = Set.of();
     public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
 
     public void rebuildSets()
     {
         dangerousBlockIdSet = parseListToSet(dangerousBlockIdList);
-        impassableBlockIdSet = parseListToSet(impassableBlockIdList);
         additionalEntityIdSet = parseListToSet(additionalEntityIdList);
         ignoreHostileEntityIdSet = parseListToSet(ignoreEntityIdList);
     }
