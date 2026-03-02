@@ -2,6 +2,7 @@ package com.tik.zbb.ai.goals;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.utilities.TargetingUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -69,6 +70,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         for (ServerPlayer p : players)
         {
+            if (!TargetingUtility.passesVanillaChecks(mob, p, true, true)) continue;
             if (!isValidPlayer(p)) continue;
             double d = p.distanceToSqr(mob);
             if (d < bestDist)

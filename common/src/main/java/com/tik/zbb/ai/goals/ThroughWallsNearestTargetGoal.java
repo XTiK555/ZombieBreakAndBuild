@@ -1,8 +1,8 @@
 package com.tik.zbb.ai.goals;
 
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.mixin.accessor.NATGAccessor;
 import com.tik.zbb.config.ConfigSnapshot;
+import com.tik.zbb.mixin.accessor.NATGAccessor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -26,7 +26,9 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
                 .range(configSnapshot.data().targetSearchRadius)
-                .selector((target) -> isAllowedByVanillaGoals(mob, target));
+                .selector((target, serverLevel) ->
+                        TargetingUtility.passesVanillaChecks(mob, target, true, true)
+                                && isAllowedByVanillaGoals(serverLevel, mob, target));
     }
 
     private boolean isAllowedByVanillaGoals(Mob self, LivingEntity target)
@@ -64,7 +66,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         if (configSnapshot.version() != ConfigManager.getConfigSnapshot().version())
             configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (!configSnapshot.data().alwaysSeeNearestPlayer) return false;
+        if (!configSnapshot.data().canSeeTargetsThroughBlocks) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
 
         return super.canUse();
