@@ -2,6 +2,7 @@ package com.tik.zbb.ai.state.tactic.tactics;
 
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
+import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -20,8 +21,11 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
+        long now = context.getLevel().getGameTime();
+        if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
+
         int radius = context.getConfigSnapshot().data().dangerousBlocksSearchRadius;
-        mobPos = context.getMob().getOnPos().mutable();
+        mobPos = context.getMob().blockPosition().mutable();
 
         int baseX = mobPos.getX();
         int baseY = mobPos.getY();
@@ -47,6 +51,8 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
                 }
             }
         }
+
+        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().searchDangerousBlocksInterval, 1));
     }
 
     private boolean isDangerous(BlockState state, MobStateContext context)

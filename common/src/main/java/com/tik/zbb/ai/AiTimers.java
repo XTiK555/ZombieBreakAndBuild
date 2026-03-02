@@ -7,6 +7,7 @@ public class AiTimers
     private long goToTargetCooldownUntil = Long.MIN_VALUE;
     private long freezeUntil = Long.MIN_VALUE;
     private long checkPathCooldownUntil = Long.MIN_VALUE;
+    private long mitigateDangerousBlocksCooldownUntil = Long.MIN_VALUE;
 
     public boolean breakCooldownPassed(long now) {return now >= breakCooldownUntil;}
 
@@ -18,6 +19,8 @@ public class AiTimers
 
     public boolean checkPathCooldownPassed(long now) {return now >= checkPathCooldownUntil;}
 
+    public boolean mitigateDangerousBlocksCooldownPassed(long now) {return now >= mitigateDangerousBlocksCooldownUntil;}
+
 
     public void setBreakCooldownUntil(long breakCooldownUntil) {this.breakCooldownUntil = breakCooldownUntil;}
 
@@ -28,4 +31,6 @@ public class AiTimers
     public void setFreezeUntil(long freezeUntil) {this.freezeUntil = freezeUntil;}
 
     public void setCheckPathCooldownUntil(long checkPathCooldownUntil) {this.checkPathCooldownUntil = checkPathCooldownUntil;}
+
+    public void setMitigateDangerousBlocksCooldownUntil(long mitigateDangerousBlocksCooldownUntil) {this.mitigateDangerousBlocksCooldownUntil = mitigateDangerousBlocksCooldownUntil;}
 }

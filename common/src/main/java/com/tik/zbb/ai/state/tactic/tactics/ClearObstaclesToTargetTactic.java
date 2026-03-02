@@ -21,9 +21,9 @@ public class ClearObstaclesToTargetTactic implements IMobTactic
     public void execute(MobStateContext context)
     {
         if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK);
-        mobPos = context.getMob().getOnPos().mutable();
+        mobPos = context.getMob().blockPosition().mutable();
 
-        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(context.getMob().getOnPos(), context.getTarget().getOnPos()).mutable();
+        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(mobPos, context.getTarget().blockPosition()).mutable();
 
         if (!IsFreePassUtility.isFreePass(mobPos, blockRegistry, context.getLevel(), context.getConfigSnapshot().data()))
         {
