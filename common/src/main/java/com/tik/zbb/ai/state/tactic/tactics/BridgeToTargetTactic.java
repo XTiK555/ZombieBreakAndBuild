@@ -18,7 +18,7 @@ public class BridgeToTargetTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
-        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(context.getMob().getOnPos(), context.getTarget().getOnPos()).mutable();
+        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(context.getMob().blockPosition(), context.getTarget().blockPosition()).mutable();
 
         int mobX = Mth.floor(context.getMob().getX());
         int mobZ = Mth.floor(context.getMob().getZ());
