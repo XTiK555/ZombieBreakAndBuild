@@ -32,7 +32,8 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         if (!config.alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
-        if (mob.getTarget() != null && isValidPlayer(mob.getTarget())) return false;
+        if (mob.getTarget() != null && TargetingUtility.passesVanillaChecks(mob, mob.getTarget(), true, true))
+            return false;
 
         target = findNearestValidPlayer(sl.players());
 
@@ -42,7 +43,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     @Override
     public boolean canContinueToUse()
     {
-        return isValidPlayer(target) && mob.getTarget() == target;
+        return TargetingUtility.passesVanillaChecks(mob, target, true, true) && mob.getTarget() == target;
     }
 
     @Override
@@ -58,25 +59,19 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         target = null;
     }
 
-    private static boolean isValidPlayer(LivingEntity livingEntity)
-    {
-        return livingEntity instanceof Player && livingEntity.isAlive() && !livingEntity.isSpectator() && !((Player) livingEntity).isCreative();
-    }
-
     private Player findNearestValidPlayer(List<ServerPlayer> players)
     {
         Player best = null;
         double bestDist = Double.POSITIVE_INFINITY;
 
-        for (ServerPlayer p : players)
+        for (ServerPlayer player : players)
         {
-            if (!TargetingUtility.passesVanillaChecks(mob, p, true, true)) continue;
-            if (!isValidPlayer(p)) continue;
-            double d = p.distanceToSqr(mob);
+            if (!TargetingUtility.passesVanillaChecks(mob, player, true, true)) continue;
+            double d = player.distanceToSqr(mob);
             if (d < bestDist)
             {
                 bestDist = d;
-                best = p;
+                best = player;
             }
         }
 
