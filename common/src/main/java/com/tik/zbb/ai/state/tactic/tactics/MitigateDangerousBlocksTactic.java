@@ -1,5 +1,6 @@
 package com.tik.zbb.ai.state.tactic.tactics;
 
+import com.tik.zbb.Constants;
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
@@ -31,7 +32,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         int baseY = mobPos.getY();
         int baseZ = mobPos.getZ();
 
-        for (int dy = -1; dy <= 1; dy++)
+        for (int dy = -radius; dy <= radius; dy++)
         {
             for (int dx = -radius; dx <= radius; dx++)
             {
@@ -57,7 +58,6 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
 
     private boolean isDangerous(BlockState state, MobStateContext context)
     {
-        if (!state.getFluidState().isEmpty()) return true;
         if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK);
 
         Identifier id = blockRegistry.getKey(state.getBlock());
