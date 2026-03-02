@@ -18,7 +18,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
 
     public ThroughWallsNearestTargetGoal(Mob mob, List<NearestAttackableTargetGoal<?>> vanillaTargetGoals)
     {
-        super(mob, LivingEntity.class, true);
+        super(mob, LivingEntity.class, false);
 
         this.configSnapshot = ConfigManager.getConfigSnapshot();
         this.vanillaTargetGoals = vanillaTargetGoals;
@@ -61,6 +61,9 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
     @Override
     public boolean canUse()
     {
+        if (configSnapshot.version() != ConfigManager.getConfigSnapshot().version())
+            configSnapshot = ConfigManager.getConfigSnapshot();
+
         if (!configSnapshot.data().alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
 
