@@ -2,11 +2,19 @@ package com.tik.zbb.ai.state.tactic.tactics;
 
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
-import com.tik.zbb.utilities.GetHorizontalFrontBlockUtility;
+import com.tik.zbb.utilities.HitboxScanUtility;
+import com.tik.zbb.utilities.IsFreePassUtility;
+import net.minecraft.commands.arguments.MessageArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec3;
 
 public class BridgeToTargetTactic implements IMobTactic
 {
@@ -18,24 +26,52 @@ public class BridgeToTargetTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
-        frontBlockPos = GetHorizontalFrontBlockUtility.getPos(context.getMob().blockPosition(), context.getTarget().blockPosition()).mutable();
-
         int mobX = Mth.floor(context.getMob().getX());
         int mobZ = Mth.floor(context.getMob().getZ());
         int targetY = Mth.floor(context.getTarget().getY());
 
-        boolean belowUsAir = context.getLevel().getBlockState(tmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ)).isAir();
-        if (belowUsAir && targetY >= frontBlockPos.getY())
+        boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), new Vec3(0, -1, 0)) == null;
+        if (belowUsEmpty && targetY >= context.getMob().getY())
         {
             context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ));
         }
 
-        boolean frontAir = context.getLevel().getBlockState(frontBlockPos).isAir();
-        boolean belowAir = context.getLevel().getBlockState(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ())).isAir();
-        boolean below2Air = context.getLevel().getBlockState(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ())).isAir();
-        if (frontAir && belowAir && below2Air)
+        frontBlockPos = getFrontBlock(context.getMob(), context.getTarget()).mutable();
+        context.getLevel().sendParticles(ParticleTypes.END_ROD, frontBlockPos.getX(), frontBlockPos.getY(), frontBlockPos.getZ(), 10, 0, 0, 0, 10000.0);
+
+        boolean frontEmpty = IsFreePassUtility.isFreePass(frontBlockPos, context.getLevel());
+        boolean belowFrontEmpty = IsFreePassUtility.isFreePass(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()), context.getLevel());
+        boolean below2FrontEmpty = IsFreePassUtility.isFreePass(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ()), context.getLevel());
+        if (frontEmpty && belowFrontEmpty && below2FrontEmpty)
         {
             context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()));
         }
+    }
+
+    public static BlockPos getFrontBlock(Mob mob, LivingEntity target)
+    {
+        var box = mob.getBoundingBox();
+
+        double dx = target.getX() - mob.getX();
+        double dz = target.getZ() - mob.getZ();
+
+        double len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 1e-6)
+            return mob.blockPosition();
+
+        dx /= len;
+        dz /= len;
+
+        double frontX = dx > 0 ? box.maxX : box.minX;
+        double frontZ = dz > 0 ? box.maxZ : box.minZ;
+
+        frontX += dx;
+        frontZ += dz;
+
+        int blockX = Mth.floor(frontX);
+        int blockY = Mth.floor(box.minY);
+        int blockZ = Mth.floor(frontZ);
+
+        return new BlockPos(blockX, blockY, blockZ);
     }
 }

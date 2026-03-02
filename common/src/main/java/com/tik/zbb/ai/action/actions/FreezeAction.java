@@ -15,10 +15,15 @@ public class FreezeAction implements IMobAction
     @Override
     public void execute(MobActionContext context)
     {
-        context.aiTimers().setFreezeUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().freezeTime));
+        int bx = context.mob().blockPosition().getX();
+        int bz = context.mob().blockPosition().getZ();
+        double cx = bx + 0.5;
+        double cz = bz + 0.5;
 
+        context.mob().getMoveControl().setWantedPosition(cx, context.mob().getY(), cz, 1);
         context.mob().getNavigation().stop();
-        context.mob().getMoveControl().setWantedPosition(context.mob().getX(), context.mob().getY(), context.mob().getZ(), 0.0);
         context.mob().setDeltaMovement(0.0, context.mob().getDeltaMovement().y, 0.0);
+
+        context.aiTimers().setFreezeUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().freezeTime));
     }
 }
