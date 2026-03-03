@@ -10,7 +10,7 @@ import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -22,10 +22,10 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.monster.zombie.Drowned;
-import net.minecraft.world.entity.monster.zombie.Husk;
-import net.minecraft.world.entity.monster.zombie.Zombie;
-import net.minecraft.world.entity.monster.zombie.ZombieVillager;
+import net.minecraft.world.entity.monster.Drowned;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.ZombieVillager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,8 +94,8 @@ public class MainCommon
         if (!(mob.level() instanceof ServerLevel)) return false;
         if (!(mob instanceof PathfinderMob)) return false;
 
-        Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
-        Identifier entityId = entityTypeRegistry.getKey(mob.getType());
+        Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().registryOrThrow(Registries.ENTITY_TYPE);
+        ResourceLocation entityId = entityTypeRegistry.getKey(mob.getType());
 
         if (entityId != null && config.ignoreHostileEntityIdSet.contains(entityId)) return false;
         if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;

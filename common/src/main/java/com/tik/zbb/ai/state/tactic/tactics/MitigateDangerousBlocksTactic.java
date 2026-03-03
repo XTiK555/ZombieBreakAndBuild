@@ -1,13 +1,12 @@
 package com.tik.zbb.ai.state.tactic.tactics;
 
-import com.tik.zbb.Constants;
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,9 +57,10 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
 
     private boolean isDangerous(BlockState state, MobStateContext context)
     {
-        if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().lookupOrThrow(Registries.BLOCK);
+        if (blockRegistry == null)
+            blockRegistry = context.getLevel().registryAccess().registryOrThrow(Registries.BLOCK);
 
-        Identifier id = blockRegistry.getKey(state.getBlock());
+        ResourceLocation id = blockRegistry.getKey(state.getBlock());
         if (id == null) return false;
 
         if (!context.getConfigSnapshot().data().dangerousBlockIdSet.contains(id)) return false;

@@ -43,7 +43,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
             if (tt == null || !tt.isInstance(target)) continue;
 
             TargetingConditions adjusted = adjustedCache.get(goal);
-            if (adjusted != null && adjusted.test(level, self, target))
+            if (adjusted != null && adjusted.test(self, target))
             {
                 return true;
             }
@@ -93,8 +93,8 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
                 .range(configSnapshot.data().targetSearchRadius)
-                .selector((target, serverLevel) ->
+                .selector((target) ->
                         TargetingUtility.passesVanillaChecks(mob, target, true, true)
-                                && isAllowedByVanillaGoals(serverLevel, mob, target));
+                                && isAllowedByVanillaGoals(mob, target));
     }
 }
