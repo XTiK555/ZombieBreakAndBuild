@@ -9,13 +9,13 @@ import net.minecraft.world.phys.Vec3;
 
 public class ClearObstaclesToTargetTactic implements IMobTactic
 {
-    private final double STEP_DISTANCE = 0.6;
+    private final double MAX_CHECK_DISTANCE = 0.8;
 
     @Override
     public void execute(MobStateContext context)
     {
         double randomMultiplier = Mth.randomBetween(context.getMob().getRandom(), 0.01f, 1);
-        double randomizedStep = STEP_DISTANCE * randomMultiplier;
+        double randomizedStep = MAX_CHECK_DISTANCE * randomMultiplier;
 
         Vec3 directionToTarget = context.getTarget().position().subtract(context.getMob().position()).normalize();
         Vec3 hitboxScanOffset = directionToTarget.scale(randomizedStep);
