@@ -15,7 +15,6 @@ public class TargetingUtility
     public static boolean passesVanillaChecks(Mob mob, LivingEntity candidate, boolean ignoreLineOfSight, boolean ignoreDistance)
     {
         if (candidate == null || !candidate.isAlive()) return false;
-        if (!(mob.level() instanceof ServerLevel level)) return false;
 
         if (candidate instanceof Player p && !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(p))
         {
@@ -26,7 +25,7 @@ public class TargetingUtility
 
         if (mob instanceof NeutralMob neutral)
         {
-            if (!neutral.isAngryAt(candidate, level)) return false;
+            if (!neutral.isAngryAt(candidate)) return false;
         }
 
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
@@ -36,6 +35,6 @@ public class TargetingUtility
         TargetingConditions cond = TargetingConditions.forCombat().range(range);
         if (ignoreLineOfSight) cond = cond.ignoreLineOfSight();
 
-        return cond.test(level, mob, candidate);
+        return cond.test(mob, candidate);
     }
 }
