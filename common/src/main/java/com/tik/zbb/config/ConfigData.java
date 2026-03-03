@@ -23,8 +23,7 @@ public class ConfigData
             "minecraft:sweet_berry_bush",
             "minecraft:wither_rose",
             "minecraft:powder_snow",
-            "minecraft:lava",
-            "minecraft:flowing_lava"
+            "minecraft:lava"
     ));
 
     // ======================

@@ -32,8 +32,11 @@ public class AdjustHeightToTargetTactic implements IMobTactic
                 {
                     context.getMob().getJumpControl().jump();
                 }
+                else
+                {
+                    context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos.set(mobX, mobY, mobZ));
+                }
             }
-            return;
         }
     }
 }
