@@ -4,22 +4,14 @@ import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.HitboxScanUtility;
 import com.tik.zbb.utilities.IsFreePassUtility;
-import net.minecraft.commands.arguments.MessageArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.core.particles.ParticleType;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
 
 public class BridgeToTargetTactic implements IMobTactic
 {
-    private Registry<Block> blockRegistry;
-
     private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
     private BlockPos.MutableBlockPos frontBlockPos = new BlockPos.MutableBlockPos();
 
@@ -27,13 +19,14 @@ public class BridgeToTargetTactic implements IMobTactic
     public void execute(MobStateContext context)
     {
         int mobX = Mth.floor(context.getMob().getX());
+        int mobY = Mth.floor(context.getMob().getY());
         int mobZ = Mth.floor(context.getMob().getZ());
         int targetY = Mth.floor(context.getTarget().getY());
 
         boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), new Vec3(0, -1, 0)) == null;
         if (belowUsEmpty && targetY >= context.getMob().getY())
         {
-            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, frontBlockPos.getY() - 1, mobZ));
+            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, mobY - 1, mobZ));
         }
 
         frontBlockPos = getFrontBlock(context.getMob(), context.getTarget()).mutable();
