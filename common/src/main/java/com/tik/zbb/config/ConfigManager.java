@@ -1,28 +1,36 @@
 package com.tik.zbb.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.serde.ObjectDeserializer;
+import com.electronwill.nightconfig.core.serde.ObjectSerializer;
 import com.tik.zbb.Constants;
 import com.tik.zbb.platform.Services;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class ConfigManager
 {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final ObjectSerializer SERIALIZER = ObjectSerializer.standard();
+    private static final ObjectDeserializer DESERIALIZER = ObjectDeserializer.standard();
 
+    private static volatile CommentedFileConfig FILE_CONFIG;
     private static volatile ConfigData DATA = new ConfigData();
     private static volatile long VERSION = 0;
-    private static volatile Path CONFIG_PATH;
 
-    public static void init(String configFileName)
+    public static void init()
     {
-        CONFIG_PATH = Services.PLATFORM.getConfigDir().resolve(configFileName);
-        loadOrCreate();
+        Config.setInsertionOrderPreserved(true);
+
+        String modName = Constants.MOD_NAME.replaceAll("\\s", "-").toLowerCase();
+        Path configPath = Services.PLATFORM.getConfigDir().resolve(modName + ".toml");
+
+        FILE_CONFIG = CommentedFileConfig.builder(configPath).sync().build();
+        FILE_CONFIG.load();
+
+        reload();
+        save();
     }
 
     public static ConfigSnapshot getConfigSnapshot()
@@ -32,87 +40,28 @@ public final class ConfigManager
 
     public static void reload()
     {
-        loadOrCreate();
+        ConfigData configData = FILE_CONFIG.isEmpty()
+                ? new ConfigData()
+                : DESERIALIZER.deserializeFields(FILE_CONFIG, ConfigData::new);
+        configData.rebuildSets();
+
+        DATA = configData;
+        VERSION++;
+
         Constants.LOG.info("Reloading Config");
     }
 
-    public static void save()
+    private static void save()
     {
-        try
-        {
-            Files.createDirectories(CONFIG_PATH.getParent());
-            try (BufferedWriter w = Files.newBufferedWriter(CONFIG_PATH, StandardCharsets.UTF_8))
-            {
-                GSON.toJson(DATA, w);
-            }
-        }
-        catch (Exception e)
-        {
-            Constants.LOG.error("Failed to save config: " + e);
-        }
-    }
+        CommentedConfig config = CommentedConfig.inMemory();
 
-    private static void loadOrCreate()
-    {
-        ConfigData loadedData = null;
+        SERIALIZER.serializeFields(DATA, config);
+        ConfigComments.apply(config, DATA);
 
-        if (Files.exists(CONFIG_PATH))
-        {
-            try (BufferedReader bufferedReader = Files.newBufferedReader(CONFIG_PATH, StandardCharsets.UTF_8))
-            {
-                loadedData = GSON.fromJson(bufferedReader, ConfigData.class);
-            }
-            catch (Exception e)
-            {
-                Constants.LOG.error("Failed to read config, using defaults: " + e);
-            }
-        }
+        FILE_CONFIG.clear();
+        FILE_CONFIG.putAll(config);
+        FILE_CONFIG.save();
 
-        if (loadedData == null)
-        {
-            loadedData = new ConfigData();
-        }
-
-        setData(validateNullFields(loadedData, new ConfigData()));
-        DATA.rebuildSets();
-        save();
-    }
-
-    private static ConfigData validateNullFields(ConfigData loaded, ConfigData def)
-    {
-        if (loaded.bridgeBlockId == null) loaded.bridgeBlockId = def.bridgeBlockId;
-        if (loaded.dangerousBlockIdList == null) loaded.dangerousBlockIdList = def.dangerousBlockIdList;
-        if (loaded.alwaysSeeNearestPlayer == null) loaded.alwaysSeeNearestPlayer = def.alwaysSeeNearestPlayer;
-        if (loaded.applyToAllMonsters == null) loaded.applyToAllMonsters = def.applyToAllMonsters;
-        if (loaded.additionalEntityIdList == null) loaded.additionalEntityIdList = def.additionalEntityIdList;
-        if (loaded.ignoreEntityIdList == null) loaded.ignoreEntityIdList = def.ignoreEntityIdList;
-        if (loaded.canSeeTargetsThroughBlocks == null)
-            loaded.canSeeTargetsThroughBlocks = def.canSeeTargetsThroughBlocks;
-        if (loaded.targetSearchRadius == null) loaded.targetSearchRadius = def.targetSearchRadius;
-        if (loaded.dangerousBlocksSearchRadius == null)
-            loaded.dangerousBlocksSearchRadius = def.dangerousBlocksSearchRadius;
-        if (loaded.breakCooldown == null) loaded.breakCooldown = def.breakCooldown;
-        if (loaded.buildCooldown == null) loaded.buildCooldown = def.buildCooldown;
-        if (loaded.damageToBlocks == null) loaded.damageToBlocks = def.damageToBlocks;
-        if (loaded.freezeTime == null) loaded.freezeTime = def.freezeTime;
-        if (loaded.searchDangerousBlocksInterval == null)
-            loaded.searchDangerousBlocksInterval = def.searchDangerousBlocksInterval;
-        if (loaded.goToTargetInterval == null) loaded.goToTargetInterval = def.goToTargetInterval;
-        if (loaded.pathCheckInterval == null) loaded.pathCheckInterval = def.pathCheckInterval;
-        if (loaded.stuckSecondsBeforeBreakAndBuild == null)
-            loaded.stuckSecondsBeforeBreakAndBuild = def.stuckSecondsBeforeBreakAndBuild;
-        if (loaded.damageStoreTime == null) loaded.damageStoreTime = def.damageStoreTime;
-        if (loaded.builtBlocksProtectionTime == null) loaded.builtBlocksProtectionTime = def.builtBlocksProtectionTime;
-        if (loaded.placeSoundId == null) loaded.placeSoundId = def.placeSoundId;
-        if (loaded.hitSoundId == null) loaded.hitSoundId = def.hitSoundId;
-        if (loaded.breakSoundId == null) loaded.breakSoundId = def.breakSoundId;
-
-        return loaded;
-    }
-
-    private static void setData(ConfigData newData)
-    {
-        DATA = newData;
-        VERSION++;
+        ConfigFormatter.splitBlocks(FILE_CONFIG.getNioPath());
     }
 }

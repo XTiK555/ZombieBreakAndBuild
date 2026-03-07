@@ -24,6 +24,6 @@ public class FreezeAction implements IMobAction
         context.mob().getNavigation().stop();
         context.mob().setDeltaMovement(0.0, context.mob().getDeltaMovement().y, 0.0);
 
-        context.aiTimers().setFreezeUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().freezeTime));
+        context.aiTimers().setFreezeUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.freezeTime));
     }
 }

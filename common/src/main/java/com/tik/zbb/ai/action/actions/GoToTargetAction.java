@@ -30,7 +30,7 @@ public class GoToTargetAction implements IMobAction
     public void execute(MobActionContext context)
     {
         mob.getNavigation().moveTo(target, 1.0);
-        context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().goToTargetInterval, 1));
+        context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.goToTargetInterval, 1));
     }
 
     public void setup(PathfinderMob mob, LivingEntity target)

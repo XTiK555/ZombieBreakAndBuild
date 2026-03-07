@@ -39,7 +39,7 @@ public class MainCommon
 {
     public static void init()
     {
-        ConfigManager.init(Constants.MOD_NAME + ".json");
+        ConfigManager.init();
     }
 
     public static void onLevelTick(ServerLevel level)
@@ -50,8 +50,8 @@ public class MainCommon
 
         if (now % interval == 0)
         {
-            long damageTtl = SecondsToTicksUtility.toTicks(config.damageStoreTime);
-            long buildTtl = SecondsToTicksUtility.toTicks(config.builtBlocksProtectionTime);
+            long damageTtl = SecondsToTicksUtility.toTicks(config.balance.damageStoreTime);
+            long buildTtl = SecondsToTicksUtility.toTicks(config.balance.builtBlocksProtectionTime);
 
             BlockStorage.cleanUpDamageData(level, damageTtl);
             BlockStorage.cleanUpBuildData(level, buildTtl);
@@ -83,9 +83,9 @@ public class MainCommon
         pFMobAccessor.zbb$getTargetSelector().addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
         pFMobAccessor.zbb$getTargetSelector().addGoal(1, new ThroughWallsNearestTargetGoal(pFMob, vanillaNatg));
 
-        if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < config.targetSearchRadius)
+        if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < config.ai.targetSearchRadius)
         {
-            followRangeAttribute.setBaseValue(config.targetSearchRadius);
+            followRangeAttribute.setBaseValue(config.ai.targetSearchRadius);
         }
     }
 
@@ -100,7 +100,7 @@ public class MainCommon
         if (entityId != null && config.ignoreHostileEntityIdSet.contains(entityId)) return false;
         if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
         if (mob.getType().getCategory() != MobCategory.MONSTER) return false;
-        if (config.applyToAllMonsters) return true;
+        if (config.ai.applyToAllMonsters) return true;
 
         return mob instanceof Zombie || mob instanceof Drowned || mob instanceof Husk || mob instanceof ZombieVillager;
     }
