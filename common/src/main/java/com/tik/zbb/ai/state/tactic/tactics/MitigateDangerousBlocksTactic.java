@@ -25,7 +25,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
-        int radius = context.getConfigSnapshot().data().dangerousBlocksSearchRadius;
+        int radius = context.getConfigSnapshot().data().ai.dangerousBlocksSearchRadius;
         mobPos = context.getMob().blockPosition().mutable();
 
         int baseX = mobPos.getX();
@@ -53,7 +53,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
             }
         }
 
-        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().searchDangerousBlocksInterval, 1));
+        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.searchDangerousBlocksInterval, 1));
     }
 
     private boolean isDangerous(BlockState state, MobStateContext context)

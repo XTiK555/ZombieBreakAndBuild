@@ -63,7 +63,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
             cachedRange = -1;
         }
 
-        if (!configSnapshot.data().canSeeTargetsThroughBlocks) return false;
+        if (!configSnapshot.data().ai.canSeeTargetsThroughBlocks) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
 
         return super.canUse();
@@ -71,7 +71,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
 
     private void rebuildCacheIfNeeded()
     {
-        double range = configSnapshot.data().targetSearchRadius;
+        double range = configSnapshot.data().ai.targetSearchRadius;
         if (range == cachedRange && !adjustedCache.isEmpty()) return;
 
         cachedRange = range;
@@ -92,7 +92,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
     {
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
-                .range(configSnapshot.data().targetSearchRadius)
+                .range(configSnapshot.data().ai.targetSearchRadius)
                 .selector((target, serverLevel) ->
                         TargetingUtility.passesVanillaChecks(mob, target, true, true)
                                 && isAllowedByVanillaGoals(serverLevel, mob, target));

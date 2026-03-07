@@ -30,7 +30,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
-        if (!config.alwaysSeeNearestPlayer) return false;
+        if (!config.ai.alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
         if (mob.getTarget() != null && TargetingUtility.passesVanillaChecks(mob, mob.getTarget(), true, true))
             return false;
