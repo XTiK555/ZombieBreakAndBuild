@@ -41,7 +41,7 @@ public class BreakAndBuildState implements IMobState
 
         if (context.getAiTimers().checkPathCooldownPassed(now))
         {
-            context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().pathCheckInterval, 1));
+            context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.pathCheckInterval, 1));
 
             PathNavigation nav = context.getMob().getNavigation();
             Path path = nav.getPath();
@@ -53,7 +53,7 @@ public class BreakAndBuildState implements IMobState
             }
 
             boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
-            boolean isStuckTooLong = stuckTicks >= SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().stuckSecondsBeforeBreakAndBuild, 1);
+            boolean isStuckTooLong = stuckTicks >= SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.stuckSecondsBeforeBreakAndBuild, 1);
 
             if (hasActivePath && !isStuckTooLong)
             {

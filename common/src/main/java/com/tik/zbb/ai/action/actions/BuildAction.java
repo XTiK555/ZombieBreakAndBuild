@@ -33,7 +33,7 @@ public class BuildAction implements IMobAction
         context.level().setBlockAndUpdate(buildPos, bridgeBlock.defaultBlockState());
         context.level().playSound(null, buildPos, placeSound, SoundSource.BLOCKS, 0.5f, 1.0f);
         context.executor().tryExecuteFreezeAction();
-        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().buildCooldown, 1));
+        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.buildCooldown, 1));
         BlockStorage.addBuild(context.level(), buildPos.immutable());
     }
 

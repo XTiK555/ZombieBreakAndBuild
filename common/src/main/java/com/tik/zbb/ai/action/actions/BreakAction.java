@@ -33,7 +33,7 @@ public class BreakAction implements IMobAction
     {
         BlockState state = context.level().getBlockState(breakPos);
         int blockHealth = getBlockHealth(breakPos, context.level());
-        int damageGave = BlockStorage.addDamage(context.level(), breakPos, context.configSnapshot().data().damageToBlocks);
+        int damageGave = BlockStorage.addDamage(context.level(), breakPos, context.configSnapshot().data().balance.damageToBlocks);
 
         if (damageGave >= blockHealth)
         {
@@ -47,7 +47,7 @@ public class BreakAction implements IMobAction
             context.level().playSound(null, breakPos, hitSound, SoundSource.HOSTILE, 0.25f, 1.0f);
         }
         context.executor().tryExecuteFreezeAction();
-        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().breakCooldown, 1));
+        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.breakCooldown, 1));
     }
 
     public void setup(BlockPos breakPos, SoundEvent breakSound, SoundEvent hitSound)
