@@ -1,5 +1,9 @@
 package com.tik.zbb.config;
 
+import com.tik.zbb.config.annotations.Comment;
+import com.tik.zbb.config.annotations.Range;
+import com.tik.zbb.config.annotations.ResourceLocationList;
+import com.tik.zbb.config.annotations.ResourceLocationString;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
@@ -40,9 +44,11 @@ public class ConfigData
 
     public static class Blocks
     {
+        @ResourceLocationString
         @Comment("The block that zombies will place")
         public String bridgeBlockId = "minecraft:dirt";
 
+        @ResourceLocationList
         @Comment("Blocks that zombies will consider dangerous (attempt to build on/break)")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
@@ -69,60 +75,77 @@ public class ConfigData
         @Comment("Give the ability to break and place blocks to all monsters, not just zombies")
         public boolean applyToAllMonsters = true;
 
+        @ResourceLocationList
         @Comment("Additional IDs of entities that will be given the ability to break and place blocks")
         public List<String> additionalEntityIdList = new ArrayList<>();
 
+        @ResourceLocationList
         @Comment("IDs of entities that will NOT be given the ability to break and place blocks")
         public List<String> ignoreEntityIdList = new ArrayList<>();
 
+        @Range(min = 0, max = 1000000)
         @Comment("Target search radius")
         public int targetSearchRadius = 35;
 
+        @Range(min = 0, max = 1000000)
         @Comment("The radius within which zombies will see dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
     }
 
     public static class Balance
     {
+        @Range(min = 0.05, max = 1000000)
         @Comment("Cooldown between block breaking attempts (seconds)")
         public double breakCooldown = 1.0D;
 
+        @Range(min = 0.05, max = 1000000)
         @Comment("Cooldown between block placing attempts (seconds)")
         public double buildCooldown = 1.0D;
 
+        @Range(min = 1, max = 1000000)
         @Comment("Damage dealt to blocks")
         public int damageToBlocks = 3;
 
+        @Range(min = 0, max = 1000000)
         @Comment("Freeze time after break/place block in seconds")
         public double freezeTime = 0.5D;
 
+        @Range(min = 0.05, max = 1000000)
         @Comment("Interval between searches for dangerous blocks (seconds)")
         public double searchDangerousBlocksInterval = 1.0D;
 
+        @Range(min = 0.05, max = 1000000)
         @Comment("Go to target interval in seconds")
         public double goToTargetInterval = 0.5D;
 
+        @Range(min = 0.05, max = 1000000)
         @Comment("Interval between path recalculations (seconds)")
         public double pathCheckInterval = 2.0D;
 
+        @Range(min = 0, max = 1000000)
         @Comment("Time stuck before zombies start breaking or placing blocks (seconds)")
         public double stuckSecondsBeforeBreakAndBuild = 3.0D;
 
+        @Range(min = 1, max = 1000000)
         @Comment("Duration damage data for blocks is stored (seconds)")
         public double damageStoreTime = 60.0D;
 
+        @Range(min = 0, max = 1000000)
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
     }
 
     public static class Audio
     {
+        @ResourceLocationString
         @Comment("Sound played when placing a block")
         public String placeSoundId = "minecraft:block.rooted_dirt.place";
 
+        @ResourceLocationString
         @Comment("Sound played when hitting a block")
         public String hitSoundId = "minecraft:entity.zombie.attack_wooden_door";
 
+        @ResourceLocationString
         @Comment("Sound played when breaking a block")
         public String breakSoundId = "minecraft:entity.zombie.break_wooden_door";
     }

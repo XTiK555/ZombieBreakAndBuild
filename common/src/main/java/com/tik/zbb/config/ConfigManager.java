@@ -6,6 +6,9 @@ import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.serde.ObjectDeserializer;
 import com.electronwill.nightconfig.core.serde.ObjectSerializer;
 import com.tik.zbb.Constants;
+import com.tik.zbb.config.tools.ConfigComments;
+import com.tik.zbb.config.tools.ConfigFormatter;
+import com.tik.zbb.config.tools.ConfigSanitizer;
 import com.tik.zbb.platform.Services;
 
 import java.nio.file.Path;
@@ -27,10 +30,8 @@ public final class ConfigManager
         Path configPath = Services.PLATFORM.getConfigDir().resolve(modName + ".toml");
 
         FILE_CONFIG = CommentedFileConfig.builder(configPath).sync().build();
-        FILE_CONFIG.load();
 
         reload();
-        save();
     }
 
     public static ConfigSnapshot getConfigSnapshot()
@@ -38,30 +39,80 @@ public final class ConfigManager
         return new ConfigSnapshot(DATA, VERSION);
     }
 
-    public static void reload()
+    public static synchronized void reload()
     {
-        ConfigData configData = FILE_CONFIG.isEmpty()
-                ? new ConfigData()
-                : DESERIALIZER.deserializeFields(FILE_CONFIG, ConfigData::new);
-        configData.rebuildSets();
+        if (FILE_CONFIG == null)
+        {
+            Constants.LOG.warn("Config reload requested before init");
+            return;
+        }
 
-        DATA = configData;
-        VERSION++;
+        ConfigData defaults = new ConfigData();
 
-        Constants.LOG.info("Reloading Config");
+        try
+        {
+            FILE_CONFIG.load();
+        }
+        catch (Exception e)
+        {
+            Constants.LOG.error("Failed to parse config, restoring defaults", e);
+            setData(defaults);
+            save();
+            return;
+        }
+
+        try
+        {
+            ConfigSanitizer.sanitize(FILE_CONFIG, defaults, SERIALIZER);
+
+            ConfigData loaded = DESERIALIZER.deserializeFields(FILE_CONFIG, ConfigData::new);
+            loaded.rebuildSets();
+
+            setData(loaded);
+            save();
+
+            Constants.LOG.info("Reloaded config");
+        }
+        catch (Exception e)
+        {
+            Constants.LOG.error("Failed to sanitize/deserialize config, restoring defaults", e);
+            setData(defaults);
+            save();
+        }
     }
 
     private static void save()
     {
-        CommentedConfig config = CommentedConfig.inMemory();
+        try
+        {
+            CommentedConfig config = CommentedConfig.inMemory();
 
-        SERIALIZER.serializeFields(DATA, config);
-        ConfigComments.apply(config, DATA);
+            SERIALIZER.serializeFields(DATA, config);
+            ConfigComments.apply(config, DATA);
 
-        FILE_CONFIG.clear();
-        FILE_CONFIG.putAll(config);
-        FILE_CONFIG.save();
+            FILE_CONFIG.clear();
+            FILE_CONFIG.putAll(config);
+            FILE_CONFIG.save();
+        }
+        catch (Exception e)
+        {
+            Constants.LOG.error("Failed to save config", e);
+            return;
+        }
 
-        ConfigFormatter.splitBlocks(FILE_CONFIG.getNioPath());
+        try
+        {
+            ConfigFormatter.splitBlocks(FILE_CONFIG.getNioPath());
+        }
+        catch (Exception e)
+        {
+            Constants.LOG.warn("Failed to format config file", e);
+        }
+    }
+
+    private static void setData(ConfigData data)
+    {
+        DATA = data;
+        VERSION++;
     }
 }
