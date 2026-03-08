@@ -1,4 +1,4 @@
-package com.tik.zbb.config;
+package com.tik.zbb.config.tools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,12 +32,10 @@ public final class ConfigFormatter
             }
 
             Files.writeString(path, out.toString(), StandardCharsets.UTF_8);
-            System.out.println(Files.readString(path, StandardCharsets.UTF_8));
         }
         catch (IOException e)
         {
             throw new RuntimeException("Failed to format config", e);
         }
-        System.out.println("Formatted config: " + path);
     }
 }

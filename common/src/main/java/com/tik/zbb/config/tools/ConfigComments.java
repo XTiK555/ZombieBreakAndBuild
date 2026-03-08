@@ -1,11 +1,10 @@
-package com.tik.zbb.config;
+package com.tik.zbb.config.tools;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.tik.zbb.config.annotations.Comment;
+import com.tik.zbb.utilities.ConfigUtilities;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Collection;
-import java.util.Map;
 
 
 public final class ConfigComments
@@ -17,11 +16,8 @@ public final class ConfigComments
 
     private static void apply(CommentedConfig config, Object obj, String path)
     {
-        for (Field field : obj.getClass().getFields())
+        for (Field field : ConfigUtilities.getConfigFields(obj.getClass()))
         {
-            if (Modifier.isStatic(field.getModifiers())) continue;
-            if (Modifier.isTransient(field.getModifiers())) continue;
-
             String name = field.getName();
             String fullPath = path.isEmpty() ? name : path + "." + name;
 
@@ -31,7 +27,7 @@ public final class ConfigComments
                 config.setComment(fullPath, " " + comment.value());
             }
 
-            if (!isCategory(field.getType())) continue;
+            if (!ConfigUtilities.isNestedConfigField(field)) continue;
 
             try
             {
@@ -45,18 +41,5 @@ public final class ConfigComments
             {
             }
         }
-    }
-
-    private static boolean isCategory(Class<?> type)
-    {
-        if (type.isPrimitive()) return false;
-        if (type == String.class) return false;
-        if (Number.class.isAssignableFrom(type)) return false;
-        if (type == Boolean.class) return false;
-        if (type.isEnum()) return false;
-        if (Collection.class.isAssignableFrom(type)) return false;
-        if (Map.class.isAssignableFrom(type)) return false;
-
-        return true;
     }
 }
