@@ -36,14 +36,13 @@ public class BreakAction implements IMobAction
 
         if (damageGave >= blockHealth)
         {
-            BlockStorage.removeDamageData((ServerLevel) context.level(), breakPos);
             BlockStorage.removeDamageData(context.level(), breakPos);
             context.level().destroyBlock(breakPos, true);
         }
         else
         {
             int stage = Math.min(9, (damageGave * 10) / blockHealth);
-            context.level().playSound(null, breakPos, hitSound, SoundSource.HOSTILE, 0.25f, 1.0f);
+            context.level().destroyBlockProgress(breakPos.hashCode(), breakPos, stage);
             context.level().levelEvent(2001, breakPos, Block.getId(state)); // particles and sound
         }
 
