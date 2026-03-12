@@ -24,7 +24,7 @@ public final class BlockStorage
         Long2IntOpenHashMap buildMap = buildsByPosMap.computeIfAbsent(level, l -> new Long2IntOpenHashMap());
         Long2LongOpenHashMap whenMap = builtTickByPosMap.computeIfAbsent(level, l -> new Long2LongOpenHashMap());
 
-        int now = buildMap.getOrDefault(key, 0) + 1; // BUGFIX: раньше не увеличивалось
+        int now = buildMap.getOrDefault(key, 0) + 1;
         buildMap.put(key, now);
         whenMap.put(key, level.getGameTime());
     }

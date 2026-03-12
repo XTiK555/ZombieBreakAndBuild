@@ -106,6 +106,9 @@ public class ConfigData
         @Comment("Damage dealt to blocks")
         public int damageToBlocks = 3;
 
+        @Comment("Will block damage scale depending on hitbox size")
+        public boolean scaleDamageToBlocksWithHitbox = true;
+
         @Range(min = 0, max = 1000000)
         @Comment("Freeze time after break/place block in seconds")
         public double freezeTime = 0.5D;
