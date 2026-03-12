@@ -5,16 +5,15 @@ import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BuildAction implements IMobAction
 {
     private BlockPos buildPos;
     private Block bridgeBlock;
-    private SoundEvent placeSound;
 
     @Override
     public boolean canExecute(MobActionContext context)
@@ -30,17 +29,20 @@ public class BuildAction implements IMobAction
     @Override
     public void execute(MobActionContext context)
     {
+        BlockState placedState = bridgeBlock.defaultBlockState();
+        SoundType soundType = placedState.getSoundType();
+
         context.level().setBlockAndUpdate(buildPos, bridgeBlock.defaultBlockState());
-        context.level().playSound(null, buildPos, placeSound, SoundSource.BLOCKS, 0.5f, 1.0f);
+        context.level().playSound(null, buildPos, soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
+
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.buildCooldown, 1));
         BlockStorage.addBuild(context.level(), buildPos.immutable());
     }
 
-    public void setup(BlockPos buildPos, Block bridgeBlock, SoundEvent placeSound)
+    public void setup(BlockPos buildPos, Block bridgeBlock)
     {
         this.buildPos = buildPos;
         this.bridgeBlock = bridgeBlock;
-        this.placeSound = placeSound;
     }
 }
