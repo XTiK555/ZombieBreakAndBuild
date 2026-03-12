@@ -123,6 +123,18 @@ public class ConfigData
         public double pathCheckInterval = 2.0D;
 
         @Range(min = 0, max = 1000000)
+        @Comment("Distance in blocks up to which distance multiplier for goToTarget/pathCheck-intervals is not applied")
+        public double distanceCooldownStartBlocks = 5.0D;
+
+        @Range(min = 0, max = 1000000)
+        @Comment("Distance in blocks at which the cooldown multiplier for goToTarget/pathCheck-intervals reaches its maximum")
+        public double distanceCooldownMaxBlocks = 64.0D;
+
+        @Range(min = 1.0, max = 1000000)
+        @Comment("Maximum multiplier for goToTarget/pathCheck-intervals based on distance to target")
+        public double distanceCooldownMaxMultiplier = 8.0D;
+
+        @Range(min = 0, max = 1000000)
         @Comment("Time stuck before zombies start breaking or placing blocks (seconds)")
         public double stuckSecondsBeforeBreakAndBuild = 3.0D;
 
