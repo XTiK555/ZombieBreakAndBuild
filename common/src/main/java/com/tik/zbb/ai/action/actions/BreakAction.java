@@ -15,6 +15,11 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction
 {
+    private static final int MAX_EFFECTIVE_HARDNESS = 50;
+    private static final float HARDNESS_TO_HEALTH_MULTIPLIER = 6.0f;
+    private static final int MIN_BLOCK_HEALTH = 1;
+    private static final double DAMAGE_SCALE_EXPONENT = 0.58D;
+
     private BlockPos breakPos;
 
     @Override
@@ -36,16 +41,17 @@ public class BreakAction implements IMobAction
         int damageToBlocks = context.configSnapshot().data().balance.scaleDamageToBlocksWithHitbox
                 ? getScaledDamageToBlocks(context)
                 : context.configSnapshot().data().balance.damageToBlocks;
-        int damageGave = BlockStorage.addDamage(context.level(), breakPos, damageToBlocks);
 
-        if (damageGave >= blockHealth)
+        int totalDamage = BlockStorage.addDamage(context.level(), breakPos, damageToBlocks);
+
+        if (totalDamage >= blockHealth)
         {
             BlockStorage.removeDamageData(context.level(), breakPos);
             context.level().destroyBlock(breakPos, true);
         }
         else
         {
-            int stage = Math.min(9, (damageGave * 10) / blockHealth);
+            int stage = Math.min(9, (totalDamage * 10) / blockHealth);
             context.level().destroyBlockProgress(breakPos.hashCode(), breakPos, stage);
             context.level().levelEvent(2001, breakPos, Block.getId(state)); // particles and sound
         }
@@ -63,9 +69,11 @@ public class BreakAction implements IMobAction
     {
         BlockState blockState = level.getBlockState(blockPos);
         float hardness = blockState.getDestroySpeed(level, blockPos);
+
         if (hardness < 0) return Integer.MAX_VALUE;
-        if (hardness != Integer.MAX_VALUE) hardness = Math.min(hardness, 50.0f);
-        return hardness != Integer.MAX_VALUE ? Math.max(2, (int) (hardness * 6.0f)) : Integer.MAX_VALUE;
+
+        hardness = Math.min(hardness, MAX_EFFECTIVE_HARDNESS);
+        return Math.max(MIN_BLOCK_HEALTH, (int) (hardness * HARDNESS_TO_HEALTH_MULTIPLIER));
     }
 
     private int getScaledDamageToBlocks(MobActionContext context)
@@ -81,7 +89,7 @@ public class BreakAction implements IMobAction
 
         double mobVolume = width * width * height;
         double volumeRatio = mobVolume / baseVolume;
-        double multiplier = Math.pow(volumeRatio, 0.58D);
+        double multiplier = Math.pow(volumeRatio, DAMAGE_SCALE_EXPONENT);
 
         return Math.max(1, (int) Math.round(baseDamage * multiplier));
     }
