@@ -5,6 +5,7 @@ import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.Priority;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.ai.state.tactic.tactics.*;
+import com.tik.zbb.utilities.DistanceIntervalUtility;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Node;
@@ -41,7 +42,8 @@ public class BreakAndBuildState implements IMobState
 
         if (context.getAiTimers().checkPathCooldownPassed(now))
         {
-            context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.pathCheckInterval, 1));
+            double pathCheckSeconds = DistanceIntervalUtility.applyDistanceMultiplier(context.getConfigSnapshot().data().balance.pathCheckInterval, context.getMob().distanceTo(context.getTarget()), context.getConfigSnapshot().data());
+            context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(pathCheckSeconds, 1));
 
             PathNavigation nav = context.getMob().getNavigation();
             Path path = nav.getPath();
