@@ -137,16 +137,16 @@ public class ConfigData
 
     public static class Audio
     {
-        @ResourceLocationString
+        @Range(min = 0, max = 1000000)
         @Comment("Sound played when placing a block")
-        public String placeSoundId = "minecraft:block.rooted_dirt.place";
+        public float placeSoundVolumeMultiplier = 1f;
 
-        @ResourceLocationString
+        @Range(min = 0, max = 1000000)
         @Comment("Sound played when hitting a block")
-        public String hitSoundId = "minecraft:entity.zombie.attack_wooden_door";
+        public float hitSoundVolumeMultiplier = 1f;
 
-        @ResourceLocationString
+        @Range(min = 0, max = 1000000)
         @Comment("Sound played when breaking a block")
-        public String breakSoundId = "minecraft:entity.zombie.break_wooden_door";
+        public float breakSoundVolumeMultiplier = 1f;
     }
 }

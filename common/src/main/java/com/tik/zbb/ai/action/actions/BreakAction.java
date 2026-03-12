@@ -6,16 +6,14 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction
 {
     private BlockPos breakPos;
-    private SoundEvent breakSound;
-    private SoundEvent hitSound;
 
     @Override
     public boolean canExecute(MobActionContext context)
@@ -35,26 +33,27 @@ public class BreakAction implements IMobAction
         int blockHealth = getBlockHealth(breakPos, context.level());
         int damageGave = BlockStorage.addDamage(context.level(), breakPos, context.configSnapshot().data().balance.damageToBlocks);
 
+
         if (damageGave >= blockHealth)
         {
             BlockStorage.removeDamageData((ServerLevel) context.level(), breakPos);
+            BlockStorage.removeDamageData(context.level(), breakPos);
             context.level().destroyBlock(breakPos, true);
-            context.level().playSound(null, breakPos, breakSound, SoundSource.HOSTILE, 0.25f, 1.0f);
         }
         else
         {
-            context.level().levelEvent(2001, breakPos, Block.getId(state)); // particles
+            int stage = Math.min(9, (damageGave * 10) / blockHealth);
             context.level().playSound(null, breakPos, hitSound, SoundSource.HOSTILE, 0.25f, 1.0f);
+            context.level().levelEvent(2001, breakPos, Block.getId(state)); // particles and sound
         }
+
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.breakCooldown, 1));
     }
 
-    public void setup(BlockPos breakPos, SoundEvent breakSound, SoundEvent hitSound)
+    public void setup(BlockPos breakPos)
     {
         this.breakPos = breakPos;
-        this.breakSound = breakSound;
-        this.hitSound = hitSound;
     }
 
     private int getBlockHealth(BlockPos blockPos, ServerLevel level)

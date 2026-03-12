@@ -12,8 +12,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
@@ -48,7 +46,7 @@ public final class ActionExecutor
     public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
-        breakAction.setup(breakPos, configCache.breakSound, configCache.hitSound);
+        breakAction.setup(breakPos);
 
         return tryExecuteAction(breakAction);
     }
@@ -56,7 +54,7 @@ public final class ActionExecutor
     public boolean tryExecuteBuildAction(BlockPos buildPos)
     {
         keepDataUpToDate();
-        buildAction.setup(buildPos, configCache.bridgeBlock, configCache.placeSound);
+        buildAction.setup(buildPos, configCache.bridgeBlock);
 
         return tryExecuteAction(buildAction);
     }
@@ -115,27 +113,14 @@ public final class ActionExecutor
     {
         if (configCache == null) configCache = new ConfigCache();
 
-        Registry<SoundEvent> soundEventRegistry = level.registryAccess().registryOrThrow(Registries.SOUND_EVENT);
         Registry<Block> blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK);
 
-        SoundEvent placeSound = soundEventRegistry.get(ResourceLocation.tryParse(configData.placeSoundId));
-        configCache.placeSound = placeSound != null ? placeSound : SoundEvents.ROOTED_DIRT_PLACE;
-
-        SoundEvent breakSound = soundEventRegistry.get(ResourceLocation.tryParse(configData.breakSoundId));
-        configCache.breakSound = breakSound != null ? breakSound : SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR;
-
-        SoundEvent hitSound = soundEventRegistry.get(ResourceLocation.tryParse(configData.hitSoundId));
-        configCache.hitSound = hitSound != null ? hitSound : SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR;
-
-        Block bridgeBlock = blockRegistry.get(ResourceLocation.tryParse(configData.bridgeBlockId));
+        Block bridgeBlock = blockRegistry.get(ResourceLocation.tryParse(configData.blocks.bridgeBlockId));
         configCache.bridgeBlock = bridgeBlock != null ? bridgeBlock : Blocks.DIRT;
     }
 
     private class ConfigCache
     {
-        public SoundEvent hitSound;
-        public SoundEvent breakSound;
-        public SoundEvent placeSound;
         public Block bridgeBlock;
     }
 }
