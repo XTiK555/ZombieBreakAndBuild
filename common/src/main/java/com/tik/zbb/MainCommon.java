@@ -97,7 +97,8 @@ public class MainCommon
         Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().registryOrThrow(Registries.ENTITY_TYPE);
         ResourceLocation entityId = entityTypeRegistry.getKey(mob.getType());
 
-        if (entityId != null && config.ignoreHostileEntityIdSet.contains(entityId)) return false;
+        if (entityId != null && config.ignoreBuildEntityIdSet.contains(entityId) && config.ignoreBreakEntityIdSet.contains(entityId))
+            return false;
         if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
         if (mob.getType().getCategory() != MobCategory.MONSTER) return false;
         if (config.ai.applyToAllMonsters) return true;
