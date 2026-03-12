@@ -46,7 +46,10 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
 
                     if (!context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos))
                     {
-                        context.getActionExecutor().tryExecuteBuildAction(blockCover);
+                        if (!context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos))
+                        {
+                            context.getActionExecutor().tryExecuteBuildAction(blockCover);
+                        }
                     }
                 }
             }
