@@ -29,6 +29,16 @@ public final class BlockStorage
         whenMap.put(key, level.getGameTime());
     }
 
+    public static void removeBuildData(ServerLevel level, BlockPos pos)
+    {
+        long key = pos.asLong();
+        var buildMap = buildsByPosMap.get(level);
+        var builtTimeMap = builtTickByPosMap.get(level);
+
+        if (buildMap != null) buildMap.remove(key);
+        if (builtTimeMap != null) builtTimeMap.remove(key);
+    }
+
     public static boolean buildMapContains(ServerLevel level, BlockPos pos)
     {
         long key = pos.asLong();
