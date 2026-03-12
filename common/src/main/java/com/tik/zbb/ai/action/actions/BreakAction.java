@@ -6,9 +6,7 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction
@@ -31,8 +29,10 @@ public class BreakAction implements IMobAction
     {
         BlockState state = context.level().getBlockState(breakPos);
         int blockHealth = getBlockHealth(breakPos, context.level());
-        int damageGave = BlockStorage.addDamage(context.level(), breakPos, context.configSnapshot().data().balance.damageToBlocks);
-
+        int damageToBlocks = context.configSnapshot().data().balance.scaleDamageToBlocksWithHitbox
+                ? getScaledDamageToBlocks(context)
+                : context.configSnapshot().data().balance.damageToBlocks;
+        int damageGave = BlockStorage.addDamage(context.level(), breakPos, damageToBlocks);
 
         if (damageGave >= blockHealth)
         {
@@ -62,5 +62,23 @@ public class BreakAction implements IMobAction
         if (hardness < 0) return Integer.MAX_VALUE;
         if (hardness != Integer.MAX_VALUE) hardness = Math.min(hardness, 50.0f);
         return hardness != Integer.MAX_VALUE ? Math.max(2, (int) (hardness * 6.0f)) : Integer.MAX_VALUE;
+    }
+
+    private int getScaledDamageToBlocks(MobActionContext context)
+    {
+        double baseDamage = context.configSnapshot().data().balance.damageToBlocks;
+
+        double width = context.mob().getBbWidth();
+        double height = context.mob().getBbHeight();
+
+        double zombieWidth = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().width();
+        double zombieHeight = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().height();
+        double baseVolume = zombieWidth * zombieWidth * zombieHeight;
+        
+        double mobVolume = width * width * height;
+        double volumeRatio = mobVolume / baseVolume;
+        double multiplier = Math.pow(volumeRatio, 0.58D);
+
+        return Math.max(1, (int) Math.round(baseDamage * multiplier));
     }
 }
