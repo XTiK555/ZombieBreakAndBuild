@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.WeakHashMap;
+import java.util.function.LongConsumer;
 
 public final class BlockStorage
 {
@@ -48,7 +49,7 @@ public final class BlockStorage
 
     public static void cleanUpBuildData(ServerLevel level, long ttlTicks)
     {
-        cleanup(level, buildsByPosMap, builtTickByPosMap, ttlTicks);
+        cleanup(level, buildsByPosMap, builtTickByPosMap, ttlTicks, null);
     }
 
     public static int addDamage(ServerLevel level, BlockPos pos, int addDamage)
@@ -70,14 +71,19 @@ public final class BlockStorage
         var last = lastDamageTickByPosMap.get(level);
         if (map != null) map.remove(key);
         if (last != null) last.remove(key);
+        level.destroyBlockProgress(pos.hashCode(), pos, -1);
     }
 
     public static void cleanUpDamageData(ServerLevel level, long ttlTicks)
     {
-        cleanup(level, damageByPosMap, lastDamageTickByPosMap, ttlTicks);
+        cleanup(level, damageByPosMap, lastDamageTickByPosMap, ttlTicks, key ->
+        {
+            BlockPos pos = BlockPos.of(key);
+            level.destroyBlockProgress(pos.hashCode(), pos, -1);
+        });
     }
 
-    private static void cleanup(ServerLevel level, WeakHashMap<ServerLevel, Long2IntOpenHashMap> valueMap, WeakHashMap<ServerLevel, Long2LongOpenHashMap> timeMap, long ttlTicks)
+    private static void cleanup(ServerLevel level, WeakHashMap<ServerLevel, Long2IntOpenHashMap> valueMap, WeakHashMap<ServerLevel, Long2LongOpenHashMap> timeMap, long ttlTicks, LongConsumer onExpire)
     {
         Long2IntOpenHashMap values = valueMap.get(level);
         Long2LongOpenHashMap times = timeMap.get(level);
@@ -96,6 +102,7 @@ public final class BlockStorage
             {
                 it.remove();
                 values.remove(key);
+                if (onExpire != null) onExpire.accept(key);
             }
         }
     }
