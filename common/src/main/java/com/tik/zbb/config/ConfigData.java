@@ -19,13 +19,15 @@ public class ConfigData
     public Audio audio = new Audio();
 
     public transient Set<ResourceLocation> dangerousBlockIdSet = Set.of();
-    public transient Set<ResourceLocation> ignoreHostileEntityIdSet = Set.of();
+    public transient Set<ResourceLocation> ignoreBuildEntityIdSet = Set.of();
+    public transient Set<ResourceLocation> ignoreBreakEntityIdSet = Set.of();
     public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
 
     public void rebuildSets()
     {
         dangerousBlockIdSet = idListToSet(blocks.dangerousBlockIdList);
-        ignoreHostileEntityIdSet = idListToSet(ai.ignoreEntityIdList);
+        ignoreBuildEntityIdSet = idListToSet(ai.ignoreBuildEntityIdList);
+        ignoreBreakEntityIdSet = idListToSet(ai.ignoreBreakEntityIdList);
         additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
     }
 
@@ -80,8 +82,27 @@ public class ConfigData
         public List<String> additionalEntityIdList = new ArrayList<>();
 
         @ResourceLocationList
-        @Comment("IDs of entities that will NOT be given the ability to break and place blocks")
-        public List<String> ignoreEntityIdList = new ArrayList<>();
+        @Comment("IDs of entities that will NOT be given the ability to place blocks")
+        public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
+                "minecraft:ender_dragon",
+                "minecraft:ghast",
+                "minecraft:phantom",
+                "minecraft:blaze",
+                "minecraft:vex",
+                "minecraft:elder_guardian",
+                "minecraft:guardian",
+                "minecraft:shulker",
+                "minecraft:wither",
+                "minecraft:breeze"
+        ));
+
+        @ResourceLocationList
+        @Comment("IDs of entities that will NOT be given the ability to break blocks")
+        public List<String> ignoreBreakEntityIdList = new ArrayList<>(List.of(
+                "minecraft:ender_dragon",
+                "minecraft:shulker",
+                "minecraft:wither"
+        ));
 
         @Range(min = 0, max = 1000000)
         @Comment("Target search radius")

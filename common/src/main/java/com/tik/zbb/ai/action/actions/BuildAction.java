@@ -5,7 +5,11 @@ import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,7 +27,7 @@ public class BuildAction implements IMobAction
         boolean canReplaced = context.level().isLoaded(buildPos) && blockState.canBeReplaced();
         boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
 
-        return cooldownPassed && canReplaced;
+        return cooldownPassed && canReplaced && canMobBuild(context);
     }
 
     @Override
@@ -44,5 +48,12 @@ public class BuildAction implements IMobAction
     {
         this.buildPos = buildPos;
         this.bridgeBlock = bridgeBlock;
+    }
+
+    private boolean canMobBuild(MobActionContext context)
+    {
+        Registry<EntityType> entityTypeRegistry = context.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
+        Identifier mobId = entityTypeRegistry.getKey(context.mob().getType());
+        return !context.configSnapshot().data().ignoreBuildEntityIdSet.contains(mobId);
     }
 }
