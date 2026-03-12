@@ -9,7 +9,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class ClearObstaclesToTargetTactic implements IMobTactic
 {
-    private final double MAX_CHECK_DISTANCE = 0.8;
+    private final double MAX_CHECK_DISTANCE = 0.9;
 
     @Override
     public void execute(MobStateContext context)
