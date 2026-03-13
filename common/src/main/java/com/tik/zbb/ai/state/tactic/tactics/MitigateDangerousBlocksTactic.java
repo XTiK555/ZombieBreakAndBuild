@@ -1,6 +1,5 @@
 package com.tik.zbb.ai.state.tactic.tactics;
 
-import com.tik.zbb.Constants;
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.SecondsToTicksUtility;

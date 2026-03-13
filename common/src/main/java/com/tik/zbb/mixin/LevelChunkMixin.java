@@ -1,6 +1,6 @@
 package com.tik.zbb.mixin;
 
-import com.tik.zbb.BlockStorage;
+import com.tik.zbb.blockstorage.BlockStorages;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -32,8 +32,8 @@ public abstract class LevelChunkMixin
 
         if (!oldState.is(newState.getBlock()))
         {
-            BlockStorage.removeDamageData(serverLevel, pos);
-            BlockStorage.removeBuildData(serverLevel, pos);
+            BlockStorages.DAMAGE.remove(serverLevel, pos);
+            BlockStorages.BUILD.remove(serverLevel, pos);
         }
     }
 }

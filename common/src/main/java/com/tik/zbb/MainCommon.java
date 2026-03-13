@@ -1,5 +1,6 @@
 package com.tik.zbb;
 
+import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
@@ -45,16 +46,14 @@ public class MainCommon
     public static void onLevelTick(ServerLevel level)
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
+
         long now = level.getGameTime();
         int interval = 10;
 
         if (now % interval == 0)
         {
-            long damageTtl = SecondsToTicksUtility.toTicks(config.balance.damageStoreTime);
-            long buildTtl = SecondsToTicksUtility.toTicks(config.balance.builtBlocksProtectionTime);
-
-            BlockStorage.cleanUpDamageData(level, damageTtl);
-            BlockStorage.cleanUpBuildData(level, buildTtl);
+            BlockStorages.DAMAGE.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.damageStoreTime));
+            BlockStorages.BUILD.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.builtBlocksProtectionTime));
         }
     }
 
