@@ -1,8 +1,8 @@
 package com.tik.zbb.ai.action.actions;
 
-import com.tik.zbb.BlockStorage;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
+import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -41,7 +41,7 @@ public class BuildAction implements IMobAction
 
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.buildCooldown, 1));
-        BlockStorage.addBuild(context.level(), buildPos.immutable());
+        BlockStorages.BUILD.addBuildData(context.level(), buildPos.immutable());
     }
 
     public void setup(BlockPos buildPos, Block bridgeBlock)

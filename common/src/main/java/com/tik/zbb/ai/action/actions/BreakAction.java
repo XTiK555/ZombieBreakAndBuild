@@ -1,8 +1,8 @@
 package com.tik.zbb.ai.action.actions;
 
-import com.tik.zbb.BlockStorage;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
+import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -27,7 +27,7 @@ public class BreakAction implements IMobAction
     {
         boolean isAir = context.level().getBlockState(breakPos).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
-        boolean notRecentlyBuilt = !BlockStorage.buildMapContains(context.level(), breakPos);
+        boolean notRecentlyBuilt = !BlockStorages.BUILD.contains(context.level(), breakPos);
         boolean unbreakable = getBlockHealth(breakPos, context.level()) == Integer.MAX_VALUE;
 
         return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak(context);
@@ -42,11 +42,11 @@ public class BreakAction implements IMobAction
                 ? getScaledDamageToBlocks(context)
                 : context.configSnapshot().data().balance.damageToBlocks;
 
-        int totalDamage = BlockStorage.addDamage(context.level(), breakPos, damageToBlocks);
+        int totalDamage = BlockStorages.DAMAGE.addDamageData(context.level(), breakPos, damageToBlocks);
 
         if (totalDamage >= blockHealth)
         {
-            BlockStorage.removeDamageData(context.level(), breakPos);
+            BlockStorages.DAMAGE.remove(context.level(), breakPos);
             context.level().destroyBlock(breakPos, true);
         }
         else
