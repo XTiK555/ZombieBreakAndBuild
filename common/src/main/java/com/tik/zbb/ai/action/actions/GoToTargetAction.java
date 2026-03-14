@@ -2,13 +2,11 @@ package com.tik.zbb.ai.action.actions;
 
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
-import com.tik.zbb.utilities.DistanceIntervalUtility;
+import com.tik.zbb.utilities.DistanceMultiplierUtility;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
@@ -38,7 +36,12 @@ public class GoToTargetAction implements IMobAction
         mob.getNavigation().moveTo(target, 1.0);
         lastPathTargetPos = target.position();
 
-        double cooldownSeconds = DistanceIntervalUtility.applyDistanceMultiplier(context.configSnapshot().data().balance.goToTargetInterval, mob.distanceTo(target), context.configSnapshot().data());
+        double cooldownSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
+                context.configSnapshot().data().balance.goToTargetInterval,
+                mob.distanceTo(target),
+                context.configSnapshot().data().balance.distanceCooldownStartBlocks,
+                context.configSnapshot().data().balance.distanceCooldownMaxBlocks,
+                context.configSnapshot().data().balance.distanceCooldownMaxMultiplier);
         context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(cooldownSeconds, 1));
     }
 
