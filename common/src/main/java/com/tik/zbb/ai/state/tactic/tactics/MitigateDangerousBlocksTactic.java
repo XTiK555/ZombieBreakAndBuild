@@ -14,9 +14,9 @@ import net.minecraft.world.level.block.state.BlockState;
 public class MitigateDangerousBlocksTactic implements IMobTactic
 {
     private Registry<Block> blockRegistry;
-    private BlockPos.MutableBlockPos mobPos;
-    private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
-    private BlockPos.MutableBlockPos blockCover = new BlockPos.MutableBlockPos();
+
+    private final BlockPos.MutableBlockPos scanPos = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos coverPos = new BlockPos.MutableBlockPos();
 
     @Override
     public void execute(MobStateContext context)
@@ -24,12 +24,11 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
+        if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().registryOrThrow(Registries.BLOCK);
         int radius = context.getConfigSnapshot().data().ai.dangerousBlocksSearchRadius;
-        mobPos = context.getMob().blockPosition().mutable();
-
-        int baseX = mobPos.getX();
-        int baseY = mobPos.getY();
-        int baseZ = mobPos.getZ();
+        int mobX = context.getMob().getBlockX();
+        int mobY = context.getMob().getBlockY();
+        int mobZ = context.getMob().getBlockZ();
 
         for (int dy = -radius; dy <= radius; dy++)
         {
@@ -37,20 +36,12 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
             {
                 for (int dz = -radius; dz <= radius; dz++)
                 {
-                    tmpBlockPos.set(baseX + dx, baseY + dy, baseZ + dz);
-                    BlockState blockState = context.getLevel().getBlockState(tmpBlockPos);
+                    scanPos.set(mobX + dx, mobY + dy, mobZ + dz);
+                    BlockState blockState = context.getLevel().getBlockState(scanPos);
 
                     if (!isDangerous(blockState, context)) continue;
 
-                    blockCover.set(tmpBlockPos.getX(), tmpBlockPos.getY() + 1, tmpBlockPos.getZ());
-
-                    if (!context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos))
-                    {
-                        if (!context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos))
-                        {
-                            context.getActionExecutor().tryExecuteBuildAction(blockCover);
-                        }
-                    }
+                    handleDangerousBlock(scanPos, context);
                 }
             }
         }
@@ -58,11 +49,20 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.searchDangerousBlocksInterval, 1));
     }
 
+    private void handleDangerousBlock(BlockPos blockPos, MobStateContext context)
+    {
+        if (!context.getActionExecutor().tryExecuteBuildAction(blockPos))
+        {
+            if (!context.getActionExecutor().tryExecuteBreakAction(blockPos))
+            {
+                coverPos.set(blockPos.getX(), blockPos.getY() + 1, blockPos.getZ());
+                context.getActionExecutor().tryExecuteBuildAction(coverPos);
+            }
+        }
+    }
+
     private boolean isDangerous(BlockState state, MobStateContext context)
     {
-        if (blockRegistry == null)
-            blockRegistry = context.getLevel().registryAccess().registryOrThrow(Registries.BLOCK);
-
         ResourceLocation id = blockRegistry.getKey(state.getBlock());
         if (id == null) return false;
 
