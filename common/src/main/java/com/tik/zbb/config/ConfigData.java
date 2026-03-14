@@ -106,10 +106,6 @@ public class ConfigData
         ));
 
         @Range(min = 0, max = 1000000)
-        @Comment("Target search radius")
-        public int targetSearchRadius = 35;
-
-        @Range(min = 0, max = 1000000)
         @Comment("The radius within which zombies will see dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
     }

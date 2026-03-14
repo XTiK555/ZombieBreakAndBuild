@@ -63,8 +63,7 @@ public class MainCommon
 
         if (!matchesZbbMobFilter(mob, config)) return;
         if (!(mob instanceof MobAccessor pFMobAccessor)) return;
-
-        AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
+        
         PathfinderMob pFMob = (PathfinderMob) mob;
         GoalSelector targetSelector = pFMobAccessor.zbb$getTargetSelector();
         GoalSelector goalSelector = pFMobAccessor.zbb$getGoalSelector();
@@ -87,11 +86,6 @@ public class MainCommon
             }
 
             targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal(pFMob, vanillaNatg));
-        }
-
-        if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < config.ai.targetSearchRadius)
-        {
-            followRangeAttribute.setBaseValue(config.ai.targetSearchRadius);
         }
     }
 
