@@ -67,20 +67,27 @@ public class MainCommon
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
         PathfinderMob pFMob = (PathfinderMob) mob;
         GoalSelector targetSelector = pFMobAccessor.zbb$getTargetSelector();
-        Set<WrappedGoal> wrapped = ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals();
-        List<NearestAttackableTargetGoal<?>> vanillaNatg = new ArrayList<>();
-        for (WrappedGoal wg : wrapped)
-        {
-            Goal g = wg.getGoal();
-            if (g instanceof NearestAttackableTargetGoal<?> natg)
-            {
-                vanillaNatg.add(natg);
-            }
-        }
+        GoalSelector goalSelector = pFMobAccessor.zbb$getGoalSelector();
 
-        pFMobAccessor.zbb$getGoalSelector().addGoal(2, new BreakAndBuildGoal(pFMob));
-        pFMobAccessor.zbb$getTargetSelector().addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
-        pFMobAccessor.zbb$getTargetSelector().addGoal(1, new ThroughWallsNearestTargetGoal(pFMob, vanillaNatg));
+        if (!hasGoal(goalSelector, BreakAndBuildGoal.class))
+            goalSelector.addGoal(2, new BreakAndBuildGoal(pFMob));
+        if (!hasGoal(targetSelector, AlwaysSeeNearestPlayerGoal.class))
+            targetSelector.addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
+        if (!hasGoal(targetSelector, ThroughWallsNearestTargetGoal.class))
+        {
+            Set<WrappedGoal> wrapped = ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals();
+            List<NearestAttackableTargetGoal<?>> vanillaNatg = new ArrayList<>();
+            for (WrappedGoal wg : wrapped)
+            {
+                Goal g = wg.getGoal();
+                if (g instanceof NearestAttackableTargetGoal<?> natg)
+                {
+                    vanillaNatg.add(natg);
+                }
+            }
+
+            targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal(pFMob, vanillaNatg));
+        }
 
         if (followRangeAttribute != null && followRangeAttribute.getBaseValue() < config.ai.targetSearchRadius)
         {
@@ -103,5 +110,17 @@ public class MainCommon
         if (config.ai.applyToAllMonsters) return true;
 
         return mob instanceof Zombie || mob instanceof Drowned || mob instanceof Husk || mob instanceof ZombieVillager;
+    }
+
+    private static boolean hasGoal(GoalSelector selector, Class<? extends Goal> goalClass)
+    {
+        for (WrappedGoal wrapped : selector.getAvailableGoals())
+        {
+            if (goalClass.isInstance(wrapped.getGoal()))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

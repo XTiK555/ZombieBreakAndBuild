@@ -1,9 +1,12 @@
 package com.tik.zbb.blockstorage;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -39,22 +42,27 @@ public abstract class BaseBlockStorage<TEntry>
 
     public void cleanup(ServerLevel level, long ttlTicks)
     {
-        var map = entriesByLevel.get(level);
-        if (map == null) return;
+        Long2ObjectMap<TEntry> map = entriesByLevel.get(level);
+        if (map == null || map.isEmpty()) return;
 
-        long now = level.getGameTime();
-        var it = map.long2ObjectEntrySet().fastIterator();
+        List<Long> expiredKeys = new ArrayList<>();
 
-        while (it.hasNext())
+        for (Long2ObjectMap.Entry<TEntry> entry : map.long2ObjectEntrySet())
         {
-            var e = it.next();
-            long key = e.getLongKey();
-            TEntry entry = e.getValue();
-
-            if (isExpired(entry, now, ttlTicks))
+            if (isExpired(entry.getValue(), level.getGameTime(), ttlTicks))
             {
-                it.remove();
+                expiredKeys.add(entry.getLongKey());
             }
+        }
+
+        for (long posKey : expiredKeys)
+        {
+            remove(level, BlockPos.of(posKey));
+        }
+
+        if (map.isEmpty())
+        {
+            entriesByLevel.remove(level);
         }
     }
 

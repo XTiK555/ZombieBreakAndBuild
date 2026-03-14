@@ -66,7 +66,6 @@ public final class ConfigManager
             ConfigSanitizer.sanitize(FILE_CONFIG, defaults, SERIALIZER);
 
             ConfigData loaded = DESERIALIZER.deserializeFields(FILE_CONFIG, ConfigData::new);
-            loaded.rebuildSets();
 
             setData(loaded);
             save();
@@ -112,6 +111,7 @@ public final class ConfigManager
 
     private static void setData(ConfigData data)
     {
+        data.rebuildSets();
         DATA = data;
         VERSION++;
     }
