@@ -13,8 +13,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class MitigateDangerousBlocksTactic implements IMobTactic
 {
-    private Registry<Block> blockRegistry;
-
     private final BlockPos.MutableBlockPos scanPos = new BlockPos.MutableBlockPos();
     private final BlockPos.MutableBlockPos coverPos = new BlockPos.MutableBlockPos();
 
@@ -24,7 +22,6 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
-        if (blockRegistry == null) blockRegistry = context.getLevel().registryAccess().registryOrThrow(Registries.BLOCK);
         int radius = context.getConfigSnapshot().data().ai.dangerousBlocksSearchRadius;
         int mobX = context.getMob().getBlockX();
         int mobY = context.getMob().getBlockY();
@@ -63,11 +60,11 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
 
     private boolean isDangerous(BlockState state, MobStateContext context)
     {
+        Registry<Block> blockRegistry = context.getLevel().registryAccess().registryOrThrow(Registries.BLOCK);
         ResourceLocation id = blockRegistry.getKey(state.getBlock());
+
         if (id == null) return false;
-
         if (!context.getConfigSnapshot().data().dangerousBlockIdSet.contains(id)) return false;
-
         if (state.getBlock() instanceof CampfireBlock)
         {
             return state.getValue(CampfireBlock.LIT);
