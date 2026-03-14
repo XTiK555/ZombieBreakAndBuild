@@ -17,6 +17,8 @@ out
 # gradle
 build
 .gradle
+!common/src/main/java/com/tik/zbb/blockstorage/storages/build/
+!common/src/main/java/com/tik/zbb/blockstorage/storages/build/**
 
 # other
 eclipse

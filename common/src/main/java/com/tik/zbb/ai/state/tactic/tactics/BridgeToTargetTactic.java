@@ -12,8 +12,12 @@ import net.minecraft.world.phys.Vec3;
 
 public class BridgeToTargetTactic implements IMobTactic
 {
-    private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
-    private BlockPos.MutableBlockPos frontBlockPos = new BlockPos.MutableBlockPos();
+    private final Vec3 DOWN_SCAN_VEC = new Vec3(0.0, -1.0, 0.0);
+
+    private final BlockPos.MutableBlockPos frontBlockPos = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos belowMobPos = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos belowFrontPos = new BlockPos.MutableBlockPos();
+    private final BlockPos.MutableBlockPos twoBelowFrontPos = new BlockPos.MutableBlockPos();
 
     @Override
     public void execute(MobStateContext context)
@@ -23,24 +27,27 @@ public class BridgeToTargetTactic implements IMobTactic
         int mobZ = Mth.floor(context.getMob().getZ());
         int targetY = Mth.floor(context.getTarget().getY());
 
-        boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), new Vec3(0, -1, 0)) == null;
-        if (belowUsEmpty && targetY >= context.getMob().getY())
+        updateFrontBlock(context.getMob(), context.getTarget());
+        belowMobPos.set(mobX, mobY - 1, mobZ);
+        belowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ());
+        twoBelowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ());
+
+        boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), DOWN_SCAN_VEC) == null;
+        if (belowUsEmpty && targetY >= mobY)
         {
-            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, mobY - 1, mobZ));
+            context.getActionExecutor().tryExecuteBuildAction(belowMobPos);
         }
 
-        frontBlockPos = getFrontBlock(context.getMob(), context.getTarget()).mutable();
-
         boolean frontEmpty = IsFreePassUtility.isFreePass(frontBlockPos, context.getLevel());
-        boolean belowFrontEmpty = IsFreePassUtility.isFreePass(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()), context.getLevel());
-        boolean below2FrontEmpty = IsFreePassUtility.isFreePass(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ()), context.getLevel());
+        boolean belowFrontEmpty = IsFreePassUtility.isFreePass(belowFrontPos, context.getLevel());
+        boolean below2FrontEmpty = IsFreePassUtility.isFreePass(twoBelowFrontPos, context.getLevel());
         if (frontEmpty && belowFrontEmpty && below2FrontEmpty)
         {
-            context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ()));
+            context.getActionExecutor().tryExecuteBuildAction(belowFrontPos);
         }
     }
 
-    public static BlockPos getFrontBlock(Mob mob, LivingEntity target)
+    public void updateFrontBlock(Mob mob, LivingEntity target)
     {
         var box = mob.getBoundingBox();
 
@@ -49,7 +56,10 @@ public class BridgeToTargetTactic implements IMobTactic
 
         double len = Math.sqrt(dx * dx + dz * dz);
         if (len < 1e-6)
-            return mob.blockPosition();
+        {
+            frontBlockPos.set(mob.getX(), mob.getY(), mob.getZ());
+            return;
+        }
 
         dx /= len;
         dz /= len;
@@ -64,6 +74,6 @@ public class BridgeToTargetTactic implements IMobTactic
         int blockY = Mth.floor(box.minY);
         int blockZ = Mth.floor(frontZ);
 
-        return new BlockPos(blockX, blockY, blockZ);
+        frontBlockPos.set(blockX, blockY, blockZ);
     }
 }
