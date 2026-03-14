@@ -11,7 +11,7 @@ import static com.tik.zbb.utilities.IsFreePassUtility.isFreePass;
 
 public class AdjustHeightToTargetTactic implements IMobTactic
 {
-    private BlockPos.MutableBlockPos tmpBlockPos = new BlockPos.MutableBlockPos();
+    private BlockPos.MutableBlockPos currentMobPos = new BlockPos.MutableBlockPos();
 
     @Override
     public void execute(MobStateContext context)
@@ -20,6 +20,7 @@ public class AdjustHeightToTargetTactic implements IMobTactic
         int mobY = Mth.floor(context.getMob().getY());
         int mobZ = Mth.floor(context.getMob().getZ());
         int targetY = Mth.floor(context.getTarget().getY());
+        currentMobPos.set(mobX, mobY, mobZ);
 
         if (targetY > mobY + 1)
         {
@@ -28,13 +29,13 @@ public class AdjustHeightToTargetTactic implements IMobTactic
             // If there is space above
             if (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel()))
             {
-                if (context.getActionExecutor().tryExecuteBuildAction(tmpBlockPos.set(mobX, mobY, mobZ)))
+                if (context.getActionExecutor().tryExecuteBuildAction(currentMobPos))
                 {
                     context.getMob().getJumpControl().jump();
                 }
                 else
                 {
-                    context.getActionExecutor().tryExecuteBreakAction(tmpBlockPos.set(mobX, mobY, mobZ));
+                    context.getActionExecutor().tryExecuteBreakAction(currentMobPos);
                 }
             }
         }
