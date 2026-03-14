@@ -13,6 +13,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
@@ -33,12 +34,15 @@ public final class ActionExecutor
         if (!(mob.level() instanceof ServerLevel level))
             throw new IllegalStateException("The mob level is not the serverLevel.");
 
+        Registry<EntityType> entityTypeRegistry = level.registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
+
         mobActionContext = new MobActionContext(
                 level,
                 ConfigManager.getConfigSnapshot(),
                 mob,
                 this,
-                aiTimers
+                aiTimers,
+                entityTypeRegistry.getKey(mob.getType())
         );
 
         reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
@@ -101,7 +105,8 @@ public final class ActionExecutor
                     ConfigManager.getConfigSnapshot(),
                     mobActionContext.mob(),
                     this,
-                    mobActionContext.aiTimers()
+                    mobActionContext.aiTimers(),
+                    mobActionContext.mobId()
             );
         }
         if (configDataOutdated)

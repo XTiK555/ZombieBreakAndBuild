@@ -26,8 +26,9 @@ public class BuildAction implements IMobAction
 
         boolean canReplaced = context.level().isLoaded(buildPos) && blockState.canBeReplaced();
         boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
+        boolean canMobBuild = !context.configSnapshot().data().ignoreBuildEntityIdSet.contains(context.mobId());
 
-        return cooldownPassed && canReplaced && canMobBuild(context);
+        return cooldownPassed && canReplaced && canMobBuild;
     }
 
     @Override
@@ -48,12 +49,5 @@ public class BuildAction implements IMobAction
     {
         this.buildPos = buildPos;
         this.bridgeBlock = bridgeBlock;
-    }
-
-    private boolean canMobBuild(MobActionContext context)
-    {
-        Registry<EntityType> entityTypeRegistry = context.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
-        Identifier mobId = entityTypeRegistry.getKey(context.mob().getType());
-        return !context.configSnapshot().data().ignoreBuildEntityIdSet.contains(mobId);
     }
 }
