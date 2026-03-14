@@ -29,8 +29,9 @@ public class BreakAction implements IMobAction
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD.contains(context.level(), breakPos);
         boolean unbreakable = getBlockHealth(breakPos, context.level()) == Integer.MAX_VALUE;
+        boolean canMobBreak = !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(context.mobId());
 
-        return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak(context);
+        return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
     }
 
     @Override
@@ -92,12 +93,5 @@ public class BreakAction implements IMobAction
         double multiplier = Math.pow(volumeRatio, DAMAGE_SCALE_EXPONENT);
 
         return Math.max(1, (int) Math.round(baseDamage * multiplier));
-    }
-
-    private boolean canMobBreak(MobActionContext context)
-    {
-        Registry<EntityType> entityTypeRegistry = context.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
-        Identifier mobId = entityTypeRegistry.getKey(context.mob().getType());
-        return !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(mobId);
     }
 }
