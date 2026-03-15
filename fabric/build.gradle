@@ -14,7 +14,12 @@ dependencies {
     implementation project(":common")
 
     implementation "com.electronwill.night-config:toml:3.8.3"
+    implementation "com.electronwill.night-config:core:3.8.3"
+    include "com.electronwill.night-config:toml:3.8.3"
+    include "com.electronwill.night-config:core:3.8.3"
 
+    implementation "org.greenrobot:eventbus-java:3.3.1"
+    include "org.greenrobot:eventbus-java:3.3.1"
 }
 
 loom {
