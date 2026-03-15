@@ -1,11 +1,19 @@
 package com.tik.zbb.blockstorage.storages.damage;
 
+import com.tik.zbb.ai.action.actions.breakk.BreakAction;
 import com.tik.zbb.blockstorage.BaseBlockStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import org.greenrobot.eventbus.Subscribe;
 
 public class DamageBlockStorage extends BaseBlockStorage<DamageEntry>
 {
+    @Subscribe
+    public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
+    {
+        remove(event.level(), event.pos());
+    }
+
     public int addDamageData(ServerLevel level, BlockPos pos, int addDamage)
     {
         DamageEntry current = get(level, pos);
@@ -19,7 +27,7 @@ public class DamageBlockStorage extends BaseBlockStorage<DamageEntry>
     {
         return now - entry.lastTick() > ttlTicks;
     }
-    
+
     @Override
     protected void onRemove(ServerLevel level, long posKey, DamageEntry entry)
     {

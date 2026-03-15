@@ -3,14 +3,13 @@ package com.tik.zbb.ai.action.actions.breakk;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.event.Events;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
-import net.minecraft.world.Clearable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
@@ -42,22 +41,10 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         if (totalDamage >= blockHealth)
         {
-            boolean blockRestoring = context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
+            boolean dropLoot = !context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
 
-            if (blockRestoring)
-            {
-                BlockStorages.BROKEN.addBrokenData(context.level(), request.pos());
-
-                BlockEntity blockEntity = context.level().getBlockEntity(request.pos());
-                if (blockEntity instanceof Clearable clearable)
-                {
-                    clearable.clearContent();
-                    blockEntity.setChanged();
-                }
-            }
-
-            BlockStorages.DAMAGE.remove(context.level(), request.pos());
-            context.level().destroyBlock(request.pos(), !blockRestoring);
+            Events.BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state));
+            context.level().destroyBlock(request.pos(), dropLoot);
         }
         else
         {
@@ -122,4 +109,6 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         return finalMultiplier;
     }
+
+    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state) {}
 }

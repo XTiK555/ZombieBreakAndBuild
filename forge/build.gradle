@@ -6,6 +6,9 @@ plugins {
 base {
     archivesName = "${mod_name}-forge-${minecraft_version}"
 }
+
+jarJar.enable()
+
 mixin {
     config("${mod_id}.mixins.json")
     config("${mod_id}.forge.mixins.json")
@@ -77,6 +80,16 @@ dependencies {
 
     // Forge's hack fix
     implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+
+    minecraftLibrary "com.electronwill.night-config:toml:3.8.3"
+    minecraftLibrary "org.greenrobot:eventbus-java:3.3.1"
+
+    jarJar("com.electronwill.night-config:toml:[3.8,4.0)") {
+        jarJar.pin(it, "3.8.3")
+    }
+    jarJar("org.greenrobot:eventbus-java:[3.3,4.0)") {
+        jarJar.pin(it, "3.3.1")
+    }
 }
 
 publishing {
