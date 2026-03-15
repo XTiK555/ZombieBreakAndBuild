@@ -1,10 +1,14 @@
 package com.tik.zbb.blockstorage;
 
-import com.tik.zbb.blockstorage.storages.build.BuildBlockStorage;
+import com.tik.zbb.blockstorage.storages.broken.BrokenBlockStorage;
+import com.tik.zbb.blockstorage.storages.buildDisappear.BuildDisappearBlockStorage;
+import com.tik.zbb.blockstorage.storages.buildProtection.BuildProtectionBlockStorage;
 import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorage;
 
 public final class BlockStorages
 {
     public final static DamageBlockStorage DAMAGE = new DamageBlockStorage();
-    public final static BuildBlockStorage BUILD = new BuildBlockStorage();
+    public final static BuildProtectionBlockStorage BUILD_PROTECTION = new BuildProtectionBlockStorage();
+    public final static BuildDisappearBlockStorage BUILD_DISAPPEAR = new BuildDisappearBlockStorage();
+    public final static BrokenBlockStorage BROKEN = new BrokenBlockStorage();
 }

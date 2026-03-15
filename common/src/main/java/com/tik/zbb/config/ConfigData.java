@@ -16,6 +16,7 @@ public class ConfigData
     public Blocks blocks = new Blocks();
     public Ai ai = new Ai();
     public Balance balance = new Balance();
+    public BlockReturning blockReturning = new BlockReturning();
     public Audio audio = new Audio();
 
     public transient Set<Identifier> dangerousBlockIdSet = Set.of();
@@ -187,6 +188,23 @@ public class ConfigData
             @Comment("Interval between searches for dangerous blocks (seconds)")
             public double searchDangerousBlocksInterval = 1.0D;
         }
+    }
+
+    public static class BlockReturning
+    {
+        @Comment("Enable disappearing of blocks placed by zombies")
+        public boolean builtBlocksDisappearing = false;
+
+        @Range(min = 0, max = 1000000)
+        @Comment("Time after which blocks placed by zombies disappear (only if builtBlocksDisappearing is true)")
+        public double builtBlocksDisappearTime = 30.0D;
+
+        @Comment("Enable restoration of blocks broken by zombies")
+        public boolean brokenBlocksRestoring = false;
+
+        @Range(min = 0, max = 1000000)
+        @Comment("Time after which blocks broken by zombies are restored (only if brokenBlocksRestoring is true)")
+        public double brokenBlocksRestoreTime = 30.0D;
     }
 
     public static class Audio
