@@ -1,4 +1,4 @@
-package com.tik.zbb.ai.action.actions;
+package com.tik.zbb.ai.action.actions.gototarget;
 
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
@@ -10,48 +10,40 @@ import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
-public class GoToTargetAction implements IMobAction
+public class GoToTargetAction implements IMobAction<GoToTargetRequest>
 {
     private static final float MAX_TARGET_MOVE_DISTANCE_TO_NEW_PATH = 2.0f;
 
-    private PathfinderMob mob;
-    private LivingEntity target;
     private Vec3 lastPathTargetPos;
 
     @Override
-    public boolean canExecute(MobActionContext context)
+    public boolean canExecute(MobActionContext context, GoToTargetRequest request)
     {
         long now = context.level().getGameTime();
 
         boolean notFreezed = context.aiTimers().freezePassed(now);
         boolean cooldownPassed = context.aiTimers().goToTargetCooldownPassed(now);
-        boolean isNewPathSimilar = isCurrentPathAlreadyGoodEnough();
+        boolean isNewPathSimilar = isCurrentPathAlreadyGoodEnough(context.mob(), request.target());
 
         return notFreezed && cooldownPassed && !isNewPathSimilar;
     }
 
     @Override
-    public void execute(MobActionContext context)
+    public void execute(MobActionContext context, GoToTargetRequest request)
     {
-        mob.getNavigation().moveTo(target, 1.0);
-        lastPathTargetPos = target.position();
+        context.mob().getNavigation().moveTo(request.target(), 1.0);
+        lastPathTargetPos = request.target().position();
 
         double cooldownSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
                 context.configSnapshot().data().balance.optimization.goToTargetInterval,
-                mob.distanceTo(target),
+                context.mob().distanceTo(request.target()),
                 context.configSnapshot().data().balance.optimization.distanceCooldownStartBlocks,
                 context.configSnapshot().data().balance.optimization.distanceCooldownMaxBlocks,
                 context.configSnapshot().data().balance.optimization.distanceCooldownMaxMultiplier);
         context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(cooldownSeconds, 1));
     }
 
-    public void setup(PathfinderMob mob, LivingEntity target)
-    {
-        this.mob = mob;
-        this.target = target;
-    }
-
-    private boolean isCurrentPathAlreadyGoodEnough()
+    private boolean isCurrentPathAlreadyGoodEnough(PathfinderMob mob, LivingEntity target)
     {
         if (lastPathTargetPos == null) return false;
 

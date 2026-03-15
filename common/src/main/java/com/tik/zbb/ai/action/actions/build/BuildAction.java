@@ -1,4 +1,4 @@
-package com.tik.zbb.ai.action.actions;
+package com.tik.zbb.ai.action.actions.build;
 
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
@@ -10,17 +10,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class BuildAction implements IMobAction
+public class BuildAction implements IMobAction<BuildRequest>
 {
-    private BlockPos buildPos;
-    private Block bridgeBlock;
-
     @Override
-    public boolean canExecute(MobActionContext context)
+    public boolean canExecute(MobActionContext context, BuildRequest request)
     {
-        BlockState blockState = context.level().getBlockState(buildPos);
+        BlockState blockState = context.level().getBlockState(request.pos());
 
-        boolean canReplaced = context.level().isLoaded(buildPos) && blockState.canBeReplaced();
+        boolean canReplaced = context.level().isLoaded(request.pos()) && blockState.canBeReplaced();
         boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
         boolean canMobBuild = !context.configSnapshot().data().ignoreBuildEntityIdSet.contains(context.mobId());
 
@@ -28,24 +25,18 @@ public class BuildAction implements IMobAction
     }
 
     @Override
-    public void execute(MobActionContext context)
+    public void execute(MobActionContext context, BuildRequest request)
     {
-        BlockState placedState = bridgeBlock.defaultBlockState();
+        BlockState placedState = request.bridgeBlock().defaultBlockState();
         SoundType soundType = placedState.getSoundType();
 
-        context.level().setBlockAndUpdate(buildPos, bridgeBlock.defaultBlockState());
-        context.level().playSound(null, buildPos, soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
+        context.level().setBlockAndUpdate(request.pos(), request.bridgeBlock().defaultBlockState());
+        context.level().playSound(null, request.pos(), soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
 
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
-        BlockStorages.BUILD_PROTECTION.addBuildProtectionData(context.level(), buildPos.immutable());
+        BlockStorages.BUILD_PROTECTION.addBuildProtectionData(context.level(), request.pos().immutable());
         if (context.configSnapshot().data().blockReturning.builtBlocksDisappearing)
-            BlockStorages.BUILD_DISAPPEAR.addBuildDisappearData(context.level(), buildPos.immutable());
-    }
-
-    public void setup(BlockPos buildPos, Block bridgeBlock)
-    {
-        this.buildPos = buildPos;
-        this.bridgeBlock = bridgeBlock;
+            BlockStorages.BUILD_DISAPPEAR.addBuildDisappearData(context.level(), request.pos().immutable());
     }
 }

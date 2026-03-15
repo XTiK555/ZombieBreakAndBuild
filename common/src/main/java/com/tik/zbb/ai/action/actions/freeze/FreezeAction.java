@@ -1,19 +1,19 @@
-package com.tik.zbb.ai.action.actions;
+package com.tik.zbb.ai.action.actions.freeze;
 
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 
-public class FreezeAction implements IMobAction
+public class FreezeAction implements IMobAction<FreezeRequest>
 {
     @Override
-    public boolean canExecute(MobActionContext context)
+    public boolean canExecute(MobActionContext context, FreezeRequest request)
     {
         return true;
     }
 
     @Override
-    public void execute(MobActionContext context)
+    public void execute(MobActionContext context, FreezeRequest request)
     {
         int blockX = context.mob().blockPosition().getX();
         int blockZ = context.mob().blockPosition().getZ();
