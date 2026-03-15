@@ -13,7 +13,7 @@ import java.util.WeakHashMap;
 public abstract class BaseBlockStorage<TEntry>
 {
     protected final Map<ServerLevel, Long2ObjectOpenHashMap<TEntry>> entriesByLevel = new WeakHashMap<>();
-
+    
     public TEntry get(ServerLevel level, BlockPos pos)
     {
         var map = entriesByLevel.get(level);

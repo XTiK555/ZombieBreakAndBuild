@@ -11,6 +11,7 @@ import com.tik.zbb.ai.action.actions.gototarget.GoToTargetAction;
 import com.tik.zbb.ai.action.actions.gototarget.GoToTargetRequest;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.event.Events;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;

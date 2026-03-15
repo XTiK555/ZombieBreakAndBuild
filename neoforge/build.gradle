@@ -42,6 +42,21 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+dependencies {
+    jarJar(implementation("com.electronwill.night-config:toml")) {
+        version {
+            strictly "[3.8,4.0)"
+            prefer "3.8.3"
+        }
+    }
+    jarJar(implementation("org.greenrobot:eventbus-java")) {
+        version {
+            strictly "[3.3,4.0)"
+            prefer "3.3.1"
+        }
+    }
+}
+
 // Implement mcgradleconventions loader attribute
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
 ['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
@@ -52,7 +67,7 @@ def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', Strin
     }
 }
 sourceSets.configureEach {
-    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName, it.getTaskName(null, 'jarJar')].each { variant->
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName, it.getTaskName(null, 'jarJar')].each { variant ->
         configurations.named("$variant") {
             attributes {
                 attribute(loaderAttribute, 'neoforge')

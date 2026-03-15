@@ -7,6 +7,9 @@ plugins {
 base {
     archivesName = "${mod_name}-forge-${minecraft_version}"
 }
+
+jarJar.enable()
+
 mixin {
     config("${mod_id}.mixins.json")
     config("${mod_id}.forge.mixins.json")
@@ -75,6 +78,16 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+
+    minecraftLibrary "com.electronwill.night-config:toml:3.8.3"
+    minecraftLibrary "org.greenrobot:eventbus-java:3.3.1"
+
+    jarJar("com.electronwill.night-config:toml:[3.8,4.0)") {
+        jarJar.pin(it, "3.8.3")
+    }
+    jarJar("org.greenrobot:eventbus-java:[3.3,4.0)") {
+        jarJar.pin(it, "3.3.1")
+    }
 }
 
 publishing {
@@ -101,7 +114,7 @@ def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', Strin
     }
 }
 sourceSets.configureEach {
-    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
         configurations.named("$variant") {
             attributes {
                 attribute(loaderAttribute, 'forge')
