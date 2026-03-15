@@ -5,11 +5,7 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -42,7 +38,9 @@ public class BuildAction implements IMobAction
 
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
-        BlockStorages.BUILD.addBuildData(context.level(), buildPos.immutable());
+        BlockStorages.BUILD_PROTECTION.addBuildProtectionData(context.level(), buildPos.immutable());
+        if (context.configSnapshot().data().blockReturning.builtBlocksDisappearing)
+            BlockStorages.BUILD_DISAPPEAR.addBuildDisappearData(context.level(), buildPos.immutable());
     }
 
     public void setup(BlockPos buildPos, Block bridgeBlock)
