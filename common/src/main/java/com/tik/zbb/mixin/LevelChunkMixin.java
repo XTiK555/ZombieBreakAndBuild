@@ -33,7 +33,7 @@ public abstract class LevelChunkMixin
         if (!oldState.is(newState.getBlock()))
         {
             BlockStorages.DAMAGE.remove(serverLevel, pos);
-            BlockStorages.BUILD.remove(serverLevel, pos);
+            BlockStorages.BUILD_PROTECTION.remove(serverLevel, pos);
         }
     }
 }

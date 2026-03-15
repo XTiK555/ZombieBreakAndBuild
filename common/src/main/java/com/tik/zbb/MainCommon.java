@@ -8,7 +8,6 @@ import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.ai.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
-import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -17,8 +16,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
@@ -31,6 +28,8 @@ import net.minecraft.world.entity.monster.ZombieVillager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import static com.tik.zbb.utilities.SecondsToTicksUtility.toTicks;
 
 // This class is part of the common project meaning it is shared between all supported loaders. Code written here can only
 // import and access the vanilla codebase, libraries used by vanilla, and optionally third party libraries that provide
@@ -52,8 +51,12 @@ public class MainCommon
 
         if (now % interval == 0)
         {
-            BlockStorages.DAMAGE.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.optimization.damageStoreTime));
-            BlockStorages.BUILD.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.builtBlocksProtectionTime));
+            BlockStorages.DAMAGE.cleanup(level, toTicks(config.balance.optimization.damageStoreTime));
+            BlockStorages.BUILD_PROTECTION.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
+            if (config.blockReturning.brokenBlocksRestoring)
+                BlockStorages.BROKEN.cleanup(level, toTicks(config.blockReturning.brokenBlocksRestoreTime));
+            if (config.blockReturning.builtBlocksDisappearing)
+                BlockStorages.BUILD_DISAPPEAR.cleanup(level, toTicks(config.blockReturning.builtBlocksDisappearTime));
         }
     }
 

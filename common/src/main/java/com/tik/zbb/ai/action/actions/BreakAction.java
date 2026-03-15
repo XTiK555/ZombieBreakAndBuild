@@ -5,10 +5,13 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction
@@ -25,7 +28,7 @@ public class BreakAction implements IMobAction
     {
         boolean isAir = context.level().getBlockState(breakPos).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
-        boolean notRecentlyBuilt = !BlockStorages.BUILD.contains(context.level(), breakPos);
+        boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION.contains(context.level(), breakPos);
         boolean unbreakable = getBlockHealth(breakPos, context.level()) == Integer.MAX_VALUE;
         boolean canMobBreak = !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(context.mobId());
 
@@ -42,8 +45,22 @@ public class BreakAction implements IMobAction
 
         if (totalDamage >= blockHealth)
         {
+            boolean blockRestoring = context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
+
+            if (blockRestoring)
+            {
+                BlockStorages.BROKEN.addBrokenData(context.level(), breakPos);
+
+                BlockEntity blockEntity = context.level().getBlockEntity(breakPos);
+                if (blockEntity instanceof Clearable clearable)
+                {
+                    clearable.clearContent();
+                    blockEntity.setChanged();
+                }
+            }
+
             BlockStorages.DAMAGE.remove(context.level(), breakPos);
-            context.level().destroyBlock(breakPos, true);
+            context.level().destroyBlock(breakPos, !blockRestoring);
         }
         else
         {
