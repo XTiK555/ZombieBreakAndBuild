@@ -52,7 +52,7 @@ public class MainCommon
 
         if (now % interval == 0)
         {
-            BlockStorages.DAMAGE.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.damageStoreTime));
+            BlockStorages.DAMAGE.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.optimization.damageStoreTime));
             BlockStorages.BUILD.cleanup(level, SecondsToTicksUtility.toTicks(config.balance.builtBlocksProtectionTime));
         }
     }
@@ -63,7 +63,7 @@ public class MainCommon
 
         if (!matchesZbbMobFilter(mob, config)) return;
         if (!(mob instanceof MobAccessor pFMobAccessor)) return;
-        
+
         PathfinderMob pFMob = (PathfinderMob) mob;
         GoalSelector targetSelector = pFMobAccessor.zbb$getTargetSelector();
         GoalSelector goalSelector = pFMobAccessor.zbb$getGoalSelector();
