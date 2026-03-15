@@ -1,10 +1,14 @@
 package com.tik.zbb.ai.action;
 
 import com.tik.zbb.ai.AiTimers;
-import com.tik.zbb.ai.action.actions.BreakAction;
-import com.tik.zbb.ai.action.actions.BuildAction;
-import com.tik.zbb.ai.action.actions.FreezeAction;
-import com.tik.zbb.ai.action.actions.GoToTargetAction;
+import com.tik.zbb.ai.action.actions.breakk.BreakAction;
+import com.tik.zbb.ai.action.actions.breakk.BreakRequest;
+import com.tik.zbb.ai.action.actions.build.BuildAction;
+import com.tik.zbb.ai.action.actions.build.BuildRequest;
+import com.tik.zbb.ai.action.actions.freeze.FreezeAction;
+import com.tik.zbb.ai.action.actions.freeze.FreezeRequest;
+import com.tik.zbb.ai.action.actions.gototarget.GoToTargetAction;
+import com.tik.zbb.ai.action.actions.gototarget.GoToTargetRequest;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.core.BlockPos;
@@ -50,42 +54,34 @@ public final class ActionExecutor
     public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
-        breakAction.setup(breakPos);
-
-        return tryExecuteAction(breakAction);
+        return tryExecuteAction(breakAction, new BreakRequest(breakPos));
     }
 
     public boolean tryExecuteBuildAction(BlockPos buildPos)
     {
         keepDataUpToDate();
-        buildAction.setup(buildPos, configCache.bridgeBlock);
-
-        return tryExecuteAction(buildAction);
+        return tryExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
     }
 
     public boolean tryExecuteFreezeAction()
     {
         keepDataUpToDate();
-
-        return tryExecuteAction(freezeAction);
+        return tryExecuteAction(freezeAction, new FreezeRequest());
     }
 
     public boolean tryExecuteGoToTargetAction(LivingEntity target)
     {
         keepDataUpToDate();
-        goToTargetAction.setup(mobActionContext.mob(), target);
-
-        return tryExecuteAction(goToTargetAction);
+        return tryExecuteAction(goToTargetAction, new GoToTargetRequest(target));
     }
 
-    private boolean tryExecuteAction(IMobAction action)
+    private <R> boolean tryExecuteAction(IMobAction<R> action, R request)
     {
-        if (!action.canExecute(mobActionContext)) return false;
+        if (!action.canExecute(mobActionContext, request)) return false;
 
-        action.execute(mobActionContext);
+        action.execute(mobActionContext, request);
         return true;
     }
-
 
     // =================================
 

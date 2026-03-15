@@ -19,6 +19,8 @@ build
 .gradle
 !common/src/main/java/com/tik/zbb/blockstorage/storages/build/
 !common/src/main/java/com/tik/zbb/blockstorage/storages/build/**
+!common/src/main/java/com/tik/zbb/ai/action/actions/build/
+!common/src/main/java/com/tik/zbb/ai/action/actions/build/**
 
 # other
 eclipse
