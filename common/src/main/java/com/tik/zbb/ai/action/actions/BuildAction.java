@@ -41,7 +41,7 @@ public class BuildAction implements IMobAction
         context.level().playSound(null, buildPos, soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
 
         context.executor().tryExecuteFreezeAction();
-        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.buildCooldown, 1));
+        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
         BlockStorages.BUILD.addBuildData(context.level(), buildPos.immutable());
     }
 

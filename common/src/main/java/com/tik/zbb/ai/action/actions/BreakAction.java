@@ -5,11 +5,9 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -39,10 +37,7 @@ public class BreakAction implements IMobAction
     {
         BlockState state = context.level().getBlockState(breakPos);
         int blockHealth = getBlockHealth(breakPos, context.level());
-        int damageToBlocks = context.configSnapshot().data().balance.scaleDamageToBlocksWithHitbox
-                ? getScaledDamageToBlocks(context)
-                : context.configSnapshot().data().balance.damageToBlocks;
-
+        int damageToBlocks = getDamageToBlocks(context);
         int totalDamage = BlockStorages.DAMAGE.addDamageData(context.level(), breakPos, damageToBlocks);
 
         if (totalDamage >= blockHealth)
@@ -58,7 +53,7 @@ public class BreakAction implements IMobAction
         }
 
         context.executor().tryExecuteFreezeAction();
-        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.breakCooldown, 1));
+        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
     }
 
     public void setup(BlockPos breakPos)
@@ -77,10 +72,17 @@ public class BreakAction implements IMobAction
         return Math.max(MIN_BLOCK_HEALTH, (int) (hardness * HARDNESS_TO_HEALTH_MULTIPLIER));
     }
 
-    private int getScaledDamageToBlocks(MobActionContext context)
+    private int getDamageToBlocks(MobActionContext context)
     {
-        double baseDamage = context.configSnapshot().data().balance.damageToBlocks;
+        int baseDamage = context.configSnapshot().data().balance.blockDamage.damageToBlocks;
+        double hitboxMultiplier = getHitboxSizeMultiplier(context);
+        double itemMultiplier = getItemMultiplier(context);
 
+        return Math.max(1, (int) Math.round(baseDamage * hitboxMultiplier * itemMultiplier));
+    }
+
+    private double getHitboxSizeMultiplier(MobActionContext context)
+    {
         double width = context.mob().getBbWidth();
         double height = context.mob().getBbHeight();
 
@@ -90,8 +92,25 @@ public class BreakAction implements IMobAction
 
         double mobVolume = width * width * height;
         double volumeRatio = mobVolume / baseVolume;
-        double multiplier = Math.pow(volumeRatio, DAMAGE_SCALE_EXPONENT);
 
-        return Math.max(1, (int) Math.round(baseDamage * multiplier));
+        double hitboxMultiplier = Math.pow(volumeRatio, DAMAGE_SCALE_EXPONENT);
+        double finalMultiplier = 1.0D + (hitboxMultiplier - 1.0D) * context.configSnapshot().data().balance.blockDamage.hitboxSizeMultiplierStrength;
+
+        return finalMultiplier;
+    }
+
+    private double getItemMultiplier(MobActionContext context)
+    {
+        ItemStack mainHandItem = context.mob().getMainHandItem();
+        ItemStack offhandItem = context.mob().getOffhandItem();
+        BlockState state = context.level().getBlockState(breakPos);
+        float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
+        float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
+        float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
+
+        float toolMultiplier = Mth.clamp(destroySpeed, 1.0f, 30.0f);
+        float finalMultiplier = (float) (1.0 + (toolMultiplier - 1.0) * context.configSnapshot().data().balance.blockDamage.itemDamageMultiplierStrength);
+
+        return finalMultiplier;
     }
 }
