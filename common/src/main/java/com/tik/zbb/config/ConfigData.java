@@ -51,7 +51,7 @@ public class ConfigData
         public String bridgeBlockId = "minecraft:dirt";
 
         @ResourceLocationList
-        @Comment("Blocks that zombies will consider dangerous (attempt to build on/break)")
+        @Comment("Blocks that zombies will consider dangerous and attempt to build on or break")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
                 "minecraft:soul_fire",
@@ -75,15 +75,15 @@ public class ConfigData
         @Comment("Zombies will be able to see targets through walls")
         public boolean canSeeTargetsThroughBlocks = true;
 
-        @Comment("Give the ability to break and place blocks to all monsters, not just zombies")
+        @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
         public boolean applyToAllMonsters = true;
 
         @ResourceLocationList
-        @Comment("Additional IDs of entities that will be given the ability to break and place blocks")
+        @Comment("Additional entity IDs that will be given the ability to break and place blocks")
         public List<String> additionalEntityIdList = new ArrayList<>();
 
         @ResourceLocationList
-        @Comment("IDs of entities that will NOT be given the ability to place blocks")
+        @Comment("Entity IDs that will NOT be given the ability to place blocks")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:ghast",
@@ -98,7 +98,7 @@ public class ConfigData
         ));
 
         @ResourceLocationList
-        @Comment("IDs of entities that will NOT be given the ability to break blocks")
+        @Comment("Entity IDs that will NOT be given the ability to break blocks")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:shulker",
@@ -110,11 +110,11 @@ public class ConfigData
     public static class Balance
     {
         @Range(min = 0, max = 1000000)
-        @Comment("Freeze time after break/place block in seconds")
+        @Comment("Freeze time after breaking or placing a block (seconds)")
         public double freezeTime = 0.5D;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time stuck before zombies start breaking or placing blocks (seconds)")
+        @Comment("Time a zombie must be stuck before it start breaking or placing blocks (seconds)")
         public double stuckSecondsBeforeBreakAndBuild = 3.0D;
 
         @Range(min = 0, max = 1000000)
@@ -122,7 +122,7 @@ public class ConfigData
         public double builtBlocksProtectionTime = 0.75D;
 
         @Range(min = 0, max = 1000000)
-        @Comment("The radius within which zombies will see dangerous blocks")
+        @Comment("The radius within which zombies will detect dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
 
         public BlockDamage blockDamage = new BlockDamage();
@@ -138,11 +138,11 @@ public class ConfigData
             public int damageToBlocks = 3;
 
             @Range(min = 0, max = 1000000)
-            @Comment("How much will the block damage multiplier from the tool in hand affect? (0 - the tool has no effect to damage)")
+            @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 = tools do not affect damage)")
             public float itemDamageMultiplierStrength = 0.5f;
 
             @Range(min = 0, max = 1000000)
-            @Comment("How much will the block damage multiplier from the hitbox size? (0 - the hitbox size has no effect to damage)")
+            @Comment("How strongly the hitbox size multiplier affects block damage (0 = hitbox size does not affect damage)")
             public double hitboxSizeMultiplierStrength = 0.5;
         }
 
@@ -160,7 +160,7 @@ public class ConfigData
         public static class Optimization
         {
             @Range(min = 0.05, max = 1000000)
-            @Comment("Go to target interval in seconds")
+            @Comment("Interval between moving toward the target (seconds)")
             public double goToTargetInterval = 0.5D;
 
             @Range(min = 0.05, max = 1000000)
@@ -168,7 +168,7 @@ public class ConfigData
             public double pathCheckInterval = 2.0D;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Distance in blocks up to which distance multiplier for goToTarget/pathCheck-intervals is not applied")
+            @Comment("Distance in blocks below which the distance-based cooldown multiplier is not applied to goToTarget/pathCheck intervals")
             public double distanceCooldownStartBlocks = 5.0D;
 
             @Range(min = 0, max = 1000000)
@@ -176,11 +176,11 @@ public class ConfigData
             public double distanceCooldownMaxBlocks = 64.0D;
 
             @Range(min = 1.0, max = 1000000)
-            @Comment("Maximum multiplier for goToTarget/pathCheck-intervals based on distance to target")
+            @Comment("Maximum distance-based multiplier for goToTarget/pathCheck intervals")
             public double distanceCooldownMaxMultiplier = 8.0D;
 
             @Range(min = 1, max = 1000000)
-            @Comment("Duration damage data for blocks is stored (seconds)")
+            @Comment("How long block damage data is stored (seconds)")
             public double damageStoreTime = 60.0D;
 
             @Range(min = 0.05, max = 1000000)
@@ -192,15 +192,7 @@ public class ConfigData
     public static class Audio
     {
         @Range(min = 0, max = 1000000)
-        @Comment("Sound played when placing a block")
+        @Comment("Volume multiplier for the sound played when placing a block")
         public float placeSoundVolumeMultiplier = 1f;
-
-        @Range(min = 0, max = 1000000)
-        @Comment("Sound played when hitting a block")
-        public float hitSoundVolumeMultiplier = 1f;
-
-        @Range(min = 0, max = 1000000)
-        @Comment("Sound played when breaking a block")
-        public float breakSoundVolumeMultiplier = 1f;
     }
 }
