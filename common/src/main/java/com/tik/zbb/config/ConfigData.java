@@ -102,12 +102,9 @@ public class ConfigData
         public List<String> ignoreBreakEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:shulker",
-                "minecraft:wither"
+                "minecraft:wither",
+                "minecraft:vex"
         ));
-
-        @Range(min = 0, max = 1000000)
-        @Comment("The radius within which zombies will see dangerous blocks")
-        public int dangerousBlocksSearchRadius = 1;
     }
 
     public static class Balance
@@ -166,6 +163,10 @@ public class ConfigData
         @Range(min = 0, max = 1000000)
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
+
+        @Range(min = 0, max = 1000000)
+        @Comment("The radius within which zombies will see dangerous blocks")
+        public int dangerousBlocksSearchRadius = 1;
     }
 
     public static class Audio

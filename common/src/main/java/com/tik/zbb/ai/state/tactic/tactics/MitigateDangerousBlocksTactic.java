@@ -22,7 +22,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
-        int radius = context.getConfigSnapshot().data().ai.dangerousBlocksSearchRadius;
+        int radius = context.getConfigSnapshot().data().balance.dangerousBlocksSearchRadius;
         int mobX = context.getMob().getBlockX();
         int mobY = context.getMob().getBlockY();
         int mobZ = context.getMob().getBlockZ();
