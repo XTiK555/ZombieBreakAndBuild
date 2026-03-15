@@ -43,11 +43,11 @@ public class BreakAndBuildState implements IMobState
         if (context.getAiTimers().checkPathCooldownPassed(now))
         {
             double pathCheckSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
-                    context.getConfigSnapshot().data().balance.pathCheckInterval,
+                    context.getConfigSnapshot().data().balance.optimization.pathCheckInterval,
                     context.getMob().distanceTo(context.getTarget()),
-                    context.getConfigSnapshot().data().balance.distanceCooldownStartBlocks,
-                    context.getConfigSnapshot().data().balance.distanceCooldownMaxBlocks,
-                    context.getConfigSnapshot().data().balance.distanceCooldownMaxMultiplier);
+                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownStartBlocks,
+                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownMaxBlocks,
+                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownMaxMultiplier);
             context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(pathCheckSeconds, 1));
 
             PathNavigation nav = context.getMob().getNavigation();

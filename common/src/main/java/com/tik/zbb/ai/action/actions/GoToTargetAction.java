@@ -37,11 +37,11 @@ public class GoToTargetAction implements IMobAction
         lastPathTargetPos = target.position();
 
         double cooldownSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
-                context.configSnapshot().data().balance.goToTargetInterval,
+                context.configSnapshot().data().balance.optimization.goToTargetInterval,
                 mob.distanceTo(target),
-                context.configSnapshot().data().balance.distanceCooldownStartBlocks,
-                context.configSnapshot().data().balance.distanceCooldownMaxBlocks,
-                context.configSnapshot().data().balance.distanceCooldownMaxMultiplier);
+                context.configSnapshot().data().balance.optimization.distanceCooldownStartBlocks,
+                context.configSnapshot().data().balance.optimization.distanceCooldownMaxBlocks,
+                context.configSnapshot().data().balance.optimization.distanceCooldownMaxMultiplier);
         context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(cooldownSeconds, 1));
     }
 
