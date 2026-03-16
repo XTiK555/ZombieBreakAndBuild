@@ -45,9 +45,9 @@ public class BreakAndBuildState implements IMobState
             double pathCheckSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
                     context.getConfigSnapshot().data().balance.optimization.pathCheckInterval,
                     context.getMob().distanceTo(context.getTarget()),
-                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownStartBlocks,
-                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownMaxBlocks,
-                    context.getConfigSnapshot().data().balance.optimization.distanceCooldownMaxMultiplier);
+                    context.getConfigSnapshot().data().balance.optimization.distanceScaleStartBlocks,
+                    context.getConfigSnapshot().data().balance.optimization.distanceScaleMaxBlocks,
+                    context.getConfigSnapshot().data().balance.optimization.distanceScaleMaxMultiplier);
             context.getAiTimers().setCheckPathCooldownUntil(now + SecondsToTicksUtility.toTicks(pathCheckSeconds, 1));
 
             PathNavigation nav = context.getMob().getNavigation();
