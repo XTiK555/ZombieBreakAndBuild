@@ -70,7 +70,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
                 .ignoreLineOfSight()
                 .range(range)
                 .selector((target, serverLevel) ->
-                        TargetingUtility.passesVanillaChecks(mob, target, true, true)
+                        TargetingUtility.passesVanillaChecks(mob, target, true, false)
                                 && isAllowedByVanillaGoals(serverLevel, mob, target));
     }
 
