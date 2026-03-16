@@ -11,7 +11,7 @@ import org.greenrobot.eventbus.Subscribe;
 public class DamageBlockStorage extends BaseBlockStorage<DamageBlockStorageEntry>
 {
     @Subscribe
-    public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
+    public void onAnyBlockBroken(BreakAction.OnAnyBlockBrokenEvent event)
     {
         remove(event.level(), event.pos());
     }
