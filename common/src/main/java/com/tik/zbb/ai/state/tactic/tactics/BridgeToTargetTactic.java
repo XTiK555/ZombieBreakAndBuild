@@ -32,7 +32,7 @@ public class BridgeToTargetTactic implements IMobTactic
         belowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ());
         twoBelowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ());
 
-        boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), DOWN_SCAN_VEC) == null;
+        boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), DOWN_SCAN_VEC) == null;
         if (belowUsEmpty && targetY >= mobY)
         {
             context.getActionExecutor().tryExecuteBuildAction(belowMobPos);
