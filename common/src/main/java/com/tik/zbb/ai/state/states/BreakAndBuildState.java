@@ -7,6 +7,7 @@ import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.ai.state.tactic.tactics.*;
 import com.tik.zbb.utilities.DistanceMultiplierUtility;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
@@ -21,7 +22,8 @@ public class BreakAndBuildState implements IMobState
 
     private Priority lastPriority = Priority.Low;
     private int stuckTicks;
-    private double lastDistSq = Double.NaN;
+    private double lastTargetDistSq = Double.NaN;
+    private LivingEntity lastTarget = null;
 
     @Override
     public void tick(MobStateContext context)
@@ -97,12 +99,19 @@ public class BreakAndBuildState implements IMobState
 
     private void updateStuckTicks(MobStateContext context, long now)
     {
+        if (context.getTarget() != lastTarget)
+        {
+            lastTarget = context.getTarget();
+            lastTargetDistSq = Double.NaN;
+            stuckTicks = 0;
+        }
+
         double distSq = context.getMob().distanceToSqr(context.getTarget());
-        if (Double.isNaN(lastDistSq)) lastDistSq = distSq;
+        if (Double.isNaN(lastTargetDistSq)) lastTargetDistSq = distSq;
 
         if (context.getAiTimers().freezePassed(now))
         {
-            if (distSq < lastDistSq - 0.5)
+            if (distSq < lastTargetDistSq - 0.5)
             {
                 stuckTicks = 0;
             }
@@ -110,7 +119,7 @@ public class BreakAndBuildState implements IMobState
             {
                 stuckTicks++;
             }
-            lastDistSq = distSq;
+            lastTargetDistSq = distSq;
         }
     }
 }

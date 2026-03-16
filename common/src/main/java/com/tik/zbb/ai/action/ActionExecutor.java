@@ -11,7 +11,6 @@ import com.tik.zbb.ai.action.actions.gototarget.GoToTargetAction;
 import com.tik.zbb.ai.action.actions.gototarget.GoToTargetRequest;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.event.Events;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -54,21 +53,25 @@ public final class ActionExecutor
 
     public boolean canExecuteBreakAction(BlockPos breakPos)
     {
+        keepDataUpToDate();
         return canExecuteAction(breakAction, new BreakRequest(breakPos));
     }
 
     public boolean canExecuteBuildAction(BlockPos buildPos)
     {
+        keepDataUpToDate();
         return canExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
     }
 
     public boolean canExecuteFreezeAction()
     {
+        keepDataUpToDate();
         return canExecuteAction(freezeAction, new FreezeRequest());
     }
 
     public boolean canExecuteGoToTargetAction(LivingEntity target)
     {
+        keepDataUpToDate();
         return canExecuteAction(goToTargetAction, new GoToTargetRequest(target));
     }
 

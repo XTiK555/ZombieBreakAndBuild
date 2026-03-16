@@ -18,6 +18,8 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenEntry>
     @Subscribe
     public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
     {
+        if (!event.configSnapshot().data().blockReturning.brokenBlocksRestoring) return;
+
         addBrokenData(event.level(), event.pos(), event.state());
 
         BlockEntity blockEntity = event.level().getBlockEntity(event.pos());

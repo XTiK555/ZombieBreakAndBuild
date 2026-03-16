@@ -1,9 +1,9 @@
 package com.tik.zbb.ai.action.actions.build;
 
+import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.config.ConfigSnapshot;
-import com.tik.zbb.event.Events;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -36,7 +36,7 @@ public class BuildAction implements IMobAction<BuildRequest>
 
         context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
-        Events.BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot()));
+        Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot()));
     }
 
     public record OnAnyBlockPlacedEvent(ServerLevel level, BlockPos pos, ConfigSnapshot configSnapshot) {}

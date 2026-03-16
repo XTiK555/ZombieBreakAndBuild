@@ -1,6 +1,6 @@
 package com.tik.zbb.mixin;
 
-import com.tik.zbb.event.Events;
+import com.tik.zbb.Constants;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -33,7 +33,7 @@ public abstract class LevelChunkMixin
 
         if (!oldState.is(newState.getBlock()))
         {
-            Events.BUS.post(new MixinEvents.OnLevelChunkBlockChangedEvent(serverLevel, pos, oldState, newState));
+            Constants.EVENT_BUS.post(new MixinEvents.OnLevelChunkBlockChangedEvent(serverLevel, pos, oldState, newState));
         }
     }
 }
