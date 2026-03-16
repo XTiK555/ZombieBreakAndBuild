@@ -2,6 +2,7 @@ package com.tik.zbb.blockstorage.storages.damage;
 
 import com.tik.zbb.ai.action.actions.breakk.BreakAction;
 import com.tik.zbb.blockstorage.BaseBlockStorage;
+import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.greenrobot.eventbus.Subscribe;
@@ -10,6 +11,12 @@ public class DamageBlockStorage extends BaseBlockStorage<DamageEntry>
 {
     @Subscribe
     public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
+    {
+        remove(event.level(), event.pos());
+    }
+
+    @Subscribe
+    public void onLevelChunkBlockChanged(MixinEvents.OnLevelChunkBlockChangedEvent event)
     {
         remove(event.level(), event.pos());
     }
