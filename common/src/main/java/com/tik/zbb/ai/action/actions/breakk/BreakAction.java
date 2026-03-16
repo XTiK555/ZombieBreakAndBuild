@@ -47,7 +47,14 @@ public class BreakAction implements IMobAction<BreakRequest>
             boolean dropLoot = !context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
 
             Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
-            context.level().destroyBlock(request.pos(), dropLoot);
+            if (context.level().destroyBlock(request.pos(), dropLoot))
+            {
+                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot()));
+            }
+            else
+            {
+                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
+            }
         }
         else
         {
@@ -115,4 +122,10 @@ public class BreakAction implements IMobAction<BreakRequest>
 
     public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
                                            ConfigSnapshot configSnapshot) {}
+
+    public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState,
+                                        ConfigSnapshot configSnapshot) {}
+
+    public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
+                                               ConfigSnapshot configSnapshot) {}
 }
