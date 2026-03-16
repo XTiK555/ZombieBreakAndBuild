@@ -2,6 +2,7 @@ package com.tik.zbb.ai.state.tactic.tactics;
 
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
+import com.tik.zbb.utilities.HitboxScanUtility;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -13,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class MitigateDangerousBlocksTactic implements IMobTactic
 {
-    private final BlockPos.MutableBlockPos scanPos = new BlockPos.MutableBlockPos();
     private final BlockPos.MutableBlockPos coverPos = new BlockPos.MutableBlockPos();
 
     @Override
@@ -23,24 +23,17 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
         int radius = context.getConfigSnapshot().data().balance.dangerousBlocksSearchRadius;
-        int mobX = context.getMob().getBlockX();
-        int mobY = context.getMob().getBlockY();
-        int mobZ = context.getMob().getBlockZ();
 
-        for (int dy = -radius; dy <= radius; dy++)
+        BlockPos dangerousBlockPos = HitboxScanUtility.findNearestBlockInInflatedHitbox(
+                context.getLevel(),
+                context.getMob(),
+                radius,
+                state -> isDangerous(state, context)
+        );
+
+        if (dangerousBlockPos != null)
         {
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                for (int dz = -radius; dz <= radius; dz++)
-                {
-                    scanPos.set(mobX + dx, mobY + dy, mobZ + dz);
-                    BlockState blockState = context.getLevel().getBlockState(scanPos);
-
-                    if (!isDangerous(blockState, context)) continue;
-
-                    handleDangerousBlock(scanPos, context);
-                }
-            }
+            handleDangerousBlock(dangerousBlockPos, context);
         }
 
         context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.optimization.searchDangerousBlocksInterval, 1));
