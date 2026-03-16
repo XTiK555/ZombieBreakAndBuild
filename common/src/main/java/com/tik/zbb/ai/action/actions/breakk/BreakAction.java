@@ -14,10 +14,11 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
 {
-    private static final int MAX_EFFECTIVE_HARDNESS = 50;
-    private static final float HARDNESS_TO_HEALTH_MULTIPLIER = 6.0f;
+    private static final int MAX_BLOCK_HARDNESS_FOR_HEALTH = 50;
+    private static final float BLOCK_HEALTH_PER_HARDNESS = 6.0f;
     private static final int MIN_BLOCK_HEALTH = 1;
-    private static final double DAMAGE_SCALE_EXPONENT = 0.58D;
+    private static final float MIN_TOOL_DESTROY_SPEED = 1.0f;
+    private static final float MAX_TOOL_DESTROY_SPEED = 30.0f;
 
     @Override
     public boolean canExecute(MobActionContext context, BreakRequest request)
@@ -49,6 +50,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         else
         {
             int stage = Math.min(9, (totalDamage * 10) / blockHealth);
+
             context.level().destroyBlockProgress(request.pos().hashCode(), request.pos(), stage);
             context.level().levelEvent(2001, request.pos(), Block.getId(state)); // particles and sound
         }
@@ -64,8 +66,8 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         if (hardness < 0) return Integer.MAX_VALUE;
 
-        hardness = Math.min(hardness, MAX_EFFECTIVE_HARDNESS);
-        return Math.max(MIN_BLOCK_HEALTH, (int) (hardness * HARDNESS_TO_HEALTH_MULTIPLIER));
+        hardness = Math.min(hardness, MAX_BLOCK_HARDNESS_FOR_HEALTH);
+        return Math.max(MIN_BLOCK_HEALTH, (int) (hardness * BLOCK_HEALTH_PER_HARDNESS));
     }
 
     private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)
@@ -87,9 +89,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         double baseVolume = zombieWidth * zombieWidth * zombieHeight;
 
         double mobVolume = width * width * height;
-        double volumeRatio = mobVolume / baseVolume;
 
-        double hitboxMultiplier = Math.pow(volumeRatio, DAMAGE_SCALE_EXPONENT);
+        double hitboxMultiplier = mobVolume / baseVolume;
         double finalMultiplier = 1.0D + (hitboxMultiplier - 1.0D) * context.configSnapshot().data().balance.blockDamage.hitboxSizeMultiplierStrength;
 
         return finalMultiplier;
@@ -104,7 +105,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
         float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
 
-        float toolMultiplier = Mth.clamp(destroySpeed, 1.0f, 30.0f);
+        float toolMultiplier = Mth.clamp(destroySpeed, MIN_TOOL_DESTROY_SPEED, MAX_TOOL_DESTROY_SPEED);
         float finalMultiplier = (float) (1.0 + (toolMultiplier - 1.0) * context.configSnapshot().data().balance.blockDamage.itemDamageMultiplierStrength);
 
         return finalMultiplier;
