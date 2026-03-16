@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.greenrobot.eventbus.Subscribe;
 
-public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearEntry>
+public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearBlockStorageEntry>
 {
     @Subscribe
     public void onAnyBlockPlaced(BuildAction.OnAnyBlockPlacedEvent event)
@@ -22,17 +22,17 @@ public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearE
     {
         BlockState state = level.getBlockState(pos);
 
-        put(level, pos, new BuildDisappearEntry(state, level.getGameTime()));
+        put(level, pos, new BuildDisappearBlockStorageEntry(state, level.getGameTime()));
     }
 
     @Override
-    protected boolean isExpired(BuildDisappearEntry entry, long now, long ttlTicks)
+    protected boolean isExpired(BuildDisappearBlockStorageEntry entry, long now, long ttlTicks)
     {
         return now - entry.tick() > ttlTicks;
     }
 
     @Override
-    protected void onRemove(ServerLevel level, long posKey, BuildDisappearEntry entry)
+    protected void onRemove(ServerLevel level, long posKey, BuildDisappearBlockStorageEntry entry)
     {
         BlockPos pos = BlockPos.of(posKey);
         BlockState currentState = level.getBlockState(pos);
