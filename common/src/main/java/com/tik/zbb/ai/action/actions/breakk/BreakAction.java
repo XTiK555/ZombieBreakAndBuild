@@ -1,9 +1,10 @@
 package com.tik.zbb.ai.action.actions.breakk;
 
+import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.event.Events;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -44,7 +45,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         {
             boolean dropLoot = !context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
 
-            Events.BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state));
+            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
             context.level().destroyBlock(request.pos(), dropLoot);
         }
         else
@@ -111,5 +112,6 @@ public class BreakAction implements IMobAction<BreakRequest>
         return finalMultiplier;
     }
 
-    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state) {}
+    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
+                                           ConfigSnapshot configSnapshot) {}
 }
