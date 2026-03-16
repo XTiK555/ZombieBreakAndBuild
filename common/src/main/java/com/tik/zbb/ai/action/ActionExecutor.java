@@ -53,6 +53,26 @@ public final class ActionExecutor
         reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
     }
 
+    public boolean canExecuteBreakAction(BlockPos breakPos)
+    {
+        return canExecuteAction(breakAction, new BreakRequest(breakPos));
+    }
+
+    public boolean canExecuteBuildAction(BlockPos buildPos)
+    {
+        return canExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
+    }
+
+    public boolean canExecuteFreezeAction()
+    {
+        return canExecuteAction(freezeAction, new FreezeRequest());
+    }
+
+    public boolean canExecuteGoToTargetAction(LivingEntity target)
+    {
+        return canExecuteAction(goToTargetAction, new GoToTargetRequest(target));
+    }
+
     public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
@@ -83,6 +103,11 @@ public final class ActionExecutor
 
         action.execute(mobActionContext, request);
         return true;
+    }
+
+    private <R> boolean canExecuteAction(IMobAction<R> action, R request)
+    {
+        return action.canExecute(mobActionContext, request);
     }
 
     // =================================

@@ -70,7 +70,7 @@ public class ConfigData
 
     public static class Ai
     {
-        @Comment("Zombies will see the nearest player no matter what.")
+        @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
         @Comment("Zombies will be able to see targets through walls")
