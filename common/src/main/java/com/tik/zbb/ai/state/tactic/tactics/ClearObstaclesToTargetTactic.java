@@ -22,7 +22,7 @@ public class ClearObstaclesToTargetTactic implements IMobTactic
         Vec3 directionToTarget = context.getTarget().position().subtract(context.getMob().position()).normalize();
         Vec3 hitboxScanOffset = directionToTarget.scale(checkDistance);
 
-        BlockPos blockToBreak = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), hitboxScanOffset);
+        BlockPos blockToBreak = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), hitboxScanOffset);
 
         if (blockToBreak != null)
         {

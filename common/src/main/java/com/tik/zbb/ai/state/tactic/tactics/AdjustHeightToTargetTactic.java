@@ -24,7 +24,7 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         if (targetY > mobY + 1)
         {
-            BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlock(context.getLevel(), context.getMob(), new Vec3(0, 1, 0));
+            BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), new Vec3(0, 1, 0));
 
             // If there is space above
             if (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel()))
