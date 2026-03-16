@@ -43,7 +43,10 @@ public class BridgeToTargetTactic implements IMobTactic
         boolean below2FrontEmpty = IsFreePassUtility.isFreePass(twoBelowFrontPos, context.getLevel());
         if (frontEmpty && belowFrontEmpty && below2FrontEmpty)
         {
-            context.getActionExecutor().tryExecuteBuildAction(belowFrontPos);
+            if (!context.getActionExecutor().tryExecuteBuildAction(belowFrontPos))
+            {
+                context.getActionExecutor().tryExecuteBreakAction(belowFrontPos);
+            }
         }
     }
 
