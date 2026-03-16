@@ -169,16 +169,16 @@ public class ConfigData
             public double pathCheckInterval = 2.0D;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Distance in blocks below which the distance-based cooldown multiplier is not applied to goToTarget/pathCheck intervals")
-            public double distanceCooldownStartBlocks = 5.0D;
+            @Comment("Distance below which no distance-based optimization is applied.)")
+            public double distanceScaleStartBlocks = 5.0D;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Distance in blocks at which the cooldown multiplier for goToTarget/pathCheck-intervals reaches its maximum")
-            public double distanceCooldownMaxBlocks = 64.0D;
+            @Comment("Distance at which distance-based optimization reaches its maximum effect.")
+            public double distanceScaleMaxBlocks = 64.0D;
 
             @Range(min = 1.0, max = 1000000)
-            @Comment("Maximum distance-based multiplier for goToTarget/pathCheck intervals")
-            public double distanceCooldownMaxMultiplier = 8.0D;
+            @Comment("Maximum multiplier used for distance-based scaling of expensive AI operations such as pathCheck intervals.")
+            public double distanceScaleMaxMultiplier = 8.0D;
 
             @Range(min = 1, max = 1000000)
             @Comment("How long block damage data is stored (seconds)")

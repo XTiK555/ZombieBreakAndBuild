@@ -5,14 +5,13 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.utilities.DistanceMultiplierUtility;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
 public class GoToTargetAction implements IMobAction<GoToTargetRequest>
 {
-    private static final float MAX_TARGET_MOVE_DISTANCE_TO_NEW_PATH = 2.0f;
+    private static final double BASE_TARGET_REPATH_DISTANCE = 2.0;
 
     private Vec3 lastPathTargetPos;
 
@@ -23,9 +22,9 @@ public class GoToTargetAction implements IMobAction<GoToTargetRequest>
 
         boolean notFreezed = context.aiTimers().freezePassed(now);
         boolean cooldownPassed = context.aiTimers().goToTargetCooldownPassed(now);
-        boolean isNewPathSimilar = isCurrentPathAlreadyGoodEnough(context.mob(), request.target());
+        boolean isCurrentPathAlreadyGoodEnough = isCurrentPathAlreadyGoodEnough(context, request.target());
 
-        return notFreezed && cooldownPassed && !isNewPathSimilar;
+        return notFreezed && cooldownPassed && !isCurrentPathAlreadyGoodEnough;
     }
 
     @Override
@@ -37,22 +36,36 @@ public class GoToTargetAction implements IMobAction<GoToTargetRequest>
         double cooldownSeconds = DistanceMultiplierUtility.applyDistanceMultiplier(
                 context.configSnapshot().data().balance.optimization.goToTargetInterval,
                 context.mob().distanceTo(request.target()),
-                context.configSnapshot().data().balance.optimization.distanceCooldownStartBlocks,
-                context.configSnapshot().data().balance.optimization.distanceCooldownMaxBlocks,
-                context.configSnapshot().data().balance.optimization.distanceCooldownMaxMultiplier);
+                context.configSnapshot().data().balance.optimization.distanceScaleStartBlocks,
+                context.configSnapshot().data().balance.optimization.distanceScaleMaxBlocks,
+                context.configSnapshot().data().balance.optimization.distanceScaleMaxMultiplier);
         context.aiTimers().setGoToTargetCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(cooldownSeconds, 1));
     }
 
-    private boolean isCurrentPathAlreadyGoodEnough(PathfinderMob mob, LivingEntity target)
+    private boolean isCurrentPathAlreadyGoodEnough(MobActionContext context, LivingEntity target)
     {
         if (lastPathTargetPos == null) return false;
 
-        PathNavigation nav = mob.getNavigation();
+        PathNavigation nav = context.mob().getNavigation();
         Path path = nav.getPath();
 
         if (path == null || path.isDone()) return false;
 
+        double targetRepathDistance = getTargetRepathDistance(context, target);
         double distSq = target.distanceToSqr(lastPathTargetPos);
-        return distSq < (MAX_TARGET_MOVE_DISTANCE_TO_NEW_PATH * MAX_TARGET_MOVE_DISTANCE_TO_NEW_PATH);
+        return distSq <= (targetRepathDistance * targetRepathDistance);
+    }
+
+    private double getTargetRepathDistance(MobActionContext context, LivingEntity target)
+    {
+        double distanceToTarget = context.mob().distanceTo(target);
+
+        return DistanceMultiplierUtility.applyDistanceMultiplier(
+                BASE_TARGET_REPATH_DISTANCE,
+                distanceToTarget,
+                context.configSnapshot().data().balance.optimization.distanceScaleStartBlocks,
+                context.configSnapshot().data().balance.optimization.distanceScaleMaxBlocks,
+                context.configSnapshot().data().balance.optimization.distanceScaleMaxMultiplier
+        );
     }
 }
