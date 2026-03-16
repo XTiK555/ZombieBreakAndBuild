@@ -27,9 +27,12 @@ public class BreakAndBuildState implements IMobState
     public void tick(MobStateContext context)
     {
         adjustHeightToTargetTactic.execute(context);
-        bridgeToTargetTactic.execute(context);
         clearObstaclesToTargetTactic.execute(context);
-        mitigateDangerousBlocksTactic.execute(context);
+        if (!adjustHeightToTargetTactic.isRunning())
+        {
+            bridgeToTargetTactic.execute(context);
+            mitigateDangerousBlocksTactic.execute(context);
+        }
         goToTargetTactic.execute(context);
     }
 

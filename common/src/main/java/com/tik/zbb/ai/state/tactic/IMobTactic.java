@@ -5,4 +5,9 @@ import com.tik.zbb.ai.state.MobStateContext;
 public interface IMobTactic
 {
     void execute(MobStateContext context);
+
+    default boolean isRunning()
+    {
+        return false;
+    }
 }
