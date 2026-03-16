@@ -13,7 +13,7 @@ import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.ValueInput;
 import org.greenrobot.eventbus.Subscribe;
 
-public class BrokenBlockStorage extends BaseBlockStorage<BrokenEntry>
+public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry>
 {
     @Subscribe
     public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
@@ -39,18 +39,18 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenEntry>
             blockEntityTag = blockEntity.saveWithFullMetadata(level.registryAccess());
         }
 
-        put(level, pos, new BrokenEntry(oldState, blockEntityTag, level.getGameTime()));
+        put(level, pos, new BrokenBlockStorageEntry(oldState, blockEntityTag, level.getGameTime()));
     }
 
     @Override
-    protected boolean isExpired(BrokenEntry entry, long now, long ttlTicks)
+    protected boolean isExpired(BrokenBlockStorageEntry entry, long now, long ttlTicks)
     {
         if (ttlTicks <= 0) return false;
         return now - entry.tick() > ttlTicks;
     }
 
     @Override
-    protected void onRemove(ServerLevel level, long posKey, BrokenEntry entry)
+    protected void onRemove(ServerLevel level, long posKey, BrokenBlockStorageEntry entry)
     {
         BlockPos pos = BlockPos.of(posKey);
         BlockState currentState = level.getBlockState(pos);

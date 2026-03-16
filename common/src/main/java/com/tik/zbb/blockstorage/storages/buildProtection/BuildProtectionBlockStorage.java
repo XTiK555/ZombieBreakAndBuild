@@ -7,7 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.greenrobot.eventbus.Subscribe;
 
-public class BuildProtectionBlockStorage extends BaseBlockStorage<BuildProtectionEntry>
+public class BuildProtectionBlockStorage extends BaseBlockStorage<BuildProtectionBlockStorageEntry>
 {
     @Subscribe
     public void onAnyBlockPlaced(BuildAction.OnAnyBlockPlacedEvent event)
@@ -23,11 +23,11 @@ public class BuildProtectionBlockStorage extends BaseBlockStorage<BuildProtectio
 
     public void addBuildProtectionData(ServerLevel level, BlockPos pos)
     {
-        put(level, pos, new BuildProtectionEntry(level.getGameTime()));
+        put(level, pos, new BuildProtectionBlockStorageEntry(level.getGameTime()));
     }
 
     @Override
-    protected boolean isExpired(BuildProtectionEntry entry, long now, long ttlTicks)
+    protected boolean isExpired(BuildProtectionBlockStorageEntry entry, long now, long ttlTicks)
     {
         return now - entry.tick() > ttlTicks;
     }

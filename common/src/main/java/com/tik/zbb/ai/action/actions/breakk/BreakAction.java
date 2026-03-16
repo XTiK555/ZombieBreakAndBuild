@@ -37,9 +37,10 @@ public class BreakAction implements IMobAction<BreakRequest>
     public void execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
+        int id = BlockStorages.ID.getOrCreate(context.level(), request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level());
         int damageToBlocks = getDamageToBlocks(context, request.pos());
-        int totalDamage = BlockStorages.DAMAGE.addDamageData(context.level(), request.pos(), damageToBlocks);
+        int totalDamage = BlockStorages.DAMAGE.addDamageData(context.level(), request.pos(), damageToBlocks, id);
 
         if (totalDamage >= blockHealth)
         {
@@ -52,7 +53,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         {
             int stage = Math.min(9, (totalDamage * 10) / blockHealth);
 
-            context.level().destroyBlockProgress(request.pos().hashCode(), request.pos(), stage);
+            context.level().destroyBlockProgress(id, request.pos(), stage);
             context.level().levelEvent(2001, request.pos(), Block.getId(state)); // particles and sound
         }
 
