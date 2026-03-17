@@ -8,13 +8,19 @@ import com.tik.zbb.ai.state.tactic.tactics.*;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.phys.Vec3;
 
 public class BreakAndBuildState implements IMobState
 {
+    private final int STUCK_TICKS_TO_BREAKANDBUILD = 40;
+
     private final IMobTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
     private final IMobTactic bridgeToTargetTactic = new BridgeToTargetTactic();
     private final IMobTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
+
+    private int customStuckTicks = 0;
+    private Vec3 lastStuckCheckPos = null;
 
     @Override
     public void tick(MobStateContext context)
@@ -39,7 +45,7 @@ public class BreakAndBuildState implements IMobState
             return Priority.High;
         }
 
-        if (navigation.isStuck())
+        if (navigation.isStuck() || isCustomStuck(context))
         {
             return Priority.High;
         }
@@ -83,5 +89,42 @@ public class BreakAndBuildState implements IMobState
         }
 
         return Priority.Low;
+    }
+
+    private boolean isCustomStuck(MobStateContext context)
+    {
+        var mob = context.getMob();
+        var navigation = mob.getNavigation();
+        var path = navigation.getPath();
+
+        if (mob.getTarget() == null || path == null || path.isDone())
+        {
+            customStuckTicks = 0;
+            lastStuckCheckPos = null;
+            return false;
+        }
+
+        Vec3 currentPos = mob.position();
+
+        if (lastStuckCheckPos == null)
+        {
+            lastStuckCheckPos = currentPos;
+            customStuckTicks = 0;
+            return false;
+        }
+
+        double movedSq = currentPos.distanceToSqr(lastStuckCheckPos);
+        lastStuckCheckPos = currentPos;
+
+        if (movedSq < 0.0009D)
+        {
+            customStuckTicks++;
+        }
+        else
+        {
+            customStuckTicks = 0;
+        }
+
+        return customStuckTicks >= STUCK_TICKS_TO_BREAKANDBUILD;
     }
 }

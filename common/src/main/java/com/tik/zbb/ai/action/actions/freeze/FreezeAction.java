@@ -24,9 +24,6 @@ public class FreezeAction implements IMobAction<FreezeRequest>
         double currentVelY = context.mob().getDeltaMovement().y;
 
         context.mob().getMoveControl().setWantedPosition(centerX, currentY, centerZ, 1);
-        context.mob().getNavigation().stop();
         context.mob().setDeltaMovement(0.0, currentVelY, 0.0);
-
-        context.aiTimers().setFreezeUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.freezeTime));
     }
 }
