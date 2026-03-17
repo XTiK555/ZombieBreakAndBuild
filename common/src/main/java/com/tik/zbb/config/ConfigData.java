@@ -115,16 +115,16 @@ public class ConfigData
         public double freezeTime = 0.5D;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time a zombie must be stuck before it start breaking or placing blocks (seconds)")
-        public double stuckSecondsBeforeBreakAndBuild = 3.0D;
-
-        @Range(min = 0, max = 1000000)
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
 
         @Range(min = 0, max = 1000000)
         @Comment("The radius within which zombies will detect dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
+
+        @Range(min = 1, max = 1000000)
+        @Comment("Distance to path end before breaking or building")
+        public int endNodeBreakBuildDistance = 6;
 
         public BlockDamage blockDamage = new BlockDamage();
 
@@ -160,22 +160,6 @@ public class ConfigData
 
         public static class Optimization
         {
-            @Range(min = 0.05, max = 1000000)
-            @Comment("Interval between path recalculations (seconds)")
-            public double pathCheckInterval = 2.0D;
-
-            @Range(min = 0, max = 1000000)
-            @Comment("Distance below which no distance-based optimization is applied.)")
-            public double distanceScaleStartBlocks = 5.0D;
-
-            @Range(min = 0, max = 1000000)
-            @Comment("Distance at which distance-based optimization reaches its maximum effect.")
-            public double distanceScaleMaxBlocks = 64.0D;
-
-            @Range(min = 1.0, max = 1000000)
-            @Comment("Maximum multiplier used for distance-based scaling of expensive AI operations such as pathCheck intervals.")
-            public double distanceScaleMaxMultiplier = 8.0D;
-
             @Range(min = 1, max = 1000000)
             @Comment("How long block damage data is stored (seconds)")
             public double damageStoreTime = 60.0D;
