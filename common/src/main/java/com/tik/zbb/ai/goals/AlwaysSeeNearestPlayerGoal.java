@@ -55,7 +55,6 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     @Override
     public void stop()
     {
-        if (mob.getTarget() == target) mob.setTarget(null);
         target = null;
     }
 

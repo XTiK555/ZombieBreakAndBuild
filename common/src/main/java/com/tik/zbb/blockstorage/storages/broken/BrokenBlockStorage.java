@@ -2,6 +2,8 @@ package com.tik.zbb.blockstorage.storages.broken;
 
 import com.tik.zbb.ai.action.actions.breakk.BreakAction;
 import com.tik.zbb.blockstorage.BaseBlockStorage;
+import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.config.ConfigSnapshot;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -24,7 +26,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
     @Subscribe
     public void onAnyBlockWillBroke(BreakAction.OnAnyBlockWillBrokeEvent event)
     {
-        if (!event.configSnapshot().data().blockReturning.brokenBlocksRestoring) return;
+        if (!BrokenBlockStorageAddConditions(event.configSnapshot(), event.level(), event.pos())) return;
 
         BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
         CompoundTag blockEntityTag = null;
@@ -46,7 +48,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
     @Subscribe
     public void onAnyBlockFailedToBroke(BreakAction.OnAnyBlockFailedToBrokeEvent event)
     {
-        if (!event.configSnapshot().data().blockReturning.brokenBlocksRestoring) return;
+        if (!BrokenBlockStorageAddConditions(event.configSnapshot(), event.level(), event.pos())) return;
 
         BrokenBlockStorageEntry entry = getPending(event.level(), event.pos());
         if (entry == null) return;
@@ -67,7 +69,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
     @Subscribe
     public void onAnyBlockBroken(BreakAction.OnAnyBlockBrokenEvent event)
     {
-        if (!event.configSnapshot().data().blockReturning.brokenBlocksRestoring) return;
+        if (!BrokenBlockStorageAddConditions(event.configSnapshot(), event.level(), event.pos())) return;
 
         BrokenBlockStorageEntry pendingEntry = getPending(event.level(), event.pos());
         if (pendingEntry == null) return;
@@ -159,5 +161,13 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
     private Long2ObjectOpenHashMap<BrokenBlockStorageEntry> pendingEntries(ServerLevel level)
     {
         return pendingEntriesByLevel.computeIfAbsent(level, l -> new Long2ObjectOpenHashMap<>());
+    }
+
+    private boolean BrokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
+    {
+        if (!configSnapshot.data().blockReturning.brokenBlocksRestoring) return false;
+        if (BlockStorages.BUILD_DISAPPEAR.contains(level, pos)) return false;
+
+        return true;
     }
 }

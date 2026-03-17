@@ -5,6 +5,7 @@ import com.tik.zbb.ai.state.tactic.IMobTactic;
 import com.tik.zbb.utilities.HitboxScanUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import static com.tik.zbb.utilities.IsFreePassUtility.isFreePass;
@@ -34,30 +35,40 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         currentMobPos.set(mobX, mobY, mobZ);
 
-        switch (currentState)
+        for (int i = 0; i < 2; i++)
         {
-            case Idle ->
+            State prevState = currentState;
+
+            switch (currentState)
             {
-                if (idle(context, targetY))
+                case Idle ->
                 {
-                    currentState = State.Jumping;
+                    if (idle(context, targetY))
+                    {
+                        currentState = State.Jumping;
+                    }
+                }
+
+                case Jumping ->
+                {
+                    if (jumping(context))
+                    {
+                        currentState = State.WaitingForBlock;
+                    }
+                }
+
+                case WaitingForBlock ->
+                {
+                    if (waitingForBlock(context, targetY))
+                    {
+                        currentState = State.Idle;
+                    }
                 }
             }
 
-            case Jumping ->
+            if (currentState == State.WaitingForBlock || currentState == prevState)
             {
-                if (jumping(context, targetY))
-                {
-                    currentState = State.WaitingForBlock;
-                }
-            }
-
-            case WaitingForBlock ->
-            {
-                if (waitingForBlock(context, targetY))
-                {
-                    currentState = State.Idle;
-                }
+                break;
             }
         }
     }
@@ -76,20 +87,13 @@ public class AdjustHeightToTargetTactic implements IMobTactic
         }
 
         BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), UP_SCAN_VEC);
+        BlockPos posUnderBottomCenter = getBlockUnderBottomCenter(context);
 
-        return (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel())) && context.getActionExecutor().canExecuteBuildAction(currentMobPos);
+        return (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel())) && context.getActionExecutor().canExecuteBuildAction(posUnderBottomCenter.above());
     }
 
-    private boolean jumping(MobStateContext context, int targetY)
+    private boolean jumping(MobStateContext context)
     {
-        BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), UP_SCAN_VEC);
-
-        if ((blockAboveUs != null && !isFreePass(blockAboveUs, context.getLevel())) || targetY <= currentMobPos.getY() + 1)
-        {
-            currentState = State.Idle;
-            return false;
-        }
-
         beforeJumpMobPos.set(currentMobPos.getX(), currentMobPos.getY(), currentMobPos.getZ());
         context.getMob().getJumpControl().jump();
 
@@ -110,15 +114,31 @@ public class AdjustHeightToTargetTactic implements IMobTactic
         // wait
         if (currentY < startY + 1) return false;
 
-        if (context.getActionExecutor().tryExecuteBuildAction(beforeJumpMobPos))
+        BlockPos posUnderBottomCenter = getBlockUnderBottomCenter(context);
+
+        if (context.getActionExecutor().tryExecuteBuildAction(posUnderBottomCenter))
         {
             return true;
         }
         else
         {
-            context.getActionExecutor().tryExecuteBreakAction(beforeJumpMobPos);
+            context.getActionExecutor().tryExecuteBreakAction(posUnderBottomCenter);
+            return true;
         }
+    }
 
-        return false;
+    private BlockPos getBlockUnderBottomCenter(MobStateContext context)
+    {
+        AABB box = context.getMob().getBoundingBox();
+
+        double centerX = (box.minX + box.maxX) * 0.5D;
+        double bottomY = box.minY;
+        double centerZ = (box.minZ + box.maxZ) * 0.5D;
+
+        int x = Mth.floor(centerX);
+        int y = Mth.floor(bottomY - 1);
+        int z = Mth.floor(centerZ);
+
+        return new BlockPos(x, y, z);
     }
 }
