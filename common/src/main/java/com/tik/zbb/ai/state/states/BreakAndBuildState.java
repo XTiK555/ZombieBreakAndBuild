@@ -17,7 +17,6 @@ public class BreakAndBuildState implements IMobState
     private final IMobTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
     private final IMobTactic bridgeToTargetTactic = new BridgeToTargetTactic();
     private final IMobTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
-    private final IMobTactic goToTargetTactic = new GoToTargetTactic();
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
     private Priority lastPriority = Priority.Low;
@@ -35,7 +34,6 @@ public class BreakAndBuildState implements IMobState
             bridgeToTargetTactic.execute(context);
             mitigateDangerousBlocksTactic.execute(context);
         }
-        goToTargetTactic.execute(context);
     }
 
     @Override

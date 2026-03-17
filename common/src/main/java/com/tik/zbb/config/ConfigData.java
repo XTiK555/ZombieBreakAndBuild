@@ -161,10 +161,6 @@ public class ConfigData
         public static class Optimization
         {
             @Range(min = 0.05, max = 1000000)
-            @Comment("Interval between moving toward the target (seconds)")
-            public double goToTargetInterval = 0.5D;
-
-            @Range(min = 0.05, max = 1000000)
             @Comment("Interval between path recalculations (seconds)")
             public double pathCheckInterval = 2.0D;
 

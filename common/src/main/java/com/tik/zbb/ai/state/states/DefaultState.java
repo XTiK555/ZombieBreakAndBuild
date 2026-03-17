@@ -8,14 +8,12 @@ import com.tik.zbb.ai.state.tactic.tactics.*;
 
 public class DefaultState implements IMobState
 {
-    private final IMobTactic goToTargetTactic = new GoToTargetTactic();
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
     @Override
     public void tick(MobStateContext context)
     {
         mitigateDangerousBlocksTactic.execute(context);
-        goToTargetTactic.execute(context);
     }
 
     @Override
