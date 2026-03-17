@@ -73,7 +73,7 @@ public class ConfigData
         @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
-        @Comment("Zombies will be able to see targets through walls")
+        @Comment("Zombies can see targets through walls (only for mobs that use NearestAttackableTargetGoal)")
         public boolean canSeeTargetsThroughBlocks = true;
 
         @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
@@ -111,10 +111,6 @@ public class ConfigData
     public static class Balance
     {
         @Range(min = 0, max = 1000000)
-        @Comment("Freeze time after breaking or placing a block (seconds)")
-        public double freezeTime = 0.5D;
-
-        @Range(min = 0, max = 1000000)
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
 
@@ -139,11 +135,11 @@ public class ConfigData
             public int damageToBlocks = 3;
 
             @Range(min = 0, max = 1000000)
-            @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 = tools do not affect damage)")
+            @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 - tools do not affect damage)")
             public float itemDamageMultiplierStrength = 0.5f;
 
             @Range(min = 0, max = 1000000)
-            @Comment("How strongly the hitbox size multiplier affects block damage (0 = hitbox size does not affect damage)")
+            @Comment("How strongly the hitbox size multiplier affects block damage (0 - hitbox size does not affect damage)")
             public double hitboxSizeMultiplierStrength = 0.5;
         }
 

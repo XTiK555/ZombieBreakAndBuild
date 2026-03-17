@@ -2,6 +2,7 @@ package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import com.tik.zbb.ai.action.actions.build.BuildAction;
 import com.tik.zbb.blockstorage.BaseBlockStorage;
+import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -16,6 +17,12 @@ public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearB
         if (!event.configSnapshot().data().blockReturning.builtBlocksDisappearing) return;
 
         addBuildDisappearData(event.level(), event.pos());
+    }
+
+    @Subscribe
+    public void onLevelChunkBlockChanged(MixinEvents.OnLevelChunkBlockChangedEvent event)
+    {
+        remove(event.level(), event.pos());
     }
 
     public void addBuildDisappearData(ServerLevel level, BlockPos pos)

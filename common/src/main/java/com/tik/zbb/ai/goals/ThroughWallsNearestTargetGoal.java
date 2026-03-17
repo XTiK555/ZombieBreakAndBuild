@@ -6,7 +6,6 @@ import com.tik.zbb.utilities.TargetingUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 
@@ -15,7 +14,6 @@ import java.util.List;
 public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<LivingEntity>
 {
     private final List<NearestAttackableTargetGoal<?>> vanillaTargetGoals;
-    private double cachedRange = -1;
     private final java.util.IdentityHashMap<NearestAttackableTargetGoal<?>, TargetingConditions> adjustedCache = new java.util.IdentityHashMap<>();
 
     public ThroughWallsNearestTargetGoal(Mob mob, List<NearestAttackableTargetGoal<?>> vanillaTargetGoals)
@@ -24,7 +22,7 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
 
         this.vanillaTargetGoals = vanillaTargetGoals;
 
-        rebuildIfNeeded();
+        rebuild();
     }
 
     @Override
@@ -40,20 +38,12 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
             return false;
         }
 
-        rebuildIfNeeded();
+        rebuild();
         return super.canUse();
     }
 
-    private void rebuildIfNeeded()
+    private void rebuild()
     {
-        double range = mob.getAttributeValue(Attributes.FOLLOW_RANGE);
-
-        if (range == cachedRange && !adjustedCache.isEmpty())
-        {
-            return;
-        }
-
-        cachedRange = range;
         adjustedCache.clear();
 
         for (NearestAttackableTargetGoal<?> goal : vanillaTargetGoals)
@@ -62,13 +52,12 @@ public class ThroughWallsNearestTargetGoal extends NearestAttackableTargetGoal<L
             TargetingConditions cond = acc.zbb$getTargetConditions();
             if (cond == null) continue;
 
-            TargetingConditions adjusted = cond.copy().ignoreLineOfSight().range(range);
+            TargetingConditions adjusted = cond.copy().ignoreLineOfSight();
             adjustedCache.put(goal, adjusted);
         }
 
         this.targetConditions = TargetingConditions.forCombat()
                 .ignoreLineOfSight()
-                .range(range)
                 .selector((target, serverLevel) ->
                         TargetingUtility.passesVanillaChecks(mob, target, true, false)
                                 && isAllowedByVanillaGoals(serverLevel, mob, target));

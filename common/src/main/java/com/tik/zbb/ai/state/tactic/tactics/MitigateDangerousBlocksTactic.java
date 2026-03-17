@@ -24,7 +24,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
 
         int radius = context.getConfigSnapshot().data().balance.dangerousBlocksSearchRadius;
 
-        BlockPos dangerousBlockPos = HitboxScanUtility.findNearestBlockInInflatedHitbox(
+        BlockPos dangerousBlockPos = HitboxScanUtility.findNearestBlockInHitbox(
                 context.getLevel(),
                 context.getMob(),
                 radius,

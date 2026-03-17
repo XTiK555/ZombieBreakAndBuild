@@ -79,12 +79,8 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 
-    minecraftLibrary "com.electronwill.night-config:toml:3.8.3"
     minecraftLibrary "org.greenrobot:eventbus-java:3.3.1"
 
-    jarJar("com.electronwill.night-config:toml:[3.8,4.0)") {
-        jarJar.pin(it, "3.8.3")
-    }
     jarJar("org.greenrobot:eventbus-java:[3.3,4.0)") {
         jarJar.pin(it, "3.3.1")
     }
