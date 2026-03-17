@@ -7,8 +7,6 @@ import com.tik.zbb.ai.action.actions.build.BuildAction;
 import com.tik.zbb.ai.action.actions.build.BuildRequest;
 import com.tik.zbb.ai.action.actions.freeze.FreezeAction;
 import com.tik.zbb.ai.action.actions.freeze.FreezeRequest;
-import com.tik.zbb.ai.action.actions.gototarget.GoToTargetAction;
-import com.tik.zbb.ai.action.actions.gototarget.GoToTargetRequest;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.core.BlockPos;
@@ -27,7 +25,6 @@ public final class ActionExecutor
     private final BreakAction breakAction = new BreakAction();
     private final BuildAction buildAction = new BuildAction();
     private final FreezeAction freezeAction = new FreezeAction();
-    private final GoToTargetAction goToTargetAction = new GoToTargetAction();
 
     private MobActionContext mobActionContext;
     private ConfigCache configCache;
@@ -69,12 +66,6 @@ public final class ActionExecutor
         return canExecuteAction(freezeAction, new FreezeRequest());
     }
 
-    public boolean canExecuteGoToTargetAction(LivingEntity target)
-    {
-        keepDataUpToDate();
-        return canExecuteAction(goToTargetAction, new GoToTargetRequest(target));
-    }
-
     public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
         keepDataUpToDate();
@@ -91,12 +82,6 @@ public final class ActionExecutor
     {
         keepDataUpToDate();
         return tryExecuteAction(freezeAction, new FreezeRequest());
-    }
-
-    public boolean tryExecuteGoToTargetAction(LivingEntity target)
-    {
-        keepDataUpToDate();
-        return tryExecuteAction(goToTargetAction, new GoToTargetRequest(target));
     }
 
     private <R> boolean tryExecuteAction(IMobAction<R> action, R request)
