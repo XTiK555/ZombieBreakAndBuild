@@ -37,6 +37,7 @@ public class BuildAction implements IMobAction<BuildRequest>
 
             context.executor().tryExecuteFreezeAction();
             context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
+
             Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot()));
         }
     }
