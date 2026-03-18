@@ -6,11 +6,11 @@
   "compatibilityLevel": "JAVA_18",
   "mixins": [
     "accessor.MobAccessor",
-    "accessor.NATGAccessor",
     "accessor.GoalSelectorAccessor",
     "LevelChunkMixin",
     "NATGoalMixin",
     "TargetGoalMixin",
+    "ZombieMixin"
   ],
   "client": [
   ],
