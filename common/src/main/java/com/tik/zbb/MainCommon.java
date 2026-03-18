@@ -5,7 +5,6 @@ import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
-import com.tik.zbb.ai.goals.ThroughWallsNearestTargetGoal;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import net.minecraft.core.Registry;
@@ -71,21 +70,15 @@ public class MainCommon
         if (!hasGoal(goalSelector, BreakAndBuildGoal.class))
             goalSelector.addGoal(2, new BreakAndBuildGoal(pFMob));
         if (!hasGoal(targetSelector, AlwaysSeeNearestPlayerGoal.class))
-            targetSelector.addGoal(2, new AlwaysSeeNearestPlayerGoal(pFMob));
-        if (!hasGoal(targetSelector, ThroughWallsNearestTargetGoal.class))
         {
-            Set<WrappedGoal> wrapped = ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals();
-            List<NearestAttackableTargetGoal<?>> vanillaNatg = new ArrayList<>();
-            for (WrappedGoal wg : wrapped)
+            int maxTargetPriority = 0;
+
+            for (WrappedGoal wg : ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals())
             {
-                Goal g = wg.getGoal();
-                if (g instanceof NearestAttackableTargetGoal<?> natg)
-                {
-                    vanillaNatg.add(natg);
-                }
+                maxTargetPriority = Math.max(maxTargetPriority, wg.getPriority());
             }
 
-            targetSelector.addGoal(1, new ThroughWallsNearestTargetGoal(pFMob, vanillaNatg));
+            targetSelector.addGoal(maxTargetPriority + 1, new AlwaysSeeNearestPlayerGoal(pFMob));
         }
     }
 
