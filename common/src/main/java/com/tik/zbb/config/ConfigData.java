@@ -124,7 +124,7 @@ public class ConfigData
 
         @Range(min = 0, max = 100)
         @Comment("Additional zombie equipment spawn chance. 0 - vanilla, 100 - 100% chance")
-        public int additionalZombieEquipmentSpawnChance = 15;
+        public int additionalZombieEquipmentSpawnChance = 10;
 
         public BlockDamage blockDamage = new BlockDamage();
 

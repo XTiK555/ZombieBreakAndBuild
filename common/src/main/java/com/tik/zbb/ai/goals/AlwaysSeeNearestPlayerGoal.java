@@ -2,11 +2,16 @@ package com.tik.zbb.ai.goals;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.utilities.TargetingUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.NeutralMob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.EnumSet;
@@ -65,7 +70,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         for (ServerPlayer player : players)
         {
-            if (!TargetingUtility.passesVanillaChecks(mob, player, true, true)) continue;
+            if (!passesVanillaChecks(mob, player, true, true)) continue;
 
             double d = player.distanceToSqr(mob);
             if (d < bestDist)
@@ -76,5 +81,32 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         }
 
         return best;
+    }
+
+    public static boolean passesVanillaChecks(Mob mob, LivingEntity candidate, boolean ignoreLineOfSight, boolean ignoreDistance)
+    {
+        if (candidate == null || !candidate.isAlive()) return false;
+        if (!(mob.level() instanceof ServerLevel level)) return false;
+
+        if (candidate instanceof Player p && !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(p))
+        {
+            return false;
+        }
+
+        if (!mob.canAttack(candidate)) return false;
+
+        if (mob instanceof NeutralMob neutral)
+        {
+            if (!neutral.isAngryAt(candidate, level)) return false;
+        }
+
+        AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
+        double followRange = followRangeAttribute != null ? followRangeAttribute.getValue() : Double.MAX_VALUE;
+        double range = ignoreDistance ? Double.MAX_VALUE : followRange;
+
+        TargetingConditions cond = TargetingConditions.forCombat().range(range);
+        if (ignoreLineOfSight) cond = cond.ignoreLineOfSight();
+
+        return cond.test(level, mob, candidate);
     }
 }
