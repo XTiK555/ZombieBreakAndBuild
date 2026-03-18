@@ -35,7 +35,6 @@ public class BuildAction implements IMobAction<BuildRequest>
         {
             context.level().playSound(null, request.pos(), soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
 
-            context.executor().tryExecuteFreezeAction();
             context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
 
             Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot()));

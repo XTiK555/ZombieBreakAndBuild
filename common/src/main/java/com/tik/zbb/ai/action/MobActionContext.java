@@ -10,7 +10,6 @@ public record MobActionContext(
         ServerLevel level,
         ConfigSnapshot configSnapshot,
         PathfinderMob mob,
-        ActionExecutor executor,
         AiTimers aiTimers,
         Identifier mobId
 ) {}
