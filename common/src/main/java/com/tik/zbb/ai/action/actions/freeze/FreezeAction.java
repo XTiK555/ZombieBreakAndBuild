@@ -23,7 +23,7 @@ public class FreezeAction implements IMobAction<FreezeRequest>
         double currentY = context.mob().getY();
         double currentVelY = context.mob().getDeltaMovement().y;
 
-        context.mob().getMoveControl().setWantedPosition(centerX, currentY, centerZ, 1);
+        context.mob().getMoveControl().setWantedPosition(centerX, currentY, centerZ, 0);
         context.mob().setDeltaMovement(0.0, currentVelY, 0.0);
     }
 }

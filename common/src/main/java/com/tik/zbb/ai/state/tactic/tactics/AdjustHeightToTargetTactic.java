@@ -118,11 +118,15 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         if (context.getActionExecutor().tryExecuteBuildAction(posUnderBottomCenter))
         {
+            context.getActionExecutor().tryExecuteFreezeAction();
             return true;
         }
         else
         {
-            context.getActionExecutor().tryExecuteBreakAction(posUnderBottomCenter);
+            if (context.getActionExecutor().tryExecuteBreakAction(posUnderBottomCenter))
+            {
+                context.getActionExecutor().tryExecuteFreezeAction();
+            }
             return true;
         }
     }
