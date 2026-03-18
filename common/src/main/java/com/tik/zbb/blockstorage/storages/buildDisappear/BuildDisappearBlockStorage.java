@@ -44,7 +44,7 @@ public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearB
         BlockPos pos = BlockPos.of(posKey);
         BlockState currentState = level.getBlockState(pos);
 
-        if (currentState.equals(entry.state()))
+        if (currentState.is(entry.state().getBlock()))
         {
             level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
         }
