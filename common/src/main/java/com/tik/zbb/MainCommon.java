@@ -44,12 +44,12 @@ public class MainCommon
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         long now = level.getGameTime();
-        int interval = 10;
+        int interval = 5;
 
+        BlockStorages.BUILD_PROTECTION.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
         if (now % interval == 0)
         {
             BlockStorages.DAMAGE.cleanup(level, toTicks(config.balance.optimization.damageStoreTime));
-            BlockStorages.BUILD_PROTECTION.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
             if (config.blockReturning.brokenBlocksRestoring)
                 BlockStorages.BROKEN.cleanup(level, toTicks(config.blockReturning.brokenBlocksRestoreTime));
             if (config.blockReturning.builtBlocksDisappearing)
@@ -97,9 +97,9 @@ public class MainCommon
         Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().registryOrThrow(Registries.ENTITY_TYPE);
         ResourceLocation entityId = entityTypeRegistry.getKey(mob.getType());
 
+        if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
         if (entityId != null && config.ignoreBuildEntityIdSet.contains(entityId) && config.ignoreBreakEntityIdSet.contains(entityId))
             return false;
-        if (entityId != null && config.additionalEntityIdSet.contains(entityId)) return true;
         if (mob.getType().getCategory() != MobCategory.MONSTER) return false;
         if (config.ai.applyToAllMonsters) return true;
 

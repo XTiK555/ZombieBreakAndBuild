@@ -18,13 +18,13 @@ public final class HitboxScanUtility
     public static BlockPos getNearestCollidingBlockWithHitbox(ServerLevel level, Mob mob, Vec3 offset)
     {
         AABB hitbox = mob.getBoundingBox().move(offset);
-        return findNearestCollidingBlock(level, hitbox, mob.position(), state -> !state.isAir());
+        return findNearestCollidingBlock(level, hitbox, mob.getBoundingBox().getCenter(), state -> !state.isAir());
     }
 
     public static BlockPos findNearestBlockInHitbox(ServerLevel level, Mob mob, double inflate, Predicate<BlockState> predicate)
     {
         AABB scanBox = mob.getBoundingBox().inflate(inflate);
-        return findNearestMatchingBlock(level, scanBox, mob.position(), (currentLevel, pos, state) -> predicate.test(state));
+        return findNearestMatchingBlock(level, scanBox, mob.getBoundingBox().getCenter(), (currentLevel, pos, state) -> predicate.test(state));
     }
 
     private static BlockPos findNearestCollidingBlock(ServerLevel level, AABB hitbox, Vec3 origin, Predicate<BlockState> predicate)
@@ -58,6 +58,10 @@ public final class HitboxScanUtility
         BlockPos nearest = null;
         double bestDist = Double.MAX_VALUE;
 
+        double originX = origin.x;
+        double originY = origin.y;
+        double originZ = origin.z;
+
         int minX = Mth.floor(scanBox.minX);
         int minY = Mth.floor(scanBox.minY);
         int minZ = Mth.floor(scanBox.minZ);
@@ -69,8 +73,12 @@ public final class HitboxScanUtility
 
         for (int x = minX; x <= maxX; x++)
         {
+            double dx = (x + 0.5D) - originX;
+
             for (int y = minY; y <= maxY; y++)
             {
+                double dy = (y + 0.5D) - originY;
+
                 for (int z = minZ; z <= maxZ; z++)
                 {
                     pos.set(x, y, z);
@@ -81,7 +89,9 @@ public final class HitboxScanUtility
                         continue;
                     }
 
-                    double dist = Vec3.atCenterOf(pos).distanceToSqr(origin);
+                    double dz = (z + 0.5D) - originZ;
+                    double dist = dx * dx + dy * dy + dz * dz;
+
                     if (dist < bestDist)
                     {
                         bestDist = dist;
