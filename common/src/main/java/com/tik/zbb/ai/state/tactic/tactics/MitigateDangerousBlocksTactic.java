@@ -14,8 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class MitigateDangerousBlocksTactic implements IMobTactic
 {
-    private final BlockPos.MutableBlockPos coverPos = new BlockPos.MutableBlockPos();
-
     @Override
     public void execute(MobStateContext context)
     {
@@ -43,11 +41,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
     {
         if (!context.getActionExecutor().tryExecuteBuildAction(blockPos))
         {
-            if (!context.getActionExecutor().tryExecuteBreakAction(blockPos))
-            {
-                coverPos.set(blockPos.getX(), blockPos.getY() + 1, blockPos.getZ());
-                context.getActionExecutor().tryExecuteBuildAction(coverPos);
-            }
+            context.getActionExecutor().tryExecuteBreakAction(blockPos);
         }
     }
 

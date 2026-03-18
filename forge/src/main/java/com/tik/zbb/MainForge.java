@@ -38,7 +38,7 @@ public class MainForge
     }
 
     @SubscribeEvent
-    public static void onAddReloadListeners(AddReloadListenerEvent event)
+    public void onAddReloadListeners(AddReloadListenerEvent event)
     {
         event.addListener((ResourceManagerReloadListener) resourceManager -> ConfigManager.reload());
     }
