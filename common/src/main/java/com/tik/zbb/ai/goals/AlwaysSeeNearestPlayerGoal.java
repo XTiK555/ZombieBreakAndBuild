@@ -5,7 +5,6 @@ import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.utilities.TargetingUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
@@ -32,24 +31,25 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         if (!config.ai.alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
-        if (mob.getTarget() != null && TargetingUtility.passesVanillaChecks(mob, mob.getTarget(), true, true))
-            return false;
+        if (mob.getTarget() != null) return false;
 
         target = findNearestValidPlayer(sl.players());
-
         return target != null;
     }
 
     @Override
     public boolean canContinueToUse()
     {
-        return TargetingUtility.passesVanillaChecks(mob, target, true, true) && mob.getTarget() == target;
+        return false;
     }
 
     @Override
     public void start()
     {
-        mob.setTarget(target);
+        if (target != null)
+        {
+            mob.setTarget(target);
+        }
     }
 
     @Override
@@ -66,6 +66,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         for (ServerPlayer player : players)
         {
             if (!TargetingUtility.passesVanillaChecks(mob, player, true, true)) continue;
+
             double d = player.distanceToSqr(mob);
             if (d < bestDist)
             {

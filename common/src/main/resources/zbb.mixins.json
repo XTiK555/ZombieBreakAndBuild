@@ -8,7 +8,9 @@
     "accessor.MobAccessor",
     "accessor.NATGAccessor",
     "accessor.GoalSelectorAccessor",
-    "LevelChunkMixin"
+    "LevelChunkMixin",
+    "NATGoalMixin",
+    "TargetGoalMixin",
   ],
   "client": [
   ],
