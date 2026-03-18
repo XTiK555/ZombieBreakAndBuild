@@ -61,11 +61,11 @@ public class MainCommon
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         if (!matchesZbbMobFilter(mob, config)) return;
-        if (!(mob instanceof MobAccessor pFMobAccessor)) return;
+        if (!(mob instanceof MobAccessor mobAccessor)) return;
 
         PathfinderMob pFMob = (PathfinderMob) mob;
-        GoalSelector targetSelector = pFMobAccessor.zbb$getTargetSelector();
-        GoalSelector goalSelector = pFMobAccessor.zbb$getGoalSelector();
+        GoalSelector targetSelector = mobAccessor.zbb$getTargetSelector();
+        GoalSelector goalSelector = mobAccessor.zbb$getGoalSelector();
 
         if (!hasGoal(goalSelector, BreakAndBuildGoal.class))
             goalSelector.addGoal(2, new BreakAndBuildGoal(pFMob));

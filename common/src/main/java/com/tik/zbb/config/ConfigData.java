@@ -122,6 +122,10 @@ public class ConfigData
         @Comment("Distance to path end before breaking or building")
         public int endNodeBreakBuildDistance = 6;
 
+        @Range(min = 0, max = 100)
+        @Comment("Additional zombie equipment spawn chance. 0 - vanilla, 100 - 100% chance")
+        public int additionalZombieEquipmentSpawnChance = 15;
+
         public BlockDamage blockDamage = new BlockDamage();
 
         public Cooldowns cooldowns = new Cooldowns();
