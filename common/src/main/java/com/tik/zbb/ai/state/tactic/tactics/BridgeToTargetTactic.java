@@ -35,7 +35,10 @@ public class BridgeToTargetTactic implements IMobTactic
         boolean belowUsEmpty = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), DOWN_SCAN_VEC) == null;
         if (belowUsEmpty && targetY >= mobY)
         {
-            context.getActionExecutor().tryExecuteBuildAction(belowMobPos);
+            if (context.getActionExecutor().tryExecuteBuildAction(belowMobPos))
+            {
+                context.getActionExecutor().tryExecuteFreezeAction();
+            }
         }
 
         boolean frontEmpty = IsFreePassUtility.isFreePass(frontBlockPos, context.getLevel());
@@ -43,9 +46,16 @@ public class BridgeToTargetTactic implements IMobTactic
         boolean below2FrontEmpty = IsFreePassUtility.isFreePass(twoBelowFrontPos, context.getLevel());
         if (frontEmpty && belowFrontEmpty && below2FrontEmpty)
         {
-            if (!context.getActionExecutor().tryExecuteBuildAction(belowFrontPos))
+            if (context.getActionExecutor().tryExecuteBuildAction(belowFrontPos))
             {
-                context.getActionExecutor().tryExecuteBreakAction(belowFrontPos);
+                context.getActionExecutor().tryExecuteFreezeAction();
+            }
+            else
+            {
+                if (context.getActionExecutor().tryExecuteBreakAction(belowFrontPos))
+                {
+                    context.getActionExecutor().tryExecuteFreezeAction();
+                }
             }
         }
     }

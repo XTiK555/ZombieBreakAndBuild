@@ -64,7 +64,6 @@ public class BreakAction implements IMobAction<BreakRequest>
             context.level().levelEvent(2001, request.pos(), Block.getId(state)); // particles and sound
         }
 
-        context.executor().tryExecuteFreezeAction();
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
     }
 

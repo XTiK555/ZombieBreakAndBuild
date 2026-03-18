@@ -41,7 +41,6 @@ public final class ActionExecutor
                 level,
                 ConfigManager.getConfigSnapshot(),
                 mob,
-                this,
                 aiTimers,
                 entityTypeRegistry.getKey(mob.getType())
         );
@@ -114,7 +113,6 @@ public final class ActionExecutor
                     level,
                     ConfigManager.getConfigSnapshot(),
                     mobActionContext.mob(),
-                    this,
                     mobActionContext.aiTimers(),
                     mobActionContext.mobId()
             );
