@@ -34,7 +34,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
             handleDangerousBlock(dangerousBlockPos, context);
         }
 
-        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.optimization.searchDangerousBlocksInterval, 1));
+        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.cooldowns.searchDangerousBlocksCooldown, 1));
     }
 
     private void handleDangerousBlock(BlockPos blockPos, MobStateContext context)

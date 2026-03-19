@@ -127,7 +127,7 @@ public final class ActionExecutor
 
         Registry<Block> blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK);
 
-        Block bridgeBlock = blockRegistry.get(ResourceLocation.tryParse(configData.blocks.bridgeBlockId));
+        Block bridgeBlock = blockRegistry.get(ResourceLocation.tryParse(configData.blocks.placeBlockId));
         configCache.bridgeBlock = bridgeBlock != null ? bridgeBlock : Blocks.DIRT;
     }
 

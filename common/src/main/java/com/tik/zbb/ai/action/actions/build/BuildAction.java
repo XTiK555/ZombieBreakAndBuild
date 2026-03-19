@@ -33,7 +33,7 @@ public class BuildAction implements IMobAction<BuildRequest>
 
         if (context.level().setBlockAndUpdate(request.pos(), request.bridgeBlock().defaultBlockState()))
         {
-            context.level().playSound(null, request.pos(), soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume * context.configSnapshot().data().audio.placeSoundVolumeMultiplier, soundType.pitch);
+            context.level().playSound(null, request.pos(), soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume, soundType.pitch);
 
             context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
 

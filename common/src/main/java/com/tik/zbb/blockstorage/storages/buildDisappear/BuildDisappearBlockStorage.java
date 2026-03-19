@@ -14,7 +14,7 @@ public class BuildDisappearBlockStorage extends BaseBlockStorage<BuildDisappearB
     @Subscribe
     public void onAnyBlockPlaced(BuildAction.OnAnyBlockPlacedEvent event)
     {
-        if (!event.configSnapshot().data().blockReturning.builtBlocksDisappearing) return;
+        if (!event.configSnapshot().data().blockRestoration.builtBlocksDisappearing) return;
 
         addBuildDisappearData(event.level(), event.pos());
     }
