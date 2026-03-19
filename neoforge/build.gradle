@@ -43,12 +43,6 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    jarJar(implementation("com.electronwill.night-config:toml")) {
-        version {
-            strictly "[3.8,4.0)"
-            prefer "3.8.3"
-        }
-    }
     jarJar(implementation("org.greenrobot:eventbus-java")) {
         version {
             strictly "[3.3,4.0)"
