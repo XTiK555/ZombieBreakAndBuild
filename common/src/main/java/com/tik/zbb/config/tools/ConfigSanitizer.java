@@ -2,12 +2,11 @@ package com.tik.zbb.config.tools;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import com.electronwill.nightconfig.core.serde.ObjectSerializer;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
 import com.tik.zbb.utilities.ConfigUtilities;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -15,12 +14,47 @@ import java.util.List;
 
 public final class ConfigSanitizer
 {
-    public static void sanitize(CommentedConfig target, Object defaults, ObjectSerializer serializer)
+    public static void sanitize(CommentedConfig target, Object defaults)
     {
         CommentedConfig defaultConfig = CommentedConfig.inMemory();
-        serializer.serializeFields(defaults, defaultConfig);
+        writeDefaults(defaults, defaultConfig);
 
         sanitizeObject(target, defaultConfig, defaults.getClass());
+    }
+
+    private static void writeDefaults(Object source, CommentedConfig target)
+    {
+        try
+        {
+            for (Field field : ConfigUtilities.getConfigFields(source.getClass()))
+            {
+                String key = field.getName();
+                Object value = field.get(source);
+
+                if (value == null) continue;
+
+                if (ConfigUtilities.isNestedConfigField(field))
+                {
+                    CommentedConfig nested = CommentedConfig.inMemory();
+                    writeDefaults(value, nested);
+                    target.set(key, nested);
+                    continue;
+                }
+
+                if (value instanceof List<?> list)
+                {
+                    target.set(key, new ArrayList<>(list));
+                }
+                else
+                {
+                    target.set(key, value);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Failed to build default config", e);
+        }
     }
 
     private static void sanitizeObject(CommentedConfig target, UnmodifiableConfig defaultConfig, Class<?> type)
@@ -115,7 +149,7 @@ public final class ConfigSanitizer
 
             if (field.isAnnotationPresent(ResourceLocationString.class))
             {
-                return Identifier.tryParse(s) != null ? s : defaultValue;
+                return ResourceLocation.tryParse(s) != null ? s : defaultValue;
             }
 
             return s;
@@ -128,7 +162,7 @@ public final class ConfigSanitizer
             List<String> cleaned = new ArrayList<>();
             for (Object o : list)
             {
-                if (o instanceof String s && Identifier.tryParse(s) != null)
+                if (o instanceof String s && ResourceLocation.tryParse(s) != null)
                 {
                     cleaned.add(s);
                 }

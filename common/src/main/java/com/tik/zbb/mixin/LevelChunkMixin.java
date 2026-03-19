@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,7 +22,7 @@ public abstract class LevelChunkMixin
     Level level;
 
     @Inject(method = "setBlockState", at = @At("RETURN"))
-    private void zbb$clearStoredDamageOnBlockChange(BlockPos pos, BlockState newState, int flags, CallbackInfoReturnable<@Nullable BlockState> cir)
+    private void zbb$clearStoredDamageOnBlockChange(BlockPos pos, BlockState newState, boolean isMoving, CallbackInfoReturnable<BlockState> cir)
     {
         if (!(this.level instanceof ServerLevel serverLevel)) return;
 

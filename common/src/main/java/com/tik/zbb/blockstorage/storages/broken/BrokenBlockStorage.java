@@ -8,12 +8,9 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.TagValueInput;
-import net.minecraft.world.level.storage.ValueInput;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.util.Map;
@@ -32,7 +29,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
         CompoundTag blockEntityTag = null;
         if (blockEntity != null)
         {
-            blockEntityTag = blockEntity.saveWithFullMetadata(event.level().registryAccess());
+            blockEntityTag = blockEntity.saveWithFullMetadata();
         }
 
         BrokenBlockStorageEntry newPending = new BrokenBlockStorageEntry(event.state(), blockEntityTag, event.level().getGameTime());
@@ -84,7 +81,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
         CompoundTag blockEntityTag = null;
         if (blockEntity != null)
         {
-            blockEntityTag = blockEntity.saveWithFullMetadata(level.registryAccess());
+            blockEntityTag = blockEntity.saveWithFullMetadata();
         }
 
         put(level, pos, new BrokenBlockStorageEntry(oldState, blockEntityTag, level.getGameTime()));
@@ -127,13 +124,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
         tagToLoad.putInt("y", pos.getY());
         tagToLoad.putInt("z", pos.getZ());
 
-        ValueInput input = TagValueInput.create(
-                ProblemReporter.DISCARDING,
-                level.registryAccess(),
-                tagToLoad
-        );
-
-        blockEntity.loadWithComponents(input);
+        blockEntity.load(tagToLoad);
         blockEntity.setChanged();
 
         BlockState state = level.getBlockState(pos);

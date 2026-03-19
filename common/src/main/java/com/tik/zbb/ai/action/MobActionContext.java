@@ -2,7 +2,7 @@ package com.tik.zbb.ai.action;
 
 import com.tik.zbb.ai.AiTimers;
 import com.tik.zbb.config.ConfigSnapshot;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.PathfinderMob;
 
@@ -11,5 +11,5 @@ public record MobActionContext(
         ConfigSnapshot configSnapshot,
         PathfinderMob mob,
         AiTimers aiTimers,
-        Identifier mobId
+        ResourceLocation mobId
 ) {}
