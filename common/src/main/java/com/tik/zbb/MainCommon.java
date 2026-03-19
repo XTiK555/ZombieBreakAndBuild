@@ -35,11 +35,11 @@ public class MainCommon
         BlockStorages.BUILD_PROTECTION.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
         if (now % interval == 0)
         {
-            BlockStorages.DAMAGE.cleanup(level, toTicks(config.balance.optimization.damageStoreTime));
-            if (config.blockReturning.brokenBlocksRestoring)
-                BlockStorages.BROKEN.cleanup(level, toTicks(config.blockReturning.brokenBlocksRestoreTime));
-            if (config.blockReturning.builtBlocksDisappearing)
-                BlockStorages.BUILD_DISAPPEAR.cleanup(level, toTicks(config.blockReturning.builtBlocksDisappearTime));
+            BlockStorages.DAMAGE.cleanup(level, toTicks(config.balance.damageStoreTime));
+            if (config.blockRestoration.brokenBlocksRestoring)
+                BlockStorages.BROKEN.cleanup(level, toTicks(config.blockRestoration.brokenBlocksRestoreTime));
+            if (config.blockRestoration.builtBlocksDisappearing)
+                BlockStorages.BUILD_DISAPPEAR.cleanup(level, toTicks(config.blockRestoration.builtBlocksDisappearTime));
         }
     }
 

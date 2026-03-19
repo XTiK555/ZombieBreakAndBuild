@@ -16,7 +16,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -129,7 +128,7 @@ public final class ActionExecutor
 
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
 
-        Identifier blockId = Identifier.tryParse(configData.blocks.bridgeBlockId);
+        Identifier blockId = Identifier.tryParse(configData.blocks.placeBlockId);
         if (blockId != null)
             configCache.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.DIRT);
         else configCache.bridgeBlock = Blocks.DIRT;

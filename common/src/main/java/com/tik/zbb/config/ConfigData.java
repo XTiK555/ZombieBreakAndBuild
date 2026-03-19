@@ -16,8 +16,7 @@ public class ConfigData
     public Blocks blocks = new Blocks();
     public Ai ai = new Ai();
     public Balance balance = new Balance();
-    public BlockReturning blockReturning = new BlockReturning();
-    public Audio audio = new Audio();
+    public BlockRestoration blockRestoration = new BlockRestoration();
 
     public transient Set<Identifier> dangerousBlockIdSet = Set.of();
     public transient Set<Identifier> ignoreBuildEntityIdSet = Set.of();
@@ -48,8 +47,8 @@ public class ConfigData
     public static class Blocks
     {
         @ResourceLocationString
-        @Comment("The block that zombies will place")
-        public String bridgeBlockId = "minecraft:dirt";
+        @Comment("Block used when mobs build")
+        public String placeBlockId = "minecraft:dirt";
 
         @ResourceLocationList
         @Comment("Blocks that zombies will consider dangerous and attempt to build on or break")
@@ -120,13 +119,15 @@ public class ConfigData
 
         @Range(min = 1, max = 1000000)
         @Comment("Distance to path end before breaking or building")
-        public int endNodeBreakBuildDistance = 6;
+        public int pathEndBreakBuildDistance = 6;
+
+        @Range(min = 1, max = 1000000)
+        @Comment("How long block damage data is stored (seconds)")
+        public double damageStoreTime = 60.0D;
 
         public BlockDamage blockDamage = new BlockDamage();
 
         public Cooldowns cooldowns = new Cooldowns();
-
-        public Optimization optimization = new Optimization();
 
         public static class BlockDamage
         {
@@ -152,41 +153,27 @@ public class ConfigData
             @Range(min = 0.05, max = 1000000)
             @Comment("Cooldown between block placing attempts (seconds)")
             public double buildCooldown = 1.0D;
-        }
-
-        public static class Optimization
-        {
-            @Range(min = 1, max = 1000000)
-            @Comment("How long block damage data is stored (seconds)")
-            public double damageStoreTime = 60.0D;
 
             @Range(min = 0.05, max = 1000000)
-            @Comment("Interval between searches for dangerous blocks (seconds)")
-            public double searchDangerousBlocksInterval = 1.0D;
+            @Comment("Cooldown between searches for dangerous blocks (seconds)")
+            public double searchDangerousBlocksCooldown = 1.0D;
         }
     }
 
-    public static class BlockReturning
+    public static class BlockRestoration
     {
         @Comment("Enable disappearing of blocks placed by zombies")
         public boolean builtBlocksDisappearing = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time after which blocks placed by zombies disappear (only if builtBlocksDisappearing is true)")
+        @Comment("Time before placed blocks by zombies disappear (only if builtBlocksDisappearing is true)")
         public double builtBlocksDisappearTime = 30.0D;
 
         @Comment("Enable restoration of blocks broken by zombies")
         public boolean brokenBlocksRestoring = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time after which blocks broken by zombies are restored (only if brokenBlocksRestoring is true)")
+        @Comment("Time before broken blocks by zombies are restored (only if brokenBlocksRestoring is true)")
         public double brokenBlocksRestoreTime = 30.0D;
-    }
-
-    public static class Audio
-    {
-        @Range(min = 0, max = 1000000)
-        @Comment("Volume multiplier for the sound played when placing a block")
-        public float placeSoundVolumeMultiplier = 1f;
     }
 }
