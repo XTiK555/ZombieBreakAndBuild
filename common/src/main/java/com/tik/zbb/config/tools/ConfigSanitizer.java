@@ -7,7 +7,7 @@ import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
 import com.tik.zbb.utilities.ConfigUtilities;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -115,7 +115,7 @@ public final class ConfigSanitizer
 
             if (field.isAnnotationPresent(ResourceLocationString.class))
             {
-                return Identifier.tryParse(s) != null ? s : defaultValue;
+                return ResourceLocation.tryParse(s) != null ? s : defaultValue;
             }
 
             return s;
@@ -128,7 +128,7 @@ public final class ConfigSanitizer
             List<String> cleaned = new ArrayList<>();
             for (Object o : list)
             {
-                if (o instanceof String s && Identifier.tryParse(s) != null)
+                if (o instanceof String s && ResourceLocation.tryParse(s) != null)
                 {
                     cleaned.add(s);
                 }

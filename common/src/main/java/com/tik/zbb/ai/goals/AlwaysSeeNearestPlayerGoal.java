@@ -97,7 +97,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
         if (mob instanceof NeutralMob neutral)
         {
-            if (!neutral.isAngryAt(candidate, level)) return false;
+            if (!neutral.isAngryAt(candidate)) return false;
         }
 
         AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
@@ -107,6 +107,6 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         TargetingConditions cond = TargetingConditions.forCombat().range(range);
         if (ignoreLineOfSight) cond = cond.ignoreLineOfSight();
 
-        return cond.test(level, mob, candidate);
+        return cond.test(mob, candidate);
     }
 }

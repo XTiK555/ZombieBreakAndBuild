@@ -43,19 +43,18 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+configurations {
+    libraries
+    implementation.extendsFrom libraries
+    additionalRuntimeClasspath.extendsFrom libraries
+}
+
 dependencies {
-    jarJar(implementation("com.electronwill.night-config:toml")) {
-        version {
-            strictly "[3.8,4.0)"
-            prefer "3.8.3"
-        }
-    }
-    jarJar(implementation("org.greenrobot:eventbus-java")) {
-        version {
-            strictly "[3.3,4.0)"
-            prefer "3.3.1"
-        }
-    }
+    libraries "com.electronwill.night-config:toml:3.8.3"
+    libraries "org.greenrobot:eventbus-java:3.3.1"
+
+    jarJar("com.electronwill.night-config:toml:3.8.3")
+    jarJar("org.greenrobot:eventbus-java:3.3.1")
 }
 
 // Implement mcgradleconventions loader attribute
