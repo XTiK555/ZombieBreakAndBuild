@@ -156,7 +156,7 @@ public class BrokenBlockStorage extends BaseBlockStorage<BrokenBlockStorageEntry
 
     private boolean BrokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
     {
-        if (!configSnapshot.data().blockReturning.brokenBlocksRestoring) return false;
+        if (!configSnapshot.data().blockRestoration.brokenBlocksRestoring) return false;
         if (BlockStorages.BUILD_DISAPPEAR.contains(level, pos)) return false;
 
         return true;

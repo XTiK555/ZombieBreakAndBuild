@@ -69,7 +69,7 @@ public class BreakAndBuildState implements IMobState
             return Priority.High;
         }
 
-        double breakBuildDistanceSq = context.getConfigSnapshot().data().balance.endNodeBreakBuildDistance * context.getConfigSnapshot().data().balance.endNodeBreakBuildDistance;
+        double breakBuildDistanceSq = context.getConfigSnapshot().data().balance.pathEndBreakBuildDistance * context.getConfigSnapshot().data().balance.pathEndBreakBuildDistance;
         double mobToEndNodeDistanceSq = context.getMob().distanceToSqr(endNode.x + 0.5D, endNode.y, endNode.z + 0.5D);
 
         boolean hasPartialPathAndMobReachedItsEnd = !pathCanReachTarget && mobToEndNodeDistanceSq < breakBuildDistanceSq;

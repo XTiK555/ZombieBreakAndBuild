@@ -45,7 +45,7 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         if (totalDamage >= blockHealth)
         {
-            boolean dropLoot = !context.configSnapshot().data().blockReturning.brokenBlocksRestoring;
+            boolean dropLoot = !context.configSnapshot().data().blockRestoration.brokenBlocksRestoring;
 
             Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
             if (context.level().destroyBlock(request.pos(), dropLoot))
