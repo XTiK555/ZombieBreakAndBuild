@@ -15,6 +15,11 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
 {
+    public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
+                                ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
+                                int newDamage,
+                                int blockId) {}
+
     private static final int MAX_BLOCK_HARDNESS_FOR_HEALTH = 50;
     private static final float BLOCK_HEALTH_PER_HARDNESS = 6.0f;
     private static final int MIN_BLOCK_HEALTH = 1;
@@ -37,10 +42,10 @@ public class BreakAction implements IMobAction<BreakRequest>
     public void execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
-        int id = BlockStorages.ID.getOrCreate(context.level(), request.pos());
+        int blockId = BlockStorages.ID.getOrCreate(context.level(), request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level());
-        int damageToBlocks = getDamageToBlocks(context, request.pos());
-        int totalDamage = BlockStorages.DAMAGE.addDamageData(context.level(), request.pos(), damageToBlocks, id);
+        int newDamage = getDamageToBlocks(context, request.pos());
+        int totalDamage = BlockStorages.DAMAGE.getTotalBlockDamage(context.level(), request.pos());
 
         if (totalDamage >= blockHealth)
         {
@@ -58,7 +63,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         }
         else
         {
-            int stage = Math.min(9, (totalDamage * 10) / blockHealth);
+            Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
 
             context.level().destroyBlockProgress(id, request.pos(), stage);
             context.level().levelEvent(2001, request.pos(), Block.getId(state)); // particles and sound
