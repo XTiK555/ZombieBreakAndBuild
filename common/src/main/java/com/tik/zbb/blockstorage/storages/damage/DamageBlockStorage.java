@@ -22,13 +22,16 @@ public class DamageBlockStorage extends BaseBlockStorage<DamageBlockStorageEntry
         remove(event.level(), event.pos());
     }
 
-    public int addDamageData(ServerLevel level, BlockPos pos, int addDamage, int blockPosId)
+    @Subscribe
+    public void onAnyBlockHit(BreakAction.OnAnyBlockHit event)
     {
-        DamageBlockStorageEntry current = get(level, pos);
-        int newDamage = (current == null ? 0 : current.damage()) + addDamage;
+        addDamageData(event.level(), event.pos(), event.newDamage(), event.blockId());
+    }
 
-        put(level, pos, new DamageBlockStorageEntry(newDamage, level.getGameTime(), blockPosId));
-        return newDamage;
+    public int getTotalBlockDamage(ServerLevel level, BlockPos pos)
+    {
+        DamageBlockStorageEntry entry = get(level, pos);
+        return entry == null ? 0 : entry.damage();
     }
 
     @Override
@@ -43,6 +46,15 @@ public class DamageBlockStorage extends BaseBlockStorage<DamageBlockStorageEntry
         BlockPos pos = BlockPos.of(posKey);
         level.destroyBlockProgress(entry.blockPosId(), pos, -1);
         Constants.EVENT_BUS.post(new OnBlockDamageProgressRemovedEvent(level, pos));
+    }
+
+    private int addDamageData(ServerLevel level, BlockPos pos, int addDamage, int blockPosId)
+    {
+        DamageBlockStorageEntry current = get(level, pos);
+        int newDamage = (current == null ? 0 : current.damage()) + addDamage;
+
+        put(level, pos, new DamageBlockStorageEntry(newDamage, level.getGameTime(), blockPosId));
+        return newDamage;
     }
 
     public record OnBlockDamageProgressRemovedEvent(ServerLevel level, BlockPos pos) {}
