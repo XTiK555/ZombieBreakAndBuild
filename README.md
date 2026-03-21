@@ -15,6 +15,7 @@ Zombies Break & Build mod enhances zombies (and optionally other hostile mobs) b
   - Break and place blocks.
   - (Optional) See targets through walls.
   - (Optional) Always see the nearest player.
+- (Optional) Placed blocks by zombies can disappear and broken blocks can be restored over time.
 - Flexible mob support via the config.
 - Customizable balance settings in the config.
 
