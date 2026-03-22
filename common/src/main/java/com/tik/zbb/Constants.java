@@ -10,4 +10,5 @@ public class Constants
     public static final String MOD_NAME = "Zombies Break & Build";
     public static final Logger LOG = LoggerFactory.getLogger(MOD_NAME);
     public static final EventBus EVENT_BUS = new EventBus();
+    public static final Scheduler SCHEDULER = new Scheduler();
 }
