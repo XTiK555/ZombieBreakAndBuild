@@ -1,6 +1,8 @@
 package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import com.tik.zbb.Constants;
+import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -29,9 +31,12 @@ public class BuildDisappearBlockVisual
     @Subscribe
     public void onBuildBlockDisappear(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
     {
-        playShrinkBlockDisplayEffect(event);
-        playShrinkSound(event);
-        Constants.SCHEDULER.schedule(() -> playDisappearSound(event), (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+        ConfigData configData = ConfigManager.getConfigSnapshot().data();
+
+        if (configData.visualEffects.builtDisappearBlockDisplay) playShrinkBlockDisplayEffect(event);
+        if (configData.visualEffects.builtDisappearShrinkSound) playShrinkSound(event);
+        if (configData.visualEffects.builtDisappearSound)
+            Constants.SCHEDULER.schedule(() -> playDisappearSound(event), (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
     }
 
     private void playDisappearSound(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
