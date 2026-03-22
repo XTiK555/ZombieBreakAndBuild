@@ -5,6 +5,7 @@ import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
+import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
@@ -22,25 +23,21 @@ public class MainCommon
     public static void init()
     {
         ConfigManager.init();
-        BlockStorages.init();
+        EventRegistrar.registerAll();
     }
 
     public static void onLevelTick(ServerLevel level)
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
-        long now = level.getGameTime();
-        int interval = 5;
+        Constants.SCHEDULER.tick();
 
-        BlockStorages.BUILD_PROTECTION.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
-        if (now % interval == 0)
-        {
-            BlockStorages.DAMAGE.cleanup(level, toTicks(config.balance.damageStoreTime));
-            if (config.blockRestoration.brokenBlocksRestoring)
-                BlockStorages.BROKEN.cleanup(level, toTicks(config.blockRestoration.brokenBlocksRestoreTime));
-            if (config.blockRestoration.builtBlocksDisappearing)
-                BlockStorages.BUILD_DISAPPEAR.cleanup(level, toTicks(config.blockRestoration.builtBlocksDisappearTime));
-        }
+        BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
+        BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance.damageStoreTime));
+        if (config.blockRestoration.brokenBlocksRestoring)
+            BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration.brokenBlocksRestoreTime));
+        if (config.blockRestoration.builtBlocksDisappearing)
+            BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration.builtBlocksDisappearTime));
     }
 
     public static void onJoin(Mob mob)

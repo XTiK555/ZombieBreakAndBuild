@@ -9,12 +9,21 @@ import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
 {
+    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
+                                           ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+
+    public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState,
+                                        ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+
+    public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
+                                               ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+
     public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
                                 ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
                                 int newDamage,
@@ -31,7 +40,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     {
         boolean isAir = context.level().getBlockState(request.pos()).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
-        boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION.contains(context.level(), request.pos());
+        boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
         boolean unbreakable = getBlockHealth(request.pos(), context.level()) == Integer.MAX_VALUE;
         boolean canMobBreak = !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(context.mobId());
 
@@ -42,32 +51,31 @@ public class BreakAction implements IMobAction<BreakRequest>
     public void execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
-        int blockId = BlockStorages.ID.getOrCreate(context.level(), request.pos());
+        int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level());
         int newDamage = getDamageToBlocks(context, request.pos());
-        int totalDamage = BlockStorages.DAMAGE.getTotalBlockDamage(context.level(), request.pos());
+        int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos());
 
         if (totalDamage >= blockHealth)
         {
             boolean dropLoot = !context.configSnapshot().data().blockRestoration.brokenBlocksRestoring;
 
-            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
+            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
+
             if (context.level().destroyBlock(request.pos(), dropLoot))
             {
-                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot()));
+                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
             }
             else
             {
-                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot()));
+                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
             }
         }
         else
         {
             Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
-
-            context.level().destroyBlockProgress(id, request.pos(), stage);
-            context.level().levelEvent(2001, request.pos(), Block.getId(state)); // particles and sound
         }
+
 
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
     }
@@ -123,13 +131,4 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         return finalMultiplier;
     }
-
-    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                           ConfigSnapshot configSnapshot) {}
-
-    public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState,
-                                        ConfigSnapshot configSnapshot) {}
-
-    public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                               ConfigSnapshot configSnapshot) {}
 }
