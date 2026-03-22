@@ -13,7 +13,7 @@ import java.util.WeakHashMap;
 public abstract class BaseBlockStorage<TEntry>
 {
     protected final Map<ServerLevel, Long2ObjectOpenHashMap<TEntry>> entriesByLevel = new WeakHashMap<>();
-    
+
     public TEntry get(ServerLevel level, BlockPos pos)
     {
         var map = entriesByLevel.get(level);
@@ -49,7 +49,7 @@ public abstract class BaseBlockStorage<TEntry>
 
         for (Long2ObjectMap.Entry<TEntry> entry : map.long2ObjectEntrySet())
         {
-            if (isExpired(entry.getValue(), level.getGameTime(), ttlTicks))
+            if (isExpired(level, entry.getLongKey(), entry.getValue(), level.getGameTime(), ttlTicks))
             {
                 expiredKeys.add(entry.getLongKey());
             }
@@ -66,7 +66,7 @@ public abstract class BaseBlockStorage<TEntry>
         }
     }
 
-    protected void put(ServerLevel level, BlockPos pos, TEntry entry)
+    public void put(ServerLevel level, BlockPos pos, TEntry entry)
     {
         entries(level).put(pos.asLong(), entry);
     }
@@ -76,7 +76,7 @@ public abstract class BaseBlockStorage<TEntry>
         return entriesByLevel.computeIfAbsent(level, l -> new Long2ObjectOpenHashMap<>());
     }
 
-    protected abstract boolean isExpired(TEntry entry, long now, long ttlTicks);
+    protected abstract boolean isExpired(ServerLevel level, long posKey, TEntry entry, long now, long ttlTicks);
 
     protected void onRemove(ServerLevel level, long posKey, TEntry entry) {}
 }

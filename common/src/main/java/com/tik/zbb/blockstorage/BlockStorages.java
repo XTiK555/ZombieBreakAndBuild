@@ -1,26 +1,16 @@
 package com.tik.zbb.blockstorage;
 
-import com.tik.zbb.Constants;
-import com.tik.zbb.blockstorage.storages.broken.BrokenBlockStorage;
-import com.tik.zbb.blockstorage.storages.buildDisappear.BuildDisappearBlockStorage;
-import com.tik.zbb.blockstorage.storages.buildProtection.BuildProtectionBlockStorage;
-import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorage;
-import com.tik.zbb.blockstorage.storages.id.IdBlockStorage;
+import com.tik.zbb.blockstorage.storages.broken.BrokenReappearBlockStorageManager;
+import com.tik.zbb.blockstorage.storages.buildDisappear.BuildDisappearBlockStorageManager;
+import com.tik.zbb.blockstorage.storages.buildProtection.BuildProtectionBlockStorageManager;
+import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorageManager;
+import com.tik.zbb.blockstorage.storages.id.IdBlockStorageManager;
 
 public final class BlockStorages
 {
-    public final static DamageBlockStorage DAMAGE = new DamageBlockStorage();
-    public final static BuildProtectionBlockStorage BUILD_PROTECTION = new BuildProtectionBlockStorage();
-    public final static BuildDisappearBlockStorage BUILD_DISAPPEAR = new BuildDisappearBlockStorage();
-    public final static BrokenBlockStorage BROKEN = new BrokenBlockStorage();
-    public final static IdBlockStorage ID = new IdBlockStorage();
-
-    public static void init()
-    {
-        Constants.EVENT_BUS.register(BlockStorages.DAMAGE);
-        Constants.EVENT_BUS.register(BlockStorages.BUILD_PROTECTION);
-        Constants.EVENT_BUS.register(BlockStorages.BUILD_DISAPPEAR);
-        Constants.EVENT_BUS.register(BlockStorages.BROKEN);
-        Constants.EVENT_BUS.register(BlockStorages.ID);
-    }
+    public final static DamageBlockStorageManager DAMAGE_MANAGER = new DamageBlockStorageManager();
+    public final static BuildProtectionBlockStorageManager BUILD_PROTECTION_MANAGER = new BuildProtectionBlockStorageManager();
+    public final static BuildDisappearBlockStorageManager BUILD_DISAPPEAR_MANAGER = new BuildDisappearBlockStorageManager();
+    public final static BrokenReappearBlockStorageManager BROKEN_MANAGER = new BrokenReappearBlockStorageManager();
+    public final static IdBlockStorageManager ID_MANAGER = new IdBlockStorageManager();
 }
