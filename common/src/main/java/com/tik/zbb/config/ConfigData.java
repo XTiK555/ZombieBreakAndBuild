@@ -17,6 +17,7 @@ public class ConfigData
     public Ai ai = new Ai();
     public Balance balance = new Balance();
     public BlockRestoration blockRestoration = new BlockRestoration();
+    public VisualEffects visualEffects = new VisualEffects();
 
     public transient Set<Identifier> dangerousBlockIdSet = Set.of();
     public transient Set<Identifier> ignoreBuildEntityIdSet = Set.of();
@@ -79,7 +80,7 @@ public class ConfigData
         public boolean applyToAllMonsters = true;
 
         @ResourceLocationList
-        @Comment("Additional entity IDs that will be given the ability to break and place blocks")
+        @Comment("Additional entity IDs that will be given the ability to break and place blocks (only Pathfinder mobs)")
         public List<String> additionalEntityIdList = new ArrayList<>();
 
         @ResourceLocationList
@@ -175,5 +176,32 @@ public class ConfigData
         @Range(min = 0, max = 1000000)
         @Comment("Time before broken blocks by zombies are restored (only if brokenBlocksRestoring is true)")
         public double brokenBlocksRestoreTime = 30.0D;
+    }
+
+    public static class VisualEffects
+    {
+        @Comment("[Break] Whether the mob will swing when breaking a block")
+        public boolean breakMobSwing = true;
+
+        @Comment("[Build] Whether a placed block will play a sound")
+        public boolean buildBlockSound = true;
+
+        @Comment("[BrokenReappear] Whether a reappearing broken block will spawn particles")
+        public boolean brokenReappearParticles = true;
+
+        @Comment("[BrokenReappear] Whether a reappearing broken block will play a charge sound")
+        public boolean brokenReappearChargeSound = true;
+
+        @Comment("[BrokenReappear] Whether a reappearing broken block will play a sound")
+        public boolean brokenReappearSound = true;
+
+        @Comment("[BuiltDisappear] Whether a disappearing built block will spawn a block display")
+        public boolean builtDisappearBlockDisplay = true;
+
+        @Comment("[BuiltDisappear] Whether a disappearing built block will play a shrink sound")
+        public boolean builtDisappearShrinkSound = true;
+
+        @Comment("[BuiltDisappear] Whether a disappearing built block will play a sound")
+        public boolean builtDisappearSound = true;
     }
 }
