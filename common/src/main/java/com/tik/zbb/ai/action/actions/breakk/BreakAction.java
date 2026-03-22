@@ -54,7 +54,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level());
         int newDamage = getDamageToBlocks(context, request.pos());
-        int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos());
+        int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()) + newDamage;
 
         if (totalDamage >= blockHealth)
         {
