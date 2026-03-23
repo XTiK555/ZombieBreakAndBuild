@@ -48,7 +48,7 @@ public class ConfigData
     public static class Blocks
     {
         @ResourceLocationString
-        @Comment("Block used when mobs build")
+        @Comment("Block used when zombies build")
         public String placeBlockId = "minecraft:dirt";
 
         @ResourceLocationList
@@ -73,7 +73,7 @@ public class ConfigData
         @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
-        @Comment("Zombies can see targets through walls (only for mobs that use NearestAttackableTargetGoal)")
+        @Comment("Zombies can see targets through walls")
         public boolean canSeeTargetsThroughBlocks = true;
 
         @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
@@ -180,7 +180,7 @@ public class ConfigData
 
     public static class VisualEffects
     {
-        @Comment("[Break] Whether the mob will swing when breaking a block")
+        @Comment("[Break] Whether the zombie will swing when breaking a block")
         public boolean breakMobSwing = true;
 
         @Comment("[Build] Whether a placed block will play a sound")
