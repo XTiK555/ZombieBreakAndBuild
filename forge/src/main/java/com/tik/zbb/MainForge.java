@@ -34,7 +34,7 @@ public class MainForge
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent.Post event)
     {
-        MainCommon.onServerTick(event.server());
+        MainCommon.onServerTick(event.getServer());
     }
 
     @SubscribeEvent
