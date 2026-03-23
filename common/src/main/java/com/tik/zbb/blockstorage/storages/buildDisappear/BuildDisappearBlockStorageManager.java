@@ -20,7 +20,7 @@ public class BuildDisappearBlockStorageManager
     {
         if (!event.configSnapshot().data().blockRestoration.builtBlocksDisappearing) return;
 
-        buildDisappearBlockStorage.put(event.level(), event.pos(), new BuildDisappearBlockStorageEntry(event.level().getBlockState(event.pos()), event.level().getGameTime()));
+        buildDisappearBlockStorage.put(event.level(), event.pos(), new BuildDisappearBlockStorageEntry(event.level().getBlockState(event.pos()), event.oldState(), event.level().getGameTime()));
     }
 
     @Subscribe
@@ -34,11 +34,15 @@ public class BuildDisappearBlockStorageManager
     {
         BlockState currentState = event.level().getBlockState(event.pos());
 
-        if (currentState.is(event.entry().state().getBlock()))
+        if (currentState.is(event.entry().placedState().getBlock()))
         {
-            event.level().setBlockAndUpdate(event.pos(), Blocks.AIR.defaultBlockState());
+            event.level().setBlockAndUpdate(event.pos(), event.entry().oldState());
 
-            Constants.EVENT_BUS.post(new OnBuildBlockDisappearEvent(event.level(), event.pos(), event.entry().state()));
+            Constants.EVENT_BUS.post(new OnBuildBlockDisappearEvent(event.level(), event.pos(), event.entry().placedState()));
+        }
+        else if (currentState.is(Blocks.AIR))
+        {
+            event.level().setBlockAndUpdate(event.pos(), event.entry().oldState());
         }
     }
 
