@@ -12,7 +12,7 @@ public class BuildVisual
     public void onAnyBlockPlaced(BuildAction.OnAnyBlockPlacedEvent event)
     {
         ConfigData configData = ConfigManager.getConfigSnapshot().data();
-        SoundType soundType = event.state().getSoundType();
+        SoundType soundType = event.placedState().getSoundType();
 
         if (configData.visualEffects.buildBlockSound)
             event.level().playSound(null, event.pos(), soundType.getPlaceSound(), SoundSource.BLOCKS, soundType.volume, soundType.pitch);
