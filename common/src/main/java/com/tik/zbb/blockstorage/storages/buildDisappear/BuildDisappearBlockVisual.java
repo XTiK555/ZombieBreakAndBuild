@@ -85,7 +85,7 @@ public class BuildDisappearBlockVisual
                         (int) uuid.getLeastSignificantBits() +
                         "]";
 
-        CompoundTag blockStateTag = NbtUtils.writeBlockState(event.oldState());
+        CompoundTag blockStateTag = NbtUtils.writeBlockState(event.placedState());
 
         server.getCommands().performPrefixedCommand(source,
                 "summon minecraft:block_display " + formatDouble(x) + " " + formatDouble(y) + " " + formatDouble(z) + " " +

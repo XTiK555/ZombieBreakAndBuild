@@ -11,7 +11,7 @@ import org.greenrobot.eventbus.Subscribe;
 
 public class BuildDisappearBlockStorageManager
 {
-    public record OnBuildBlockDisappearEvent(ServerLevel level, BlockPos pos, BlockState oldState) {}
+    public record OnBuildBlockDisappearEvent(ServerLevel level, BlockPos pos, BlockState placedState) {}
 
     private final BuildDisappearBlockStorage buildDisappearBlockStorage = new BuildDisappearBlockStorage();
 
