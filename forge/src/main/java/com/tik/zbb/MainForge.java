@@ -32,9 +32,11 @@ public class MainForge
     }
 
     @SubscribeEvent
-    public void onServerTick(TickEvent.ServerTickEvent.Post event)
+    public void onServerTick(TickEvent.ServerTickEvent event)
     {
-        MainCommon.onServerTick(event.server());
+        if (event.phase != TickEvent.Phase.END) return;
+
+        MainCommon.onServerTick(event.getServer());
     }
 
     @SubscribeEvent

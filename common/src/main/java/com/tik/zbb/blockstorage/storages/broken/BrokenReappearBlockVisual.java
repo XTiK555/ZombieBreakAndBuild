@@ -26,8 +26,8 @@ public class BrokenReappearBlockVisual
     private static final float REAPPEAR_SOUND_VOLUME = 0.1f;
     private static final float REAPPEAR_SOUND_PITCH = 0.08f;
 
-    private static final float REAPPEAR_CHARGE_SOUND_VOLUME = 0.2f;
-    private static final float REAPPEAR_CHARGE_SOUND_PITCH = 0.01f;
+    private static final float REAPPEAR_CHARGE_SOUND_VOLUME = 0.5f;
+    private static final float REAPPEAR_CHARGE_SOUND_PITCH = 0f;
 
     @Subscribe
     public void onBrokenBlockWillReappear(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)
@@ -130,7 +130,7 @@ public class BrokenReappearBlockVisual
         event.level().playSound(
                 null,
                 event.pos(),
-                SoundEvents.BREEZE_CHARGE,
+                SoundEvents.WITHER_SKELETON_AMBIENT,
                 SoundSource.BLOCKS,
                 REAPPEAR_CHARGE_SOUND_VOLUME,
                 REAPPEAR_CHARGE_SOUND_PITCH
