@@ -13,11 +13,12 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 @Mod(Constants.MOD_ID)
-public class MainNeoforge
+public class MainNeoForge
 {
-    public MainNeoforge(IEventBus eventBus)
+    public MainNeoForge(IEventBus eventBus)
     {
         MainCommon.init();
 
@@ -30,6 +31,12 @@ public class MainNeoforge
         if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
 
         MainCommon.onLevelTick(serverLevel);
+    }
+
+    @SubscribeEvent
+    public void onServerTick(ServerTickEvent.Post event)
+    {
+        MainCommon.onServerTick(event.getServer());
     }
 
     @SubscribeEvent

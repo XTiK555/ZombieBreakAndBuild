@@ -14,11 +14,11 @@ import org.greenrobot.eventbus.Subscribe;
 
 public class BrokenReappearBlockVisual
 {
-    private static final int REAPPEAR_PARTICLE_STEPS = 40;
+    private static final int REAPPEAR_PARTICLE_STEPS = 15;
     private static final int REAPPEAR_PARTICLE_STEP_DELAY = 1;
     private static final double REAPPEAR_PARTICLE_BLOCK_START_SCALE = 1.5;
     private static final double REAPPEAR_PARTICLE_BLOCK_END_SCALE = 1.0;
-    private static final int REAPPEAR_PARTICLE_BLOCK_GRID = 2;
+    private static final int REAPPEAR_PARTICLE_BLOCK_GRID = 3;
     private static final boolean REAPPEAR_PARTICLE_BLOCK_SURFACE_ONLY = true;
     private static final double REAPPEAR_PARTICLE_PARTICLE_JITTER = 0;
     private static final double REAPPEAR_PARTICLE_PARTICLE_SPEED = 0;
