@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class BuildDisappearBlockVisual
 {
-    private static final int SHRINK_BLOCK_DISPLAY_STEPS = 25;
+    private static final int SHRINK_BLOCK_DISPLAY_STEPS = 8;
     private static final int SHRINK_BLOCK_DISPLAY_STEP_DELAY = 1;
     private static final float SHRINK_BLOCK_DISPLAY_START_SCALE = 1.0f;
     private static final float SHRINK_BLOCK_DISPLAY_END_SCALE = 0.05f;

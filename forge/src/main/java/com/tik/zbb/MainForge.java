@@ -1,6 +1,7 @@
 package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigManager;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
@@ -27,6 +28,12 @@ public class MainForge
         if (!(event.level() instanceof ServerLevel serverLevel)) return;
 
         MainCommon.onLevelTick(serverLevel);
+    }
+
+    @SubscribeEvent
+    public void onServerTick(TickEvent.ServerTickEvent.Post event)
+    {
+        MainCommon.onServerTick(event.server());
     }
 
     @SubscribeEvent

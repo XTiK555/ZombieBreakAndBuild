@@ -9,6 +9,7 @@ import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
@@ -30,14 +31,17 @@ public class MainCommon
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
-        Constants.SCHEDULER.tick();
-
         BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
         BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance.damageStoreTime));
         if (config.blockRestoration.brokenBlocksRestoring)
             BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration.brokenBlocksRestoreTime));
         if (config.blockRestoration.builtBlocksDisappearing)
             BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration.builtBlocksDisappearTime));
+    }
+
+    public static void onServerTick(MinecraftServer server)
+    {
+        Constants.SCHEDULER.tick();
     }
 
     public static void onJoin(Mob mob)
