@@ -23,7 +23,7 @@ public abstract class TargetGoalMixin
     @Redirect(method = "canContinueToUse", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/ai/goal/target/TargetGoal;mustSee:Z"))
     private boolean zbb$redirectMustSee(TargetGoal instance)
     {
-        if (ConfigManager.getConfigSnapshot().data().ai.canSeeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(mob, ConfigManager.getConfigSnapshot().data()))
+        if (ConfigManager.getConfigSnapshot().data().ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(mob, ConfigManager.getConfigSnapshot().data()))
         {
             return false;
         }
