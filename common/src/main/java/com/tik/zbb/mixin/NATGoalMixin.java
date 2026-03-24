@@ -47,7 +47,7 @@ public abstract class NATGoalMixin extends TargetGoal
         {
             this.targetConditions = this.zbb$originalTargetConditions.copy()
                     .ignoreLineOfSight()
-                    .selector((candidate, level) -> zbb$canNoticeTargetThroughSolidBlocks(
+                    .selector((candidate) -> zbb$canNoticeTargetThroughSolidBlocks(
                             this.mob,
                             candidate,
                             data.ai.noticeTargetsThroughBlocksLimit
@@ -105,7 +105,7 @@ public abstract class NATGoalMixin extends TargetGoal
 
             BlockState state = level.getBlockState(pos);
 
-            if (!state.isAir() && state.isSolidRender())
+            if (!state.isAir() && state.isSolidRender(level, pos))
             {
                 solidBlocks++;
 
