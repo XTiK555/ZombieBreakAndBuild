@@ -73,8 +73,15 @@ public class ConfigData
         @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
-        @Comment("Zombies can see targets through walls")
-        public boolean canSeeTargetsThroughBlocks = true;
+        @Comment("Zombies can notice targets through walls")
+        public boolean canNoticeTargetsThroughBlocks = true;
+
+        @Range(min = 0, max = 1000000)
+        @Comment("(only if canNoticeTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when noticing through walls (0 - infinity)")
+        public int noticeTargetsThroughBlocksLimit = 3;
+
+        @Comment("Zombies can continue seeing targets through walls")
+        public boolean canContinueSeeingTargetsThroughBlocks = true;
 
         @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
         public boolean applyToAllMonsters = true;
