@@ -13,7 +13,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,41 +21,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(NearestAttackableTargetGoal.class)
 public abstract class NATGoalMixin extends TargetGoal
 {
-    @Shadow
-    protected TargetingConditions targetConditions;
-
-    @Unique
-    private TargetingConditions zbb$originalTargetConditions;
-
     protected NATGoalMixin(Mob mob, boolean mustSee)
     {
         super(mob, mustSee);
     }
 
-    @Inject(method = "canUse", at = @At("HEAD"))
-    private void zbb$adjustLineOfSightBeforeCanUse(CallbackInfoReturnable<Boolean> cir)
+    @Inject(method = "getTargetConditions", at = @At("RETURN"), cancellable = true)
+    private void zbb$getTargetConditions(CallbackInfoReturnable<TargetingConditions> cir)
     {
-        if (this.zbb$originalTargetConditions == null)
-        {
-            this.zbb$originalTargetConditions = this.targetConditions;
-        }
-
         ConfigData data = ConfigManager.getConfigSnapshot().data();
+        if (!data.ai.canNoticeTargetsThroughBlocks)
+        {
+            return;
+        }
 
-        if (data.ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
+        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
         {
-            this.targetConditions = this.zbb$originalTargetConditions.copy()
-                    .ignoreLineOfSight()
-                    .selector((candidate, level) -> zbb$canNoticeTargetThroughSolidBlocks(
-                            this.mob,
-                            candidate,
-                            data.ai.noticeTargetsThroughBlocksLimit
-                    ));
+            return;
         }
-        else
-        {
-            this.targetConditions = this.zbb$originalTargetConditions;
-        }
+
+        TargetingConditions original = cir.getReturnValue();
+        cir.setReturnValue(
+                original.copy()
+                        .ignoreLineOfSight()
+                        .selector((candidate, level) -> zbb$canNoticeTargetThroughSolidBlocks(
+                                this.mob,
+                                candidate,
+                                data.ai.noticeTargetsThroughBlocksLimit
+                        ))
+        );
     }
 
     @Unique
@@ -64,11 +57,10 @@ public abstract class NATGoalMixin extends TargetGoal
     {
         if (maxSolidBlocks == 0)
         {
-            return true; // infinity
+            return true;
         }
 
         Level level = mob.level();
-
         Vec3 from = mob.getEyePosition();
         Vec3 to = target.getEyePosition();
 
@@ -91,11 +83,10 @@ public abstract class NATGoalMixin extends TargetGoal
             Vec3 point = from.lerp(to, t);
             BlockPos pos = BlockPos.containing(point);
 
-            if (lastPos != null && lastPos.equals(pos))
+            if (pos.equals(lastPos))
             {
                 continue;
             }
-
             lastPos = pos;
 
             if (pos.equals(startPos) || pos.equals(endPos))
@@ -104,11 +95,9 @@ public abstract class NATGoalMixin extends TargetGoal
             }
 
             BlockState state = level.getBlockState(pos);
-
             if (!state.isAir() && state.isSolidRender())
             {
                 solidBlocks++;
-
                 if (solidBlocks > maxSolidBlocks)
                 {
                     return false;

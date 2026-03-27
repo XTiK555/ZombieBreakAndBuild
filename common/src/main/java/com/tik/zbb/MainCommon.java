@@ -7,7 +7,6 @@ import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
-import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -46,6 +45,8 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
+        Constants.LOG.info("ZBB onJoin: entity={}, mobAccessor={}", mob.getType(), mob instanceof MobAccessor);
+
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         if (!ShouldApplyToMobUtility.matchesZbbMobFilter(mob, config)) return;
@@ -61,7 +62,7 @@ public class MainCommon
         {
             int maxTargetPriority = 0;
 
-            for (WrappedGoal wg : ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals())
+            for (WrappedGoal wg : (targetSelector.getAvailableGoals()))
             {
                 maxTargetPriority = Math.max(maxTargetPriority, wg.getPriority());
             }

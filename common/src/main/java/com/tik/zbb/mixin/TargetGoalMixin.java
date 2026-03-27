@@ -1,9 +1,12 @@
 package com.tik.zbb.mixin;
 
+import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
+import net.minecraft.world.entity.ai.sensing.Sensing;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -16,18 +19,17 @@ public abstract class TargetGoalMixin
     @Shadow
     @Final
     protected Mob mob;
-    @Shadow
-    @Final
-    protected boolean mustSee;
 
-    @Redirect(method = "canContinueToUse", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/ai/goal/target/TargetGoal;mustSee:Z"))
-    private boolean zbb$redirectMustSee(TargetGoal instance)
+    @Redirect(method = "canContinueToUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/sensing/Sensing;hasLineOfSight(Lnet/minecraft/world/entity/Entity;)Z"))
+    private boolean zbb$hasLineOfSight(Sensing sensing, net.minecraft.world.entity.Entity target)
     {
-        if (ConfigManager.getConfigSnapshot().data().ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(mob, ConfigManager.getConfigSnapshot().data()))
+        ConfigData data = ConfigManager.getConfigSnapshot().data();
+
+        if (data.ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data) && target instanceof LivingEntity)
         {
-            return false;
+            return true;
         }
 
-        return this.mustSee;
+        return sensing.hasLineOfSight(target);
     }
 }

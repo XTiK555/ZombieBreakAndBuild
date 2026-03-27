@@ -20,7 +20,7 @@ public abstract class LevelChunkMixin
 {
     @Shadow
     @Final
-    Level level;
+    private Level level;
 
     @Inject(method = "setBlockState", at = @At("RETURN"))
     private void zbb$clearStoredDamageOnBlockChange(BlockPos pos, BlockState newState, int flags, CallbackInfoReturnable<@Nullable BlockState> cir)

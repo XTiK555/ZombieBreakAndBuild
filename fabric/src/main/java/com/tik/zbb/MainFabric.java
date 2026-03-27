@@ -22,7 +22,7 @@ public class MainFabric implements ModInitializer
             }
         });
 
-        ServerTickEvents.END_WORLD_TICK.register(MainCommon::onLevelTick);
+        ServerTickEvents.END_LEVEL_TICK.register(MainCommon::onLevelTick);
 
         ServerTickEvents.END_SERVER_TICK.register(MainCommon::onServerTick);
 

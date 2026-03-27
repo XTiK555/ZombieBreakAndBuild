@@ -2,7 +2,6 @@ package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
@@ -18,7 +17,6 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 @Mod(Constants.MOD_ID)
 public class MainNeoForge
