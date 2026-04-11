@@ -33,7 +33,7 @@ public abstract class LevelChunkMixin
 
         if (!oldState.is(newState.getBlock()))
         {
-            Constants.EVENT_BUS.post(new MixinEvents.OnLevelChunkBlockChangedEvent(serverLevel, pos, oldState, newState));
+            Constants.EVENT_BUS.post(new MixinEvents.OnLevelChunkBlockChangedEvent(serverLevel, pos.immutable(), oldState, newState));
         }
     }
 }

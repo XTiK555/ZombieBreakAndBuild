@@ -2,4 +2,10 @@ package com.tik.zbb.ai.action.actions.breakk;
 
 import net.minecraft.core.BlockPos;
 
-public record BreakRequest(BlockPos pos) {}
+public record BreakRequest(BlockPos pos)
+{
+    public BreakRequest
+    {
+        pos = pos.immutable();
+    }
+}
