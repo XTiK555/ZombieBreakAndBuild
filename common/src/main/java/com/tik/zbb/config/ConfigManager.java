@@ -101,6 +101,7 @@ public final class ConfigManager
 
         try
         {
+            ConfigFormatter.addHeader(FILE_CONFIG.getNioPath());
             ConfigFormatter.splitBlocks(FILE_CONFIG.getNioPath());
         }
         catch (Exception e)
