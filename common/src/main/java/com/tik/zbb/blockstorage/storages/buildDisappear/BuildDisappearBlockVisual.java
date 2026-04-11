@@ -51,7 +51,7 @@ public class BuildDisappearBlockVisual
             {
                 if (entity instanceof Display.BlockDisplay blockDisplay)
                 {
-                    if (blockDisplay.entityTags().contains("zbb_build_disappear"))
+                    if (blockDisplay.getTags().contains("zbb_build_disappear"))
                     {
                         blockDisplay.discard();
                     }
