@@ -2,6 +2,7 @@ package com.tik.zbb.mixin;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.mixin.accessor.TargetingConditionsAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -45,13 +46,20 @@ public abstract class NATGoalMixin extends TargetGoal
 
         if (data.ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
         {
+            TargetingConditions.Selector oldSelector =
+                    ((TargetingConditionsAccessor) (Object) this.zbb$originalTargetConditions).zbb$getSelector();
+
+            TargetingConditions.Selector combinedSelector = (candidate, level) ->
+                    (oldSelector == null || oldSelector.test(candidate, level)) &&
+                            zbb$canNoticeTargetThroughSolidBlocks(
+                                    this.mob,
+                                    candidate,
+                                    data.ai.noticeTargetsThroughBlocksLimit
+                            );
+
             this.targetConditions = this.zbb$originalTargetConditions.copy()
                     .ignoreLineOfSight()
-                    .selector((candidate, level) -> zbb$canNoticeTargetThroughSolidBlocks(
-                            this.mob,
-                            candidate,
-                            data.ai.noticeTargetsThroughBlocksLimit
-                    ));
+                    .selector(combinedSelector);
         }
         else
         {

@@ -9,7 +9,8 @@
     "accessor.GoalSelectorAccessor",
     "LevelChunkMixin",
     "NATGoalMixin",
-    "TargetGoalMixin"
+    "TargetGoalMixin",
+    "accessor.TargetingConditionsAccessor"
   ],
   "client": [
   ],
