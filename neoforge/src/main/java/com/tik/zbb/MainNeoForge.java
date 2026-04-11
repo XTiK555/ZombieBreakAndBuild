@@ -13,6 +13,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -40,6 +41,12 @@ public class MainNeoForge
     public void onServerTick(ServerTickEvent.Post event)
     {
         MainCommon.onServerTick(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onServerTick(ServerStoppingEvent event)
+    {
+        MainCommon.onServerStopping(event.getServer());
     }
 
     @SubscribeEvent
