@@ -1,15 +1,13 @@
 package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigManager;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod(Constants.MOD_ID)
@@ -19,33 +17,38 @@ public class MainForge
     {
         MainCommon.init();
 
-        MinecraftForge.EVENT_BUS.register(this);
+        TickEvent.LevelTickEvent.Post.BUS.addListener(this::onLevelTick);
+        TickEvent.ServerTickEvent.Post.BUS.addListener(this::onServerTick);
+        ServerStoppingEvent.BUS.addListener(this::onServerStopping);
+        EntityJoinLevelEvent.BUS.addListener(this::onJoin);
+        AddReloadListenerEvent.BUS.addListener(this::onAddReloadListeners);
     }
 
-    @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent.Post event)
+    private void onLevelTick(TickEvent.LevelTickEvent.Post event)
     {
         if (!(event.level() instanceof ServerLevel serverLevel)) return;
 
         MainCommon.onLevelTick(serverLevel);
     }
 
-    @SubscribeEvent
-    public void onServerTick(TickEvent.ServerTickEvent.Post event)
+    private void onServerTick(TickEvent.ServerTickEvent.Post event)
     {
         MainCommon.onServerTick(event.server());
     }
 
-    @SubscribeEvent
-    public void onJoin(EntityJoinLevelEvent event)
+    private void onServerStopping(ServerStoppingEvent event)
+    {
+        MainCommon.onServerStopping(event.getServer());
+    }
+
+    private void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
 
         MainCommon.onJoin(mob);
     }
 
-    @SubscribeEvent
-    public void onAddReloadListeners(AddReloadListenerEvent event)
+    private void onAddReloadListeners(AddReloadListenerEvent event)
     {
         event.addListener((ResourceManagerReloadListener) resourceManager -> ConfigManager.reload());
     }
