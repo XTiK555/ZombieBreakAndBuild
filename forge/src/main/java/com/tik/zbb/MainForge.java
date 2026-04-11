@@ -1,7 +1,6 @@
 package com.tik.zbb;
 
 import com.tik.zbb.config.ConfigManager;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
@@ -10,6 +9,7 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod(Constants.MOD_ID)
@@ -35,6 +35,12 @@ public class MainForge
     public void onServerTick(TickEvent.ServerTickEvent.Post event)
     {
         MainCommon.onServerTick(event.getServer());
+    }
+
+    @SubscribeEvent
+    private void onServerStopping(ServerStoppingEvent event)
+    {
+        MainCommon.onServerStopping(event.getServer());
     }
 
     @SubscribeEvent
