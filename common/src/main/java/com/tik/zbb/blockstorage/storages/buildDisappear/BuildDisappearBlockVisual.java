@@ -1,14 +1,17 @@
 package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import com.tik.zbb.Constants;
+import com.tik.zbb.MainCommon;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Display;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.util.Locale;
@@ -37,6 +40,24 @@ public class BuildDisappearBlockVisual
         if (configData.visualEffects.builtDisappearShrinkSound) playShrinkSound(event);
         if (configData.visualEffects.builtDisappearSound)
             Constants.SCHEDULER.schedule(() -> playDisappearSound(event), (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+    }
+
+    @Subscribe
+    public void onServerStopping(MainCommon.OnServerStoppingEvent event)
+    {
+        for (ServerLevel level : event.server().getAllLevels())
+        {
+            level.getAllEntities().forEach(entity ->
+            {
+                if (entity instanceof Display.BlockDisplay blockDisplay)
+                {
+                    if (blockDisplay.entityTags().contains("zbb_build_disappear"))
+                    {
+                        blockDisplay.discard();
+                    }
+                }
+            });
+        }
     }
 
     private void playDisappearSound(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
@@ -91,6 +112,7 @@ public class BuildDisappearBlockVisual
                 "summon minecraft:block_display " + formatDouble(x) + " " + formatDouble(y) + " " + formatDouble(z) + " " +
                         "{UUID:" + uuidNbt + "," +
                         "block_state:" + blockStateTag + "," +
+                        "Tags:[\"zbb_build_disappear\"]," +
                         "transformation:{" +
                         "translation:[-0.5f,0.0f,-0.5f]," +
                         "left_rotation:[0.0f,0.0f,0.0f,1.0f]," +
