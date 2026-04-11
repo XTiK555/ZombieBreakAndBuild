@@ -51,8 +51,6 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
-        Constants.LOG.info("ZBB onJoin: entity={}, mobAccessor={}", mob.getType(), mob instanceof MobAccessor);
-
         ConfigData config = ConfigManager.getConfigSnapshot().data();
 
         if (!ShouldApplyToMobUtility.matchesZbbMobFilter(mob, config)) return;
