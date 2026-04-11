@@ -46,7 +46,7 @@ public class MainNeoForge
     }
 
     @SubscribeEvent
-    public void onServerTick(ServerStoppingEvent event)
+    public void onServerStopping(ServerStoppingEvent event)
     {
         MainCommon.onServerStopping(event.getServer());
     }
