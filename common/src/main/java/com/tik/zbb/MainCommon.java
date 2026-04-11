@@ -1,13 +1,13 @@
 package com.tik.zbb;
 
+import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
+import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
-import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.event.EventRegistrar;
-import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.mixin.accessor.MobAccessor;
+import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
@@ -41,6 +41,12 @@ public class MainCommon
     public static void onServerTick(MinecraftServer server)
     {
         Constants.SCHEDULER.tick();
+    }
+
+    public static void onServerStopping(MinecraftServer server)
+    {
+        Constants.SCHEDULER.clear();
+        Constants.EVENT_BUS.post(new OnServerStoppingEvent(server));
     }
 
     public static void onJoin(Mob mob)
@@ -82,4 +88,6 @@ public class MainCommon
         }
         return false;
     }
+
+    public record OnServerStoppingEvent(MinecraftServer server) {}
 }

@@ -26,6 +26,8 @@ public class MainFabric implements ModInitializer
 
         ServerTickEvents.END_SERVER_TICK.register(MainCommon::onServerTick);
 
+        ServerLifecycleEvents.SERVER_STOPPING.register(MainCommon::onServerStopping);
+
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> ConfigManager.reload());
     }
 }
