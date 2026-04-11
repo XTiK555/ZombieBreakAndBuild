@@ -1,11 +1,12 @@
 package com.tik.zbb;
 
+import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
+import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
-import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.event.EventRegistrar;
+import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.mixin.accessor.GoalSelectorAccessor;
 import com.tik.zbb.mixin.accessor.MobAccessor;
@@ -44,6 +45,12 @@ public class MainCommon
         Constants.SCHEDULER.tick();
     }
 
+    public static void onServerStopping(MinecraftServer server)
+    {
+        Constants.SCHEDULER.clear();
+        Constants.EVENT_BUS.post(new OnServerStoppingEvent(server));
+    }
+
     public static void onJoin(Mob mob)
     {
         ConfigData config = ConfigManager.getConfigSnapshot().data();
@@ -61,7 +68,7 @@ public class MainCommon
         {
             int maxTargetPriority = 0;
 
-            for (WrappedGoal wg : ((GoalSelectorAccessor) (Object) targetSelector).zbb$getAvailableGoals())
+            for (WrappedGoal wg : (targetSelector.getAvailableGoals()))
             {
                 maxTargetPriority = Math.max(maxTargetPriority, wg.getPriority());
             }
@@ -81,4 +88,6 @@ public class MainCommon
         }
         return false;
     }
+
+    public record OnServerStoppingEvent(MinecraftServer server) {}
 }

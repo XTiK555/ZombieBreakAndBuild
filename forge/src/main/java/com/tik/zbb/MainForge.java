@@ -9,7 +9,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod(Constants.MOD_ID)
@@ -40,7 +40,13 @@ public class MainForge
     }
 
     @SubscribeEvent
-    public void onJoin(EntityJoinLevelEvent event)
+    private void onServerStopping(ServerStoppingEvent event)
+    {
+        MainCommon.onServerStopping(event.getServer());
+    }
+
+    @SubscribeEvent
+    private void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
 
