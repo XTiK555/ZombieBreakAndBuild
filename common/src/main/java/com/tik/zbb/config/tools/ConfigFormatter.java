@@ -38,4 +38,37 @@ public final class ConfigFormatter
             throw new RuntimeException("Failed to format config", e);
         }
     }
+
+    public static void addHeader(Path path)
+    {
+        try
+        {
+            String header = String.join("\n",
+                    "# -----------------------------------------------------------------------------------",
+                    "# Zombies Break & Build config",
+                    "#",
+                    "# This config can be reloaded with /reload",
+                    "# You do NOT need to restart the server for most changes",
+                    "#",
+                    "# Note:",
+                    "# Existing mobs may keep already-added AI goals until they respawn or are reloaded,",
+                    "# but config values themselves are reloaded by /reload",
+                    "# -----------------------------------------------------------------------------------",
+                    "",
+                    ""
+            );
+
+            String original = Files.readString(path, StandardCharsets.UTF_8);
+
+            if (!original.contains("# This config can be reloaded with /reload"))
+            {
+                original = header + original;
+                Files.writeString(path, original, StandardCharsets.UTF_8);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to format config", e);
+        }
+    }
 }
