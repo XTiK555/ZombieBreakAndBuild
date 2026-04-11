@@ -2,6 +2,7 @@ package com.tik.zbb.mixin;
 
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.mixin.accessor.TargetingConditionsAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,6 +19,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.function.Predicate;
 
 @Mixin(NearestAttackableTargetGoal.class)
 public abstract class NATGoalMixin extends TargetGoal
@@ -45,13 +48,20 @@ public abstract class NATGoalMixin extends TargetGoal
 
         if (data.ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
         {
+            Predicate<LivingEntity> oldSelector =
+                    ((TargetingConditionsAccessor) (Object) this.zbb$originalTargetConditions).zbb$getSelector();
+
+            Predicate<LivingEntity> combinedSelector = (candidate) ->
+                    (oldSelector == null || oldSelector.test(candidate)) &&
+                            zbb$canNoticeTargetThroughSolidBlocks(
+                                    this.mob,
+                                    candidate,
+                                    data.ai.noticeTargetsThroughBlocksLimit
+                            );
+
             this.targetConditions = this.zbb$originalTargetConditions.copy()
                     .ignoreLineOfSight()
-                    .selector((candidate) -> zbb$canNoticeTargetThroughSolidBlocks(
-                            this.mob,
-                            candidate,
-                            data.ai.noticeTargetsThroughBlocksLimit
-                    ));
+                    .selector(combinedSelector);
         }
         else
         {
