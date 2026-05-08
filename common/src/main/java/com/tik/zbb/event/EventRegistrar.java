@@ -6,6 +6,7 @@ import com.tik.zbb.ai.action.actions.build.BuildVisual;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.blockstorage.storages.broken.BrokenReappearBlockVisual;
 import com.tik.zbb.blockstorage.storages.buildDisappear.BuildDisappearBlockVisual;
+import com.tik.zbb.blockstorage.storages.damage.DamageBlockVisual;
 
 public final class EventRegistrar
 {
@@ -21,6 +22,7 @@ public final class EventRegistrar
         // storage visuals
         Constants.EVENT_BUS.register(new BrokenReappearBlockVisual());
         Constants.EVENT_BUS.register(new BuildDisappearBlockVisual());
+        Constants.EVENT_BUS.register(new DamageBlockVisual());
 
 
         // action visuals
