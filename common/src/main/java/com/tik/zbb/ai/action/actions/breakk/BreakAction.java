@@ -9,6 +9,7 @@ import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -105,8 +106,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         double width = context.mob().getBbWidth();
         double height = context.mob().getBbHeight();
 
-        double zombieWidth = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().width();
-        double zombieHeight = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().height();
+        double zombieWidth = EntityTypes.ZOMBIE.getDimensions().width();
+        double zombieHeight = EntityTypes.ZOMBIE.getDimensions().height();
         double baseVolume = zombieWidth * zombieWidth * zombieHeight;
 
         double mobVolume = width * width * height;
