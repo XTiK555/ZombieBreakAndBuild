@@ -22,6 +22,7 @@ public class ConfigData
     public transient Set<ResourceLocation> ignoreBreakEntityIdSet = Set.of();
     public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
     public transient Map<ResourceLocation, ResourceLocation> dimensionPlaceBlockIdMap = Map.of();
+    public transient Map<ResourceLocation, ResourceLocation> mobPlaceBlockIdOverrideMap = Map.of();
 
     public void rebuildSets()
     {
@@ -30,6 +31,7 @@ public class ConfigData
         ignoreBreakEntityIdSet = idListToSet(ai.ignoreBreakEntityIdList);
         additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
         dimensionPlaceBlockIdMap = idPairListToMap(blocks.dimensionPlaceBlockIdList);
+        mobPlaceBlockIdOverrideMap = idPairListToMap(blocks.mobPlaceBlockIdOverrideList);
     }
 
     private static Set<ResourceLocation> idListToSet(List<String> list)
@@ -75,6 +77,10 @@ public class ConfigData
                 "minecraft:the_nether=minecraft:netherrack",
                 "minecraft:the_end=minecraft:end_stone"
         ));
+
+        @ResourceLocationPairList
+        @Comment("Mob-specific build block overrides, for example: \"minecraft:zombie=stone\", \"minecraft:pig=minecraft:dirt\"")
+        public List<String> mobPlaceBlockIdOverrideList = new ArrayList<>();
 
         @ResourceLocationList
         @Comment("Blocks that zombies will consider dangerous and attempt to build on or break")
