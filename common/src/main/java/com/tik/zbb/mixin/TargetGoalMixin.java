@@ -3,6 +3,7 @@ package com.tik.zbb.mixin;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
+import com.tik.zbb.utilities.TargetVisibilityThroughBlocksUtility;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
@@ -25,9 +26,13 @@ public abstract class TargetGoalMixin
     {
         ConfigData data = ConfigManager.getConfigSnapshot().data();
 
-        if (data.ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data) && target instanceof LivingEntity)
+        if (data.ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data) && target instanceof LivingEntity livingTarget)
         {
-            return true;
+            return TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
+                    this.mob,
+                    livingTarget,
+                    data.ai.continueSeeingTargetsThroughBlocksLimit
+            );
         }
 
         return sensing.hasLineOfSight(target);

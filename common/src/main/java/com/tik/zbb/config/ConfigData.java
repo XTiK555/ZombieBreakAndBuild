@@ -110,6 +110,10 @@ public class ConfigData
         @Comment("Zombies can continue seeing targets through walls")
         public boolean canContinueSeeingTargetsThroughBlocks = true;
 
+        @Range(min = 0, max = 1000000)
+        @Comment("(only if canContinueSeeingTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when continuing to see through walls (0 - infinity)")
+        public int continueSeeingTargetsThroughBlocksLimit = 6;
+
         @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
         public boolean applyToAllMonsters = true;
 
