@@ -2,6 +2,7 @@ package com.tik.zbb.config;
 
 import com.tik.zbb.config.annotations.Comment;
 import com.tik.zbb.config.annotations.Range;
+import com.tik.zbb.config.annotations.ResourceLocationIntPairList;
 import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationPairList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
@@ -23,6 +24,7 @@ public class ConfigData
     public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
     public transient Map<ResourceLocation, ResourceLocation> dimensionPlaceBlockIdMap = Map.of();
     public transient Map<ResourceLocation, ResourceLocation> mobPlaceBlockIdOverrideMap = Map.of();
+    public transient Map<ResourceLocation, Integer> blockHealthOverrideMap = Map.of();
 
     public void rebuildSets()
     {
@@ -32,6 +34,7 @@ public class ConfigData
         additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
         dimensionPlaceBlockIdMap = idPairListToMap(blocks.dimensionPlaceBlockIdList);
         mobPlaceBlockIdOverrideMap = idPairListToMap(blocks.mobPlaceBlockIdOverrideList);
+        blockHealthOverrideMap = idIntPairListToMap(balance.blockDamage.blockHealthOverrideList);
     }
 
     private static Set<ResourceLocation> idListToSet(List<String> list)
@@ -59,6 +62,31 @@ public class ConfigData
             ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
             ResourceLocation value = ResourceLocation.tryParse(parts[1].trim());
             if (key != null && value != null) map.put(key, value);
+        }
+
+        return Map.copyOf(map);
+    }
+
+    private static Map<ResourceLocation, Integer> idIntPairListToMap(List<String> list)
+    {
+        Map<ResourceLocation, Integer> map = new HashMap<>();
+
+        for (String s : list)
+        {
+            String[] parts = s.split("=", 2);
+            if (parts.length != 2) continue;
+
+            ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
+            if (key == null) continue;
+
+            try
+            {
+                int value = Integer.parseInt(parts[1].trim());
+                if (value >= 0) map.put(key, value);
+            }
+            catch (NumberFormatException ignored)
+            {
+            }
         }
 
         return Map.copyOf(map);
@@ -176,7 +204,15 @@ public class ConfigData
         {
             @Range(min = 1, max = 1000000)
             @Comment("Damage dealt to blocks")
-            public int damageToBlocks = 3;
+            public int damageToBlocks = 1;
+
+            @Range(min = 0, max = 1000000)
+            @Comment("Block hardness contrast. Vanilla block hardness is multiplied by this value to get block health.")
+            public float blockHardnessContrast = 2.0f;
+
+            @ResourceLocationIntPairList
+            @Comment("Manual block health overrides (blockId=health). Example: \"minecraft:dirt=40\"")
+            public List<String> blockHealthOverrideList = new ArrayList<>();
 
             @Range(min = 0, max = 1000000)
             @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 - tools do not affect damage)")
