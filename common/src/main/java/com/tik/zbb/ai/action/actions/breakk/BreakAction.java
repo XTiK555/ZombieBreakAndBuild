@@ -85,13 +85,14 @@ public class BreakAction implements IMobAction<BreakRequest>
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         Identifier blockId = blockRegistry.getKey(blockState.getBlock());
         Integer blockHealthOverride = configData.blockHealthOverrideMap.get(blockId);
-        if (blockHealthOverride != null) return blockHealthOverride;
-
         float hardness = blockState.getDestroySpeed(level, blockPos);
+        double health = Math.pow(hardness, configData.balance.blockDamage.blockHardnessContrast) * configData.balance.blockDamage.blockHardnessMultiplier;
 
+        if (blockHealthOverride != null) return blockHealthOverride;
         if (hardness < 0) return Integer.MAX_VALUE;
+        if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
 
-        return (int) (hardness * configData.balance.blockDamage.blockHardnessContrast);
+        return (int) Math.round(health);
     }
 
     private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)
