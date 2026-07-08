@@ -3,6 +3,7 @@ package com.tik.zbb.config.tools;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.tik.zbb.config.annotations.Range;
+import com.tik.zbb.config.annotations.ResourceLocationIntPairList;
 import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationPairList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
@@ -188,6 +189,36 @@ public final class ConfigSanitizer
                 if (key != null && pairValue != null)
                 {
                     cleaned.add(key + "=" + pairValue);
+                }
+            }
+            return cleaned;
+        }
+
+        if (field.isAnnotationPresent(ResourceLocationIntPairList.class))
+        {
+            if (!(value instanceof List<?> list)) return deepCopyRaw(defaultValue);
+
+            List<String> cleaned = new ArrayList<>();
+            for (Object o : list)
+            {
+                if (!(o instanceof String s)) continue;
+
+                String[] parts = s.split("=", 2);
+                if (parts.length != 2) continue;
+
+                Identifier key = Identifier.tryParse(parts[0].trim());
+                if (key == null) continue;
+
+                try
+                {
+                    int pairValue = Integer.parseInt(parts[1].trim());
+                    if (pairValue >= 0)
+                    {
+                        cleaned.add(key + "=" + pairValue);
+                    }
+                }
+                catch (NumberFormatException ignored)
+                {
                 }
             }
             return cleaned;
