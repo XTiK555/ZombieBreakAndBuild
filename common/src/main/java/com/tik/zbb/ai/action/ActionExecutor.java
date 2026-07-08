@@ -134,6 +134,14 @@ public final class ActionExecutor
 
     private ResourceLocation selectBridgeBlockId(ServerLevel level, ConfigData configData)
     {
+        ResourceLocation mobBlockId = mobActionContext.mobId() == null
+                ? null
+                : configData.mobPlaceBlockIdOverrideMap.get(mobActionContext.mobId());
+        if (mobBlockId != null)
+        {
+            return mobBlockId;
+        }
+
         ResourceLocation dimensionBlockId = configData.dimensionPlaceBlockIdMap.get(level.dimension().location());
         if (dimensionBlockId != null)
         {
