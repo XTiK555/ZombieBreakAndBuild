@@ -4,14 +4,19 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
@@ -30,9 +35,6 @@ public class BreakAction implements IMobAction<BreakRequest>
                                 int newDamage,
                                 int blockId) {}
 
-    private static final int MAX_BLOCK_HARDNESS_FOR_HEALTH = 50;
-    private static final float BLOCK_HEALTH_PER_HARDNESS = 6.0f;
-    private static final int MIN_BLOCK_HEALTH = 1;
     private static final float MIN_TOOL_DESTROY_SPEED = 1.0f;
     private static final float MAX_TOOL_DESTROY_SPEED = 30.0f;
 
@@ -42,7 +44,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         boolean isAir = context.level().getBlockState(request.pos()).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
-        boolean unbreakable = getBlockHealth(request.pos(), context.level()) == Integer.MAX_VALUE;
+        boolean unbreakable = getBlockHealth(request.pos(), context.level(), context.configSnapshot().data()) == Integer.MAX_VALUE;
         boolean canMobBreak = !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(context.mobId());
 
         return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
@@ -53,7 +55,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     {
         BlockState state = context.level().getBlockState(request.pos());
         int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
-        int blockHealth = getBlockHealth(request.pos(), context.level());
+        int blockHealth = getBlockHealth(request.pos(), context.level(), context.configSnapshot().data());
         int newDamage = getDamageToBlocks(context, request.pos());
         int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()) + newDamage;
 
@@ -81,15 +83,19 @@ public class BreakAction implements IMobAction<BreakRequest>
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
     }
 
-    private int getBlockHealth(BlockPos blockPos, ServerLevel level)
+    private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigData configData)
     {
         BlockState blockState = level.getBlockState(blockPos);
+        Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        Identifier blockId = blockRegistry.getKey(blockState.getBlock());
+        Integer blockHealthOverride = configData.blockHealthOverrideMap.get(blockId);
+        if (blockHealthOverride != null) return blockHealthOverride;
+
         float hardness = blockState.getDestroySpeed(level, blockPos);
 
         if (hardness < 0) return Integer.MAX_VALUE;
 
-        hardness = Math.min(hardness, MAX_BLOCK_HARDNESS_FOR_HEALTH);
-        return Math.max(MIN_BLOCK_HEALTH, (int) (hardness * BLOCK_HEALTH_PER_HARDNESS));
+        return (int) (hardness * configData.balance.blockDamage.blockHardnessContrast);
     }
 
     private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)
