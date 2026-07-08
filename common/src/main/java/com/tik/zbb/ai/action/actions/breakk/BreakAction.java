@@ -12,7 +12,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
@@ -32,11 +31,8 @@ public class BreakAction implements IMobAction<BreakRequest>
 
     public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
                                 ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
-                                int newDamage,
-                                int blockId) {}
+                                int newDamage, int blockId) {}
 
-    private static final float MIN_TOOL_DESTROY_SPEED = 1.0f;
-    private static final float MAX_TOOL_DESTROY_SPEED = 30.0f;
 
     @Override
     public boolean canExecute(MobActionContext context, BreakRequest request)
@@ -132,10 +128,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
         float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
         float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
+        float toolMultiplier = (float) (1.0 + (destroySpeed - 1.0) * context.configSnapshot().data().balance.blockDamage.itemDamageMultiplierStrength);
 
-        float toolMultiplier = Mth.clamp(destroySpeed, MIN_TOOL_DESTROY_SPEED, MAX_TOOL_DESTROY_SPEED);
-        float finalMultiplier = (float) (1.0 + (toolMultiplier - 1.0) * context.configSnapshot().data().balance.blockDamage.itemDamageMultiplierStrength);
-
-        return finalMultiplier;
+        return toolMultiplier;
     }
 }
