@@ -1,6 +1,5 @@
 package com.tik.zbb;
 
-import com.tik.zbb.config.ConfigManager;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -73,7 +72,7 @@ public class MainNeoForge
             @Override
             protected void apply(Void object, ResourceManager resourceManager, ProfilerFiller profiler)
             {
-                ConfigManager.reload();
+                MainCommon.onReload();
             }
         });
     }

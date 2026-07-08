@@ -1,6 +1,5 @@
 package com.tik.zbb;
 
-import com.tik.zbb.config.ConfigManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
@@ -50,6 +49,6 @@ public class MainForge
 
     private void onAddReloadListeners(AddReloadListenerEvent event)
     {
-        event.addListener((ResourceManagerReloadListener) resourceManager -> ConfigManager.reload());
+        event.addListener((ResourceManagerReloadListener) resourceManager -> MainCommon.onReload());
     }
 }
