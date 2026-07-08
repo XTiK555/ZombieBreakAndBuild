@@ -116,7 +116,7 @@ public final class ActionExecutor
                     mobActionContext.mobId()
             );
         }
-        if (configDataOutdated)
+        if (levelOutdated || configDataOutdated)
         {
             reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
         }
@@ -128,10 +128,20 @@ public final class ActionExecutor
 
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
 
-        Identifier blockId = Identifier.tryParse(configData.blocks.placeBlockId);
-        if (blockId != null)
-            configCache.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.DIRT);
-        else configCache.bridgeBlock = Blocks.DIRT;
+        Identifier blockId = selectBridgeBlockId(level, configData);
+        configCache.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.STONE);
+    }
+
+    private Identifier selectBridgeBlockId(ServerLevel level, ConfigData configData)
+    {
+        Identifier dimensionBlockId = configData.dimensionPlaceBlockIdMap.get(level.dimension().identifier());
+        if (dimensionBlockId != null)
+        {
+            return dimensionBlockId;
+        }
+
+        Identifier fallbackBlockId = Identifier.tryParse(configData.blocks.fallbackPlaceBlockId);
+        return fallbackBlockId != null ? fallbackBlockId : Identifier.tryParse("minecraft:stone");
     }
 
     private class ConfigCache
@@ -139,5 +149,3 @@ public final class ActionExecutor
         public Block bridgeBlock;
     }
 }
-
-
