@@ -5,6 +5,7 @@ import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.electronwill.nightconfig.core.serde.ObjectSerializer;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationList;
+import com.tik.zbb.config.annotations.ResourceLocationPairList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
 import com.tik.zbb.utilities.ConfigUtilities;
 import net.minecraft.resources.ResourceLocation;
@@ -131,6 +132,28 @@ public final class ConfigSanitizer
                 if (o instanceof String s && ResourceLocation.tryParse(s) != null)
                 {
                     cleaned.add(s);
+                }
+            }
+            return cleaned;
+        }
+
+        if (field.isAnnotationPresent(ResourceLocationPairList.class))
+        {
+            if (!(value instanceof List<?> list)) return deepCopyRaw(defaultValue);
+
+            List<String> cleaned = new ArrayList<>();
+            for (Object o : list)
+            {
+                if (!(o instanceof String s)) continue;
+
+                String[] parts = s.split("=", 2);
+                if (parts.length != 2) continue;
+
+                ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
+                ResourceLocation pairValue = ResourceLocation.tryParse(parts[1].trim());
+                if (key != null && pairValue != null)
+                {
+                    cleaned.add(key + "=" + pairValue);
                 }
             }
             return cleaned;
