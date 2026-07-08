@@ -202,8 +202,12 @@ public class ConfigData
             public int damageToBlocks = 1;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Block hardness contrast. Vanilla block hardness is multiplied by this value to get block health.")
-            public float blockHardnessContrast = 2.0f;
+            @Comment("Exponent applied to vanilla block hardness. 1 = no contrast change.")
+            public float blockHardnessContrast = 0.85f;
+
+            @Range(min = 0, max = 1000000)
+            @Comment("Multiplier applied to the calculated block health after hardness contrast is applied.")
+            public float blockHardnessMultiplier = 2.0f;
 
             @ResourceLocationIntPairList
             @Comment("Manual block health overrides (blockId=health). Example: \"minecraft:dirt=40\"")
