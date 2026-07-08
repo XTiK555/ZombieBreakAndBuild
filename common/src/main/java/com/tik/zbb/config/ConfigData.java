@@ -3,13 +3,11 @@ package com.tik.zbb.config;
 import com.tik.zbb.config.annotations.Comment;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationList;
+import com.tik.zbb.config.annotations.ResourceLocationPairList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ConfigData
 {
@@ -23,6 +21,7 @@ public class ConfigData
     public transient Set<ResourceLocation> ignoreBuildEntityIdSet = Set.of();
     public transient Set<ResourceLocation> ignoreBreakEntityIdSet = Set.of();
     public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
+    public transient Map<ResourceLocation, ResourceLocation> dimensionPlaceBlockIdMap = Map.of();
 
     public void rebuildSets()
     {
@@ -30,6 +29,7 @@ public class ConfigData
         ignoreBuildEntityIdSet = idListToSet(ai.ignoreBuildEntityIdList);
         ignoreBreakEntityIdSet = idListToSet(ai.ignoreBreakEntityIdList);
         additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
+        dimensionPlaceBlockIdMap = idPairListToMap(blocks.dimensionPlaceBlockIdList);
     }
 
     private static Set<ResourceLocation> idListToSet(List<String> list)
@@ -45,11 +45,36 @@ public class ConfigData
         return Set.copyOf(set);
     }
 
+    private static Map<ResourceLocation, ResourceLocation> idPairListToMap(List<String> list)
+    {
+        Map<ResourceLocation, ResourceLocation> map = new HashMap<>();
+
+        for (String s : list)
+        {
+            String[] parts = s.split("=", 2);
+            if (parts.length != 2) continue;
+
+            ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
+            ResourceLocation value = ResourceLocation.tryParse(parts[1].trim());
+            if (key != null && value != null) map.put(key, value);
+        }
+
+        return Map.copyOf(map);
+    }
+
     public static class Blocks
     {
         @ResourceLocationString
-        @Comment("Block used when zombies build")
-        public String placeBlockId = "minecraft:dirt";
+        @Comment("Block used when no dimension-specific or mob-specific build block is configured")
+        public String fallbackPlaceBlockId = "minecraft:stone";
+
+        @ResourceLocationPairList
+        @Comment("Dimension-specific blocks used when mobs build (dimensionId=blockId)")
+        public List<String> dimensionPlaceBlockIdList = new ArrayList<>(List.of(
+                "minecraft:overworld=minecraft:dirt",
+                "minecraft:the_nether=minecraft:netherrack",
+                "minecraft:the_end=minecraft:end_stone"
+        ));
 
         @ResourceLocationList
         @Comment("Blocks that zombies will consider dangerous and attempt to build on or break")
