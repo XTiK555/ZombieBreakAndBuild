@@ -75,6 +75,11 @@ public class MainCommon
         }
     }
 
+    public static void onReload()
+    {
+        ConfigManager.reload();
+    }
+
     private static boolean hasGoal(GoalSelector selector, Class<? extends Goal> goalClass)
     {
         for (WrappedGoal wrapped : selector.getAvailableGoals())

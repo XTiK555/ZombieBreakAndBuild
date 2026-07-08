@@ -1,8 +1,7 @@
 package com.tik.zbb;
 
-import com.tik.zbb.config.ConfigManager;
-import net.minecraft.util.Unit;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Unit;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.TickEvent;
@@ -52,7 +51,7 @@ public class MainForge
     private void onAddReloadListeners(AddReloadListenerEvent event)
     {
         event.addListener((state, backgroundExecutor, preparationBarrier, gameExecutor) ->
-                preparationBarrier.wait(Unit.INSTANCE).thenRunAsync(ConfigManager::reload, gameExecutor)
+                preparationBarrier.wait(Unit.INSTANCE).thenRunAsync(MainCommon::onReload, gameExecutor)
         );
     }
 }
