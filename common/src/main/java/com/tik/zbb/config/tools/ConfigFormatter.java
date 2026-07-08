@@ -25,7 +25,7 @@ public final class ConfigFormatter
                 if (!trimmed.contains("=")) continue;
 
                 String next = i + 1 < lines.size() ? lines.get(i + 1).trim() : "";
-                if (!next.isEmpty() && !next.startsWith("["))
+                if (!next.isEmpty() && !next.startsWith("[") && !trimmed.startsWith("#"))
                 {
                     out.append('\n');
                 }
@@ -48,10 +48,8 @@ public final class ConfigFormatter
                     "# Zombies Break & Build config",
                     "#",
                     "# This config can be reloaded with /reload",
-                    "# You do NOT need to restart the server for most changes",
-                    "#",
-                    "# Note:",
-                    "# Existing mobs may keep already-added AI goals until they respawn or are reloaded,",
+                    "# You do NOT need to restart the server for MOST changes",
+                    "# Existing mobs may keep already-added AI goals until they respawn,",
                     "# but config values themselves are reloaded by /reload",
                     "# -----------------------------------------------------------------------------------",
                     "",

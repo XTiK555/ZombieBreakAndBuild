@@ -62,10 +62,6 @@ public class ConfigData
 
     public static class Blocks
     {
-        @ResourceLocationString
-        @Comment("Block used when no dimension-specific or mob-specific build block is configured")
-        public String fallbackPlaceBlockId = "minecraft:stone";
-
         @ResourceLocationPairList
         @Comment("Dimension-specific blocks used when mobs build (dimensionId=blockId)")
         public List<String> dimensionPlaceBlockIdList = new ArrayList<>(List.of(
@@ -75,11 +71,15 @@ public class ConfigData
         ));
 
         @ResourceLocationPairList
-        @Comment("Mob-specific build block overrides, for example: \"minecraft:zombie=stone\", \"minecraft:pig=minecraft:dirt\"")
+        @Comment("Mob-specific build block overrides. These have priority over dimensionPlaceBlockIdList. Example: \"minecraft:zombie=minecraft:stone\"")
         public List<String> mobPlaceBlockIdOverrideList = new ArrayList<>();
 
+        @ResourceLocationString
+        @Comment("Block used when no mob-specific or dimension-specific build block is configured")
+        public String fallbackPlaceBlockId = "minecraft:stone";
+
         @ResourceLocationList
-        @Comment("Blocks that zombies will consider dangerous and attempt to build on or break")
+        @Comment("Blocks that zombies will consider dangerous and attempt to cover or break")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
                 "minecraft:soul_fire",
@@ -100,14 +100,14 @@ public class ConfigData
         @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
-        @Comment("Zombies can notice targets through walls")
+        @Comment("Zombies can find a new target through blocks")
         public boolean canNoticeTargetsThroughBlocks = true;
 
         @Range(min = 0, max = 1000000)
         @Comment("(only if canNoticeTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when noticing through walls (0 - infinity)")
         public int noticeTargetsThroughBlocksLimit = 3;
 
-        @Comment("Zombies can continue seeing targets through walls")
+        @Comment("Zombies can keep chasing an already found target through blocks")
         public boolean canContinueSeeingTargetsThroughBlocks = true;
 
         @Range(min = 0, max = 1000000)
@@ -157,7 +157,7 @@ public class ConfigData
         public int dangerousBlocksSearchRadius = 1;
 
         @Range(min = 1, max = 1000000)
-        @Comment("Distance to path end before breaking or building")
+        @Comment("How close a mob must get to the end of its path before it tries to break or place blocks")
         public int pathEndBreakBuildDistance = 6;
 
         @Range(min = 1, max = 1000000)
@@ -201,18 +201,18 @@ public class ConfigData
 
     public static class BlockRestoration
     {
-        @Comment("Enable disappearing of blocks placed by zombies")
+        @Comment("Enable disappearing for blocks placed by zombies")
         public boolean builtBlocksDisappearing = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time before placed blocks by zombies disappear (only if builtBlocksDisappearing is true)")
+        @Comment("Time before blocks placed by zombies disappear (only if builtBlocksDisappearing is true)")
         public double builtBlocksDisappearTime = 30.0D;
 
         @Comment("Enable restoration of blocks broken by zombies")
         public boolean brokenBlocksRestoring = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time before broken blocks by zombies are restored (only if brokenBlocksRestoring is true)")
+        @Comment("Time before blocks broken by zombies are restored (only if brokenBlocksRestoring is true)")
         public double brokenBlocksRestoreTime = 30.0D;
     }
 
