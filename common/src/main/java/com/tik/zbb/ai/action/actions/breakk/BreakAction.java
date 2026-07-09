@@ -40,8 +40,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         boolean isAir = context.level().getBlockState(request.pos()).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
-        boolean unbreakable = getBlockHealth(request.pos(), context.level(), context.configSnapshot().data()) == Integer.MAX_VALUE;
-        boolean canMobBreak = !context.configSnapshot().data().ignoreBreakEntityIdSet.contains(context.mobId());
+        boolean unbreakable = getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
+        boolean canMobBreak = !context.configSnapshot().runtime().ignoreBreakEntityIdSet().contains(context.mobId());
 
         return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
     }
@@ -51,7 +51,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     {
         BlockState state = context.level().getBlockState(request.pos());
         int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
-        int blockHealth = getBlockHealth(request.pos(), context.level(), context.configSnapshot().data());
+        int blockHealth = getBlockHealth(request.pos(), context.level(), context.configSnapshot());
         int newDamage = getDamageToBlocks(context, request.pos());
         int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()) + newDamage;
 
@@ -79,12 +79,13 @@ public class BreakAction implements IMobAction<BreakRequest>
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
     }
 
-    private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigData configData)
+    private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
     {
+        ConfigData configData = configSnapshot.data();
         BlockState blockState = level.getBlockState(blockPos);
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
         Identifier blockId = blockRegistry.getKey(blockState.getBlock());
-        Integer blockHealthOverride = configData.blockHealthOverrideMap.get(blockId);
+        Integer blockHealthOverride = configSnapshot.runtime().blockHealthOverrideMap().get(blockId);
         float hardness = blockState.getDestroySpeed(level, blockPos);
         double health = Math.pow(hardness, configData.balance.blockDamage.blockHardnessContrast) * configData.balance.blockDamage.blockHardnessMultiplier;
 
