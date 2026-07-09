@@ -1,7 +1,7 @@
 package com.tik.zbb.mixin;
 
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.utilities.TargetVisibilityThroughBlocksUtility;
 import net.minecraft.world.entity.LivingEntity;
@@ -24,14 +24,14 @@ public abstract class TargetGoalMixin
     @Redirect(method = "canContinueToUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/sensing/Sensing;hasLineOfSight(Lnet/minecraft/world/entity/Entity;)Z"))
     private boolean zbb$hasLineOfSight(Sensing sensing, net.minecraft.world.entity.Entity target)
     {
-        ConfigData data = ConfigManager.getConfigSnapshot().data();
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (data.ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data) && target instanceof LivingEntity livingTarget)
+        if (configSnapshot.data().ai.canContinueSeeingTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot) && target instanceof LivingEntity livingTarget)
         {
             return TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                     this.mob,
                     livingTarget,
-                    data.ai.continueSeeingTargetsThroughBlocksLimit
+                    configSnapshot.data().ai.continueSeeingTargetsThroughBlocksLimit
             );
         }
 

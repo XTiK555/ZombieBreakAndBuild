@@ -1,11 +1,10 @@
 package com.tik.zbb.mixin;
 
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.mixin.accessor.TargetingConditionsAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.utilities.TargetVisibilityThroughBlocksUtility;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
@@ -26,16 +25,10 @@ public abstract class NATGoalMixin extends TargetGoal
     @Inject(method = "getTargetConditions", at = @At("RETURN"), cancellable = true)
     private void zbb$getTargetConditions(CallbackInfoReturnable<TargetingConditions> cir)
     {
-        ConfigData data = ConfigManager.getConfigSnapshot().data();
-        if (!data.ai.canNoticeTargetsThroughBlocks)
-        {
-            return;
-        }
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
-        {
-            return;
-        }
+        if (!configSnapshot.data().ai.canNoticeTargetsThroughBlocks) return;
+        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot)) return;
 
         TargetingConditions original = cir.getReturnValue();
         TargetingConditions.Selector oldSelector = ((TargetingConditionsAccessor) (Object) original).zbb$getSelector();
@@ -45,7 +38,7 @@ public abstract class NATGoalMixin extends TargetGoal
                         TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                                 this.mob,
                                 candidate,
-                                data.ai.noticeTargetsThroughBlocksLimit
+                                configSnapshot.data().ai.noticeTargetsThroughBlocksLimit
                         );
 
         cir.setReturnValue(original.copy()
