@@ -1,7 +1,6 @@
 package com.tik.zbb.config;
 
 import com.tik.zbb.config.annotations.*;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -12,80 +11,6 @@ public class ConfigData
     public Balance balance = new Balance();
     public BlockRestoration blockRestoration = new BlockRestoration();
     public VisualEffects visualEffects = new VisualEffects();
-
-    public transient Set<Identifier> dangerousBlockIdSet = Set.of();
-    public transient Set<Identifier> ignoreBuildEntityIdSet = Set.of();
-    public transient Set<Identifier> ignoreBreakEntityIdSet = Set.of();
-    public transient Set<Identifier> additionalEntityIdSet = Set.of();
-    public transient Map<Identifier, Identifier> dimensionPlaceBlockIdMap = Map.of();
-    public transient Map<Identifier, Identifier> mobPlaceBlockIdOverrideMap = Map.of();
-    public transient Map<Identifier, Integer> blockHealthOverrideMap = Map.of();
-
-    public void rebuildSets()
-    {
-        dangerousBlockIdSet = idListToSet(blocks.dangerousBlockIdList);
-        ignoreBuildEntityIdSet = idListToSet(ai.ignoreBuildEntityIdList);
-        ignoreBreakEntityIdSet = idListToSet(ai.ignoreBreakEntityIdList);
-        additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
-        dimensionPlaceBlockIdMap = idPairListToMap(blocks.dimensionPlaceBlockIdList);
-        mobPlaceBlockIdOverrideMap = idPairListToMap(blocks.mobPlaceBlockIdOverrideList);
-        blockHealthOverrideMap = idIntPairListToMap(balance.blockDamage.blockHealthOverrideList);
-    }
-
-    private static Set<Identifier> idListToSet(List<String> list)
-    {
-        Set<Identifier> set = new HashSet<>();
-
-        for (String s : list)
-        {
-            Identifier id = Identifier.tryParse(s);
-            if (id != null) set.add(id);
-        }
-
-        return Set.copyOf(set);
-    }
-
-    private static Map<Identifier, Identifier> idPairListToMap(List<String> list)
-    {
-        Map<Identifier, Identifier> map = new HashMap<>();
-
-        for (String s : list)
-        {
-            String[] parts = s.split("=", 2);
-            if (parts.length != 2) continue;
-
-            Identifier key = Identifier.tryParse(parts[0].trim());
-            Identifier value = Identifier.tryParse(parts[1].trim());
-            if (key != null && value != null) map.put(key, value);
-        }
-
-        return Map.copyOf(map);
-    }
-
-    private static Map<Identifier, Integer> idIntPairListToMap(List<String> list)
-    {
-        Map<Identifier, Integer> map = new HashMap<>();
-
-        for (String s : list)
-        {
-            String[] parts = s.split("=", 2);
-            if (parts.length != 2) continue;
-
-            Identifier key = Identifier.tryParse(parts[0].trim());
-            if (key == null) continue;
-
-            try
-            {
-                int value = Integer.parseInt(parts[1].trim());
-                if (value >= 0) map.put(key, value);
-            }
-            catch (NumberFormatException ignored)
-            {
-            }
-        }
-
-        return Map.copyOf(map);
-    }
 
     public static class Blocks
     {
