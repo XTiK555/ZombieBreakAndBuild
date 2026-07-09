@@ -9,6 +9,7 @@ import com.tik.zbb.ai.action.actions.freeze.FreezeAction;
 import com.tik.zbb.ai.action.actions.freeze.FreezeRequest;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -44,7 +45,7 @@ public final class ActionExecutor
                 entityTypeRegistry.getKey(mob.getType())
         );
 
-        reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
+        reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot());
     }
 
     public boolean canExecuteBreakAction(BlockPos breakPos)
@@ -118,31 +119,32 @@ public final class ActionExecutor
         }
         if (levelOutdated || configDataOutdated)
         {
-            reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot().data());
+            reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot());
         }
     }
 
-    private void reloadConfigCache(ServerLevel level, ConfigData configData)
+    private void reloadConfigCache(ServerLevel level, ConfigSnapshot configSnapshot)
     {
         if (configCache == null) configCache = new ConfigCache();
 
         Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
 
-        Identifier blockId = selectBridgeBlockId(level, configData);
+        Identifier blockId = selectBridgeBlockId(level, configSnapshot);
         configCache.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.STONE);
     }
 
-    private Identifier selectBridgeBlockId(ServerLevel level, ConfigData configData)
+    private Identifier selectBridgeBlockId(ServerLevel level, ConfigSnapshot configSnapshot)
     {
+        ConfigData configData = configSnapshot.data();
         Identifier mobBlockId = mobActionContext.mobId() == null
                 ? null
-                : configData.mobPlaceBlockIdOverrideMap.get(mobActionContext.mobId());
+                : configSnapshot.runtime().mobPlaceBlockIdOverrideMap().get(mobActionContext.mobId());
         if (mobBlockId != null)
         {
             return mobBlockId;
         }
 
-        Identifier dimensionBlockId = configData.dimensionPlaceBlockIdMap.get(level.dimension().identifier());
+        Identifier dimensionBlockId = configSnapshot.runtime().dimensionPlaceBlockIdMap().get(level.dimension().identifier());
         if (dimensionBlockId != null)
         {
             return dimensionBlockId;

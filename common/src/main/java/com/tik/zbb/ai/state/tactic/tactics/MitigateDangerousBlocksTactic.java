@@ -51,7 +51,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         Identifier id = blockRegistry.getKey(state.getBlock());
 
         if (id == null) return false;
-        if (!context.getConfigSnapshot().data().dangerousBlockIdSet.contains(id)) return false;
+        if (!context.getConfigSnapshot().runtime().dangerousBlockIdSet().contains(id)) return false;
         if (state.getBlock() instanceof CampfireBlock)
         {
             return state.getValue(CampfireBlock.LIT);
