@@ -5,6 +5,7 @@ import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
@@ -53,9 +54,9 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
-        ConfigData config = ConfigManager.getConfigSnapshot().data();
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(mob, config)) return;
+        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(mob, configSnapshot)) return;
         if (!(mob instanceof MobAccessor mobAccessor)) return;
 
         PathfinderMob pFMob = (PathfinderMob) mob;
@@ -63,7 +64,9 @@ public class MainCommon
         GoalSelector goalSelector = mobAccessor.zbb$getGoalSelector();
 
         if (!hasGoal(goalSelector, BreakAndBuildGoal.class))
+        {
             goalSelector.addGoal(2, new BreakAndBuildGoal(pFMob));
+        }
         if (!hasGoal(targetSelector, AlwaysSeeNearestPlayerGoal.class))
         {
             int maxTargetPriority = 0;

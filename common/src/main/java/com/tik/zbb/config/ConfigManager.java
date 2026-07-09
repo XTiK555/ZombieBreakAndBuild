@@ -19,6 +19,7 @@ public final class ConfigManager
 {
     private static volatile CommentedFileConfig FILE_CONFIG;
     private static volatile ConfigData DATA = new ConfigData();
+    private static volatile ConfigSnapshot SNAPSHOT = ConfigSnapshot.create(DATA, 0);
     private static volatile long VERSION = 0;
 
     public static void init()
@@ -35,7 +36,7 @@ public final class ConfigManager
 
     public static ConfigSnapshot getConfigSnapshot()
     {
-        return new ConfigSnapshot(DATA, VERSION);
+        return SNAPSHOT;
     }
 
     public static synchronized void reload()
@@ -111,11 +112,10 @@ public final class ConfigManager
 
     private static void setData(ConfigData data)
     {
-        data.rebuildSets();
         DATA = data;
         VERSION++;
+        SNAPSHOT = ConfigSnapshot.create(DATA, VERSION);
     }
-
     private static <T> T readObject(CommentedConfig config, Class<T> type)
     {
         try

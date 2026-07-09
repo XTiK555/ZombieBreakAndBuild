@@ -184,8 +184,8 @@ public final class ConfigSanitizer
                 String[] parts = s.split("=", 2);
                 if (parts.length != 2) continue;
 
-                Identifier key = Identifier.tryParse(parts[0].trim());
-                Identifier pairValue = Identifier.tryParse(parts[1].trim());
+                ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
+                ResourceLocation pairValue = ResourceLocation.tryParse(parts[1].trim());
                 if (key != null && pairValue != null)
                 {
                     cleaned.add(key + "=" + pairValue);
@@ -206,7 +206,7 @@ public final class ConfigSanitizer
                 String[] parts = s.split("=", 2);
                 if (parts.length != 2) continue;
 
-                Identifier key = Identifier.tryParse(parts[0].trim());
+                ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
                 if (key == null) continue;
 
                 try

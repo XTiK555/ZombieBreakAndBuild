@@ -1,7 +1,7 @@
 package com.tik.zbb.mixin;
 
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.mixin.accessor.TargetingConditionsAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.utilities.TargetVisibilityThroughBlocksUtility;
@@ -41,9 +41,9 @@ public abstract class NATGoalMixin extends TargetGoal
             this.zbb$originalTargetConditions = this.targetConditions;
         }
 
-        ConfigData data = ConfigManager.getConfigSnapshot().data();
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (data.ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, data))
+        if (configSnapshot.data().ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot))
         {
             Predicate<LivingEntity> oldSelector =
                     ((TargetingConditionsAccessor) (Object) this.zbb$originalTargetConditions).zbb$getSelector();
@@ -53,7 +53,7 @@ public abstract class NATGoalMixin extends TargetGoal
                             TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                                     this.mob,
                                     candidate,
-                                    data.ai.noticeTargetsThroughBlocksLimit
+                                    configSnapshot.data().ai.noticeTargetsThroughBlocksLimit
                             );
 
             this.targetConditions = this.zbb$originalTargetConditions.copy()

@@ -6,7 +6,6 @@ import com.tik.zbb.config.annotations.ResourceLocationIntPairList;
 import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationPairList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
-import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
 
@@ -17,80 +16,6 @@ public class ConfigData
     public Balance balance = new Balance();
     public BlockRestoration blockRestoration = new BlockRestoration();
     public VisualEffects visualEffects = new VisualEffects();
-
-    public transient Set<ResourceLocation> dangerousBlockIdSet = Set.of();
-    public transient Set<ResourceLocation> ignoreBuildEntityIdSet = Set.of();
-    public transient Set<ResourceLocation> ignoreBreakEntityIdSet = Set.of();
-    public transient Set<ResourceLocation> additionalEntityIdSet = Set.of();
-    public transient Map<ResourceLocation, ResourceLocation> dimensionPlaceBlockIdMap = Map.of();
-    public transient Map<ResourceLocation, ResourceLocation> mobPlaceBlockIdOverrideMap = Map.of();
-    public transient Map<ResourceLocation, Integer> blockHealthOverrideMap = Map.of();
-
-    public void rebuildSets()
-    {
-        dangerousBlockIdSet = idListToSet(blocks.dangerousBlockIdList);
-        ignoreBuildEntityIdSet = idListToSet(ai.ignoreBuildEntityIdList);
-        ignoreBreakEntityIdSet = idListToSet(ai.ignoreBreakEntityIdList);
-        additionalEntityIdSet = idListToSet(ai.additionalEntityIdList);
-        dimensionPlaceBlockIdMap = idPairListToMap(blocks.dimensionPlaceBlockIdList);
-        mobPlaceBlockIdOverrideMap = idPairListToMap(blocks.mobPlaceBlockIdOverrideList);
-        blockHealthOverrideMap = idIntPairListToMap(balance.blockDamage.blockHealthOverrideList);
-    }
-
-    private static Set<ResourceLocation> idListToSet(List<String> list)
-    {
-        Set<ResourceLocation> set = new HashSet<>();
-
-        for (String s : list)
-        {
-            ResourceLocation id = ResourceLocation.tryParse(s);
-            if (id != null) set.add(id);
-        }
-
-        return Set.copyOf(set);
-    }
-
-    private static Map<ResourceLocation, ResourceLocation> idPairListToMap(List<String> list)
-    {
-        Map<ResourceLocation, ResourceLocation> map = new HashMap<>();
-
-        for (String s : list)
-        {
-            String[] parts = s.split("=", 2);
-            if (parts.length != 2) continue;
-
-            ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
-            ResourceLocation value = ResourceLocation.tryParse(parts[1].trim());
-            if (key != null && value != null) map.put(key, value);
-        }
-
-        return Map.copyOf(map);
-    }
-
-    private static Map<ResourceLocation, Integer> idIntPairListToMap(List<String> list)
-    {
-        Map<ResourceLocation, Integer> map = new HashMap<>();
-
-        for (String s : list)
-        {
-            String[] parts = s.split("=", 2);
-            if (parts.length != 2) continue;
-
-            ResourceLocation key = ResourceLocation.tryParse(parts[0].trim());
-            if (key == null) continue;
-
-            try
-            {
-                int value = Integer.parseInt(parts[1].trim());
-                if (value >= 0) map.put(key, value);
-            }
-            catch (NumberFormatException ignored)
-            {
-            }
-        }
-
-        return Map.copyOf(map);
-    }
 
     public static class Blocks
     {
