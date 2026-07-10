@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -21,6 +22,7 @@ public class MainForge
         ServerStoppingEvent.BUS.addListener(this::onServerStopping);
         EntityJoinLevelEvent.BUS.addListener(this::onJoin);
         AddReloadListenerEvent.BUS.addListener(this::onAddReloadListeners);
+        RegisterCommandsEvent.BUS.addListener(this::onRegisterCommands);
     }
 
     private void onLevelTick(TickEvent.LevelTickEvent.Post event)
@@ -50,5 +52,10 @@ public class MainForge
     private void onAddReloadListeners(AddReloadListenerEvent event)
     {
         event.addListener((ResourceManagerReloadListener) resourceManager -> MainCommon.onReload());
+    }
+
+    private void onRegisterCommands(RegisterCommandsEvent event)
+    {
+        MainCommon.registerCommands(event.getDispatcher());
     }
 }
