@@ -3,12 +3,15 @@ package com.tik.zbb;
 import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.command.ZbbConfigCommand;
 import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
+import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
@@ -81,6 +84,11 @@ public class MainCommon
     public static void onReload()
     {
         ConfigManager.reload();
+    }
+
+    public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher)
+    {
+        ZbbConfigCommand.register(dispatcher);
     }
 
     private static boolean hasGoal(GoalSelector selector, Class<? extends Goal> goalClass)
