@@ -8,7 +8,13 @@ import java.util.List;
 
 public final class ConfigFormatter
 {
-    public static void splitBlocks(Path path)
+    public static void format(Path path)
+    {
+        splitBlocks(path);
+        addHeader(path);
+    }
+
+    private static void splitBlocks(Path path)
     {
         try
         {
@@ -39,7 +45,7 @@ public final class ConfigFormatter
         }
     }
 
-    public static void addHeader(Path path)
+    private static void addHeader(Path path)
     {
         try
         {

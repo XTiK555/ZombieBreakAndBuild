@@ -5,6 +5,7 @@ import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -54,5 +55,11 @@ public class MainForge
     public void onAddReloadListeners(AddReloadListenerEvent event)
     {
         event.addListener((ResourceManagerReloadListener) resourceManager -> MainCommon.onReload());
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event)
+    {
+        MainCommon.registerCommands(event.getDispatcher());
     }
 }
