@@ -55,6 +55,37 @@ class ConfigEditServiceTest
     }
 
     @Test
+    void resourceLocationPatternListCodecAcceptsSupportedPatterns() throws Exception
+    {
+        ConfigFieldDescriptor descriptor = descriptor("ai.affectedEntityIdList");
+
+        assertEquals(
+                java.util.List.of("minecraft:zombie", "minecraft:*", "*:zombie", "*:*", "!minecraft:zombie", "!minecraft:*", "!*:zombie", "!*:*"),
+                descriptor.codec().parseText(descriptor, "minecraft:zombie,minecraft:*,*:zombie,*:*,!minecraft:zombie,!minecraft:*,!*:zombie,!*:*")
+        );
+    }
+
+    @Test
+    void resourceLocationPatternListCodecRejectsUnsupportedPatterns()
+    {
+        ConfigFieldDescriptor descriptor = descriptor("ai.affectedEntityIdList");
+
+        assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "minecraft:!zombie"));
+        assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "minecraft:zombie*"));
+        assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "mine craft:zombie"));
+    }
+
+    @Test
+    void aiSchemaUsesPatternModelOnly()
+    {
+        assertTrue(ConfigSchema.find(new ConfigPath("ai.affectedEntityIdList")).isPresent());
+        assertTrue(ConfigSchema.find(new ConfigPath("ai.ignoreBuildEntityIdList")).isPresent());
+        assertTrue(ConfigSchema.find(new ConfigPath("ai.ignoreBreakEntityIdList")).isPresent());
+        assertTrue(ConfigSchema.find(new ConfigPath("ai.applyToAllMonsters")).isEmpty());
+        assertTrue(ConfigSchema.find(new ConfigPath("ai.additionalEntityIdList")).isEmpty());
+    }
+
+    @Test
     void floatCodecRejectsNonFloatRuntimeValuesWithoutPublishingState()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
@@ -194,10 +225,12 @@ class ConfigEditServiceTest
         ConfigData copy = ConfigDataCopier.copy(original);
 
         copy.blocks.dangerousBlockIdList.clear();
+        copy.ai.affectedEntityIdList.add("minecraft:test");
         copy.ai.ignoreBuildEntityIdList.add("minecraft:test");
         copy.balance.blockDamage.blockHealthOverrideList.add("minecraft:dirt=5");
 
         assertFalse(original.blocks.dangerousBlockIdList.isEmpty());
+        assertFalse(original.ai.affectedEntityIdList.contains("minecraft:test"));
         assertFalse(original.ai.ignoreBuildEntityIdList.contains("minecraft:test"));
         assertTrue(original.balance.blockDamage.blockHealthOverrideList.isEmpty());
     }
