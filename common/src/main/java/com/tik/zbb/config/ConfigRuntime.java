@@ -1,18 +1,17 @@
 package com.tik.zbb.config;
 
+import com.tik.zbb.config.schema.ResourceLocationPatternMatcher;
 import net.minecraft.resources.Identifier;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public record ConfigRuntime(
-        Set<Identifier> dangerousBlockIdSet,
-        Set<Identifier> ignoreBuildEntityIdSet,
-        Set<Identifier> ignoreBreakEntityIdSet,
-        Set<Identifier> additionalEntityIdSet,
+        ResourceLocationPatternMatcher dangerousBlockIdMatcher,
+        ResourceLocationPatternMatcher affectedEntityIdMatcher,
+        ResourceLocationPatternMatcher ignoreBuildEntityIdMatcher,
+        ResourceLocationPatternMatcher ignoreBreakEntityIdMatcher,
         Map<Identifier, Identifier> dimensionPlaceBlockIdMap,
         Map<Identifier, Identifier> mobPlaceBlockIdOverrideMap,
         Map<Identifier, Integer> blockHealthOverrideMap
@@ -21,27 +20,14 @@ public record ConfigRuntime(
     public static ConfigRuntime create(ConfigData data)
     {
         return new ConfigRuntime(
-                idListToSet(data.blocks.dangerousBlockIdList),
-                idListToSet(data.ai.ignoreBuildEntityIdList),
-                idListToSet(data.ai.ignoreBreakEntityIdList),
-                idListToSet(data.ai.additionalEntityIdList),
+                ResourceLocationPatternMatcher.compile(data.blocks.dangerousBlockIdList),
+                ResourceLocationPatternMatcher.compile(data.ai.affectedEntityIdList),
+                ResourceLocationPatternMatcher.compile(data.ai.ignoreBuildEntityIdList),
+                ResourceLocationPatternMatcher.compile(data.ai.ignoreBreakEntityIdList),
                 idPairListToMap(data.blocks.dimensionPlaceBlockIdList),
                 idPairListToMap(data.blocks.mobPlaceBlockIdOverrideList),
                 idIntPairListToMap(data.balance.blockDamage.blockHealthOverrideList)
         );
-    }
-
-    private static Set<Identifier> idListToSet(List<String> list)
-    {
-        Set<Identifier> set = new HashSet<>();
-
-        for (String s : list)
-        {
-            Identifier id = Identifier.tryParse(s);
-            if (id != null) set.add(id);
-        }
-
-        return Set.copyOf(set);
     }
 
     private static Map<Identifier, Identifier> idPairListToMap(List<String> list)

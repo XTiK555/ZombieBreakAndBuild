@@ -2,8 +2,8 @@ package com.tik.zbb.config.schema;
 
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationIntPairList;
-import com.tik.zbb.config.annotations.ResourceLocationList;
 import com.tik.zbb.config.annotations.ResourceLocationPairList;
+import com.tik.zbb.config.annotations.ResourceLocationPatternList;
 import com.tik.zbb.config.annotations.ResourceLocationString;
 import net.minecraft.resources.Identifier;
 
@@ -302,11 +302,9 @@ public final class ConfigValueCodecs
         {
             if (rawValue.isBlank()) throw new ConfigValidationException("List entry cannot be empty");
 
-            if (field.isAnnotationPresent(ResourceLocationList.class))
+            if (field.isAnnotationPresent(ResourceLocationPatternList.class))
             {
-                Identifier id = Identifier.tryParse(rawValue);
-                if (id == null) throw new ConfigValidationException("Expected resource location");
-                return id.toString();
+                return ResourceLocationPatternParser.normalizeEntry(rawValue);
             }
 
             if (field.isAnnotationPresent(ResourceLocationPairList.class))
