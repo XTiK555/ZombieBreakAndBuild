@@ -18,8 +18,7 @@ public final class ConfigDataCopier
         copy.ai.noticeTargetsThroughBlocksLimit = data.ai.noticeTargetsThroughBlocksLimit;
         copy.ai.canContinueSeeingTargetsThroughBlocks = data.ai.canContinueSeeingTargetsThroughBlocks;
         copy.ai.continueSeeingTargetsThroughBlocksLimit = data.ai.continueSeeingTargetsThroughBlocksLimit;
-        copy.ai.applyToAllMonsters = data.ai.applyToAllMonsters;
-        copy.ai.additionalEntityIdList = new ArrayList<>(data.ai.additionalEntityIdList);
+        copy.ai.affectedEntityIdList = new ArrayList<>(data.ai.affectedEntityIdList);
         copy.ai.ignoreBuildEntityIdList = new ArrayList<>(data.ai.ignoreBuildEntityIdList);
         copy.ai.ignoreBreakEntityIdList = new ArrayList<>(data.ai.ignoreBreakEntityIdList);
 
