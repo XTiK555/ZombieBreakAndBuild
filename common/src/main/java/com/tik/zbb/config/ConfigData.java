@@ -2,7 +2,8 @@ package com.tik.zbb.config;
 
 import com.tik.zbb.config.annotations.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConfigData
 {
@@ -30,7 +31,7 @@ public class ConfigData
         @Comment("Block used when no mob-specific or dimension-specific build block is configured")
         public String fallbackPlaceBlockId = "minecraft:stone";
 
-        @ResourceLocationList
+        @ResourceLocationPatternList
         @Comment("Blocks that zombies will consider dangerous and attempt to cover or break")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
@@ -66,15 +67,12 @@ public class ConfigData
         @Comment("(only if canContinueSeeingTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when continuing to see through walls (0 - infinity)")
         public int continueSeeingTargetsThroughBlocksLimit = 6;
 
-        @Comment("Gives all monsters, not just zombies, the ability to break and place blocks")
-        public boolean applyToAllMonsters = true;
+        @ResourceLocationPatternList
+        @Comment("Entity ID patterns that will be given Zombie Break & Build behavior (only Pathfinder mobs)")
+        public List<String> affectedEntityIdList = new ArrayList<>(List.of("*:*"));
 
-        @ResourceLocationList
-        @Comment("Additional entity IDs that will be given the ability to break and place blocks (only Pathfinder mobs)")
-        public List<String> additionalEntityIdList = new ArrayList<>();
-
-        @ResourceLocationList
-        @Comment("Entity IDs that will NOT be given the ability to place blocks")
+        @ResourceLocationPatternList
+        @Comment("Entity ID patterns that will NOT be given the ability to place blocks")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:ghast",
@@ -84,18 +82,12 @@ public class ConfigData
                 "minecraft:elder_guardian",
                 "minecraft:guardian",
                 "minecraft:shulker",
-                "minecraft:wither",
-                "minecraft:breeze"
+                "minecraft:wither"
         ));
 
-        @ResourceLocationList
-        @Comment("Entity IDs that will NOT be given the ability to break blocks")
-        public List<String> ignoreBreakEntityIdList = new ArrayList<>(List.of(
-                "minecraft:ender_dragon",
-                "minecraft:shulker",
-                "minecraft:wither",
-                "minecraft:vex"
-        ));
+        @ResourceLocationPatternList
+        @Comment("Entity ID patterns that will NOT be given the ability to break blocks")
+        public List<String> ignoreBreakEntityIdList = new ArrayList<>();
     }
 
     public static class Balance
