@@ -5,8 +5,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.edit.ConfigEditOperation;
 import com.tik.zbb.config.edit.ConfigEditRequest;
 import com.tik.zbb.config.edit.ConfigEditResult;
+import com.tik.zbb.config.edit.ConfigEditService;
 import com.tik.zbb.config.edit.ConfigWriteMode;
 import com.tik.zbb.config.schema.*;
 import net.minecraft.commands.CommandSourceStack;
@@ -25,8 +27,6 @@ public final class ZbbConfigCommand
     private static final String VALUE_ARGUMENT = "value";
     private static final String ENTRY_ARGUMENT = "entry";
     private static final String MODE_ARGUMENT = "mode";
-    private static final String SOURCE = "command";
-
     private static final SuggestionProvider<CommandSourceStack> LEAF_PATH_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(ConfigSchema.descriptors().stream()
                     .map(descriptor -> descriptor.path().value()), builder);
@@ -57,53 +57,62 @@ public final class ZbbConfigCommand
                         .then(literal("set")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(argument(VALUE_ARGUMENT, StringArgumentType.word())
-                                                .executes(context -> set(context, ConfigWriteMode.PERSISTENT))
-                                                .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                        .suggests(MODE_SUGGESTIONS)
-                                                        .executes(context -> set(context, readMode(context)))))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .then(argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> set(context, ConfigWriteMode.RUNTIME_ONLY))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .then(argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> set(context, ConfigWriteMode.PERSISTENT))))
+                                        .then(argument(VALUE_ARGUMENT, StringArgumentType.string())
+                                                .executes(context -> set(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("add")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.word())
-                                                .executes(context -> add(context, ConfigWriteMode.PERSISTENT))
-                                                .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                        .suggests(MODE_SUGGESTIONS)
-                                                        .executes(context -> add(context, readMode(context)))))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> add(context, ConfigWriteMode.RUNTIME_ONLY))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> add(context, ConfigWriteMode.PERSISTENT))))
+                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.string())
+                                                .executes(context -> add(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("remove")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.word())
-                                                .executes(context -> remove(context, ConfigWriteMode.PERSISTENT))
-                                                .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                        .suggests(MODE_SUGGESTIONS)
-                                                        .executes(context -> remove(context, readMode(context)))))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> remove(context, ConfigWriteMode.RUNTIME_ONLY))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                                                        .executes(context -> remove(context, ConfigWriteMode.PERSISTENT))))
+                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.string())
+                                                .executes(context -> remove(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("clear")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT, SOURCE)))
+                                        .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT)))
                                         .then(argument(MODE_ARGUMENT, StringArgumentType.word())
                                                 .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), readMode(context), SOURCE))))))
+                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), readMode(context)))))))
                         .then(literal("reset")
                                 .then(literal("all")
-                                        .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT, SOURCE)))
+                                        .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT)))
                                         .then(argument(MODE_ARGUMENT, StringArgumentType.word())
                                                 .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(readMode(context), SOURCE)))))
+                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(readMode(context))))))
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT, SOURCE)))
+                                        .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT)))
                                         .then(argument(MODE_ARGUMENT, StringArgumentType.word())
                                                 .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), readMode(context), SOURCE))))))
-                        .then(literal("discard")
-                                .executes(context -> edit(context, ConfigEditRequest.discardAll(SOURCE)))
+                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), readMode(context)))))))
+                        .then(literal("discard_runtime_overrides")
+                                .executes(context -> edit(context, ConfigEditRequest.discardAll()))
                                 .then(literal("all")
-                                        .executes(context -> edit(context, ConfigEditRequest.discardAll(SOURCE))))
+                                        .executes(context -> edit(context, ConfigEditRequest.discardAll())))
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(PATH_OR_SECTION_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.discard(readPath(context), SOURCE)))))
+                                        .executes(context -> edit(context, ConfigEditRequest.discard(readPath(context))))))
                         .then(literal("reload")
                                 .executes(ZbbConfigCommand::reload))));
     }
@@ -139,50 +148,29 @@ public final class ZbbConfigCommand
 
     private static int set(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
     {
-        ConfigFieldDescriptor descriptor = readDescriptor(context);
-        if (descriptor == null) return 0;
-
-        try
-        {
-            Object value = descriptor.codec().parseText(descriptor, StringArgumentType.getString(context, VALUE_ARGUMENT));
-            return edit(context, ConfigEditRequest.set(descriptor.path(), value, writeMode, SOURCE));
-        }
-        catch (ConfigValidationException e)
-        {
-            return fail(context, descriptor.path() + ": " + e.getMessage());
-        }
+        return editRaw(context, ConfigEditRequest.set(
+                readPath(context),
+                readRawValue(context, VALUE_ARGUMENT),
+                writeMode
+        ));
     }
 
     private static int add(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
     {
-        ConfigFieldDescriptor descriptor = readListDescriptor(context);
-        if (descriptor == null) return 0;
-
-        try
-        {
-            String entry = parseSingleListEntry(descriptor, StringArgumentType.getString(context, ENTRY_ARGUMENT));
-            return edit(context, ConfigEditRequest.add(descriptor.path(), entry, writeMode, SOURCE));
-        }
-        catch (ConfigValidationException e)
-        {
-            return fail(context, descriptor.path() + ": " + e.getMessage());
-        }
+        return editRaw(context, ConfigEditRequest.add(
+                readPath(context),
+                readRawValue(context, ENTRY_ARGUMENT),
+                writeMode
+        ));
     }
 
     private static int remove(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
     {
-        ConfigFieldDescriptor descriptor = readListDescriptor(context);
-        if (descriptor == null) return 0;
-
-        try
-        {
-            String entry = parseSingleListEntry(descriptor, StringArgumentType.getString(context, ENTRY_ARGUMENT));
-            return edit(context, ConfigEditRequest.remove(descriptor.path(), entry, writeMode, SOURCE));
-        }
-        catch (ConfigValidationException e)
-        {
-            return fail(context, descriptor.path() + ": " + e.getMessage());
-        }
+        return editRaw(context, ConfigEditRequest.remove(
+                readPath(context),
+                readRawValue(context, ENTRY_ARGUMENT),
+                writeMode
+        ));
     }
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -199,8 +187,33 @@ public final class ZbbConfigCommand
         }
 
         String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
-        success(context, result.operation().name().toLowerCase() + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
+        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
         return Math.max(1, result.affectedCount());
+    }
+
+    private static int editRaw(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
+    {
+        ConfigEditResult result = ConfigManager.editRaw(request);
+        if (!result.success())
+        {
+            return fail(context, result.message());
+        }
+
+        String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
+        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
+        return Math.max(1, result.affectedCount());
+    }
+
+    private static String operationName(ConfigEditOperation operation)
+    {
+        return switch (operation)
+        {
+            case RESET_TO_DEFAULT -> "reset_to_default";
+            case RESET_ALL_TO_DEFAULTS -> "reset_all_to_defaults";
+            case REVERT_TO_PERSISTED -> "revert_to_persisted";
+            case DISCARD_ALL_OVERRIDES -> "discard_all_overrides";
+            default -> operation.name().toLowerCase();
+        };
     }
 
     private static String formatResultValue(ConfigEditResult result)
@@ -222,49 +235,26 @@ public final class ZbbConfigCommand
             }
             return "[" + String.join(", ", entries) + "]";
         }
+        if (value instanceof java.util.Map<?, ?> map)
+        {
+            List<String> entries = new ArrayList<>();
+            for (java.util.Map.Entry<?, ?> entry : map.entrySet())
+            {
+                entries.add(entry.getKey() + "=" + entry.getValue());
+            }
+            return "{" + String.join(", ", entries) + "}";
+        }
         return String.valueOf(value);
-    }
-
-    private static ConfigFieldDescriptor readDescriptor(CommandContext<CommandSourceStack> context)
-    {
-        ConfigPath path = readPath(context);
-        ConfigFieldDescriptor descriptor = ConfigSchema.find(path).orElse(null);
-        if (descriptor == null)
-        {
-            fail(context, "Unknown config path: " + path);
-        }
-        return descriptor;
-    }
-
-    private static ConfigFieldDescriptor readListDescriptor(CommandContext<CommandSourceStack> context)
-    {
-        ConfigFieldDescriptor descriptor = readDescriptor(context);
-        if (descriptor == null) return null;
-
-        if (descriptor.kind() != ConfigValueKind.STRING_LIST)
-        {
-            fail(context, descriptor.path() + " is not a list");
-            return null;
-        }
-
-        return descriptor;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static String parseSingleListEntry(ConfigFieldDescriptor descriptor, String rawValue) throws ConfigValidationException
-    {
-        List<String> values = (List<String>) descriptor.codec().parseText(descriptor, rawValue);
-        if (values.size() != 1)
-        {
-            throw new ConfigValidationException("Expected one list entry");
-        }
-        return values.get(0);
     }
 
     private static int reload(CommandContext<CommandSourceStack> context)
     {
-        ConfigManager.reload();
-        success(context, "reloaded config and discarded temporary values");
+        ConfigEditService.ConfigReloadResult result = ConfigManager.reload();
+        if (!result.success())
+        {
+            return fail(context, result.message());
+        }
+        success(context, result.message() + " and discarded temporary values");
         return 1;
     }
 
@@ -276,6 +266,11 @@ public final class ZbbConfigCommand
     private static ConfigWriteMode readMode(CommandContext<CommandSourceStack> context)
     {
         return ConfigWriteMode.parse(StringArgumentType.getString(context, MODE_ARGUMENT)).orElse(null);
+    }
+
+    private static String readRawValue(CommandContext<CommandSourceStack> context, String argument)
+    {
+        return StringArgumentType.getString(context, argument).trim();
     }
 
     private static int fail(CommandContext<CommandSourceStack> context, String message)

@@ -1,7 +1,7 @@
 package com.tik.zbb.blockstorage.storages.broken;
 
 import com.tik.zbb.Constants;
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -32,18 +32,18 @@ public class BrokenReappearBlockVisual
     @Subscribe
     public void onBrokenBlockWillReappear(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)
     {
-        ConfigData configData = ConfigManager.getConfigSnapshot().data();
+        ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
-        if (configData.visualEffects.brokenReappearParticles) playReappearAssemblingBlockEffect(event);
-        if (configData.visualEffects.brokenReappearChargeSound) playReappearChargeSound(event);
+        if (visualEffects.brokenReappearParticles()) playReappearAssemblingBlockEffect(event);
+        if (visualEffects.brokenReappearChargeSound()) playReappearChargeSound(event);
     }
 
     @Subscribe
     public void onBrokenBlockReappear(BrokenReappearBlockStorageManager.OnBrokenBlockReappearEvent event)
     {
-        ConfigData configData = ConfigManager.getConfigSnapshot().data();
+        ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
-        if (configData.visualEffects.brokenReappearSound) playReappearSound(event);
+        if (visualEffects.brokenReappearSound()) playReappearSound(event);
     }
 
     private void playReappearAssemblingBlockEffect(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)

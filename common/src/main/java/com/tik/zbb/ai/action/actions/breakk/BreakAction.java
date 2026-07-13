@@ -4,18 +4,14 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
@@ -41,7 +37,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
         boolean unbreakable = getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
-        boolean canMobBreak = !context.configSnapshot().runtime().ignoreBreakEntityIdMatcher().matches(context.mobId());
+        boolean canMobBreak = !context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher().matches(context.mobId().toString());
 
         return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
     }
@@ -57,7 +53,7 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         if (totalDamage >= blockHealth)
         {
-            boolean dropLoot = !context.configSnapshot().data().blockRestoration.brokenBlocksRestoring;
+            boolean dropLoot = !context.configSnapshot().game().blockRestoration().brokenBlocksRestoring();
 
             Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
 
@@ -76,18 +72,16 @@ public class BreakAction implements IMobAction<BreakRequest>
         }
 
 
-        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.breakCooldown, 1));
+        context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().breakCooldown(), 1));
     }
 
     private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
     {
-        ConfigData configData = configSnapshot.data();
+        ConfigGame.BlockDamage blockDamage = configSnapshot.game().balance().blockDamage();
         BlockState blockState = level.getBlockState(blockPos);
-        Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        Identifier blockId = blockRegistry.getKey(blockState.getBlock());
-        Integer blockHealthOverride = configSnapshot.runtime().blockHealthOverrideMap().get(blockId);
+        Integer blockHealthOverride = blockDamage.blockHealthOverrideMap().get(blockState.getBlock());
         float hardness = blockState.getDestroySpeed(level, blockPos);
-        double health = Math.pow(hardness, configData.balance.blockDamage.blockHardnessContrast) * configData.balance.blockDamage.blockHardnessMultiplier;
+        double health = Math.pow(hardness, blockDamage.blockHardnessContrast()) * blockDamage.blockHardnessMultiplier();
 
         if (blockHealthOverride != null) return blockHealthOverride;
         if (hardness < 0) return Integer.MAX_VALUE;
@@ -98,7 +92,7 @@ public class BreakAction implements IMobAction<BreakRequest>
 
     private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)
     {
-        int baseDamage = context.configSnapshot().data().balance.blockDamage.damageToBlocks;
+        int baseDamage = context.configSnapshot().game().balance().blockDamage().damageToBlocks();
         double hitboxMultiplier = getHitboxSizeMultiplier(context);
         double itemMultiplier = getItemMultiplier(context, breakPos);
 
@@ -117,7 +111,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         double mobVolume = width * width * height;
 
         double hitboxMultiplier = mobVolume / baseVolume;
-        double finalMultiplier = 1.0D + (hitboxMultiplier - 1.0D) * context.configSnapshot().data().balance.blockDamage.hitboxSizeMultiplierStrength;
+        double finalMultiplier = 1.0D + (hitboxMultiplier - 1.0D) * context.configSnapshot().game().balance().blockDamage().hitboxSizeMultiplierStrength();
 
         return finalMultiplier;
     }
@@ -130,7 +124,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
         float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
         float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
-        float toolMultiplier = (float) (1.0 + (destroySpeed - 1.0) * context.configSnapshot().data().balance.blockDamage.itemDamageMultiplierStrength);
+        float toolMultiplier = (float) (1.0 + (destroySpeed - 1.0) * context.configSnapshot().game().balance().blockDamage().itemDamageMultiplierStrength());
 
         return toolMultiplier;
     }

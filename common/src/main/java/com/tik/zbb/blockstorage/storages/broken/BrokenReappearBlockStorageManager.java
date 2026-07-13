@@ -169,7 +169,7 @@ public class BrokenReappearBlockStorageManager
 
     private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
     {
-        if (!configSnapshot.data().blockRestoration.brokenBlocksRestoring) return false;
+        if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
         if (BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, pos)) return false;
 
         return true;

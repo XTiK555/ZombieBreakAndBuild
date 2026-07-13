@@ -27,7 +27,7 @@ public abstract class NATGoalMixin extends TargetGoal
     {
         ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (!configSnapshot.data().ai.canNoticeTargetsThroughBlocks) return;
+        if (!configSnapshot.game().ai().canNoticeTargetsThroughBlocks()) return;
         if (!ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot)) return;
 
         TargetingConditions original = cir.getReturnValue();
@@ -38,7 +38,7 @@ public abstract class NATGoalMixin extends TargetGoal
                         TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                                 this.mob,
                                 candidate,
-                                configSnapshot.data().ai.noticeTargetsThroughBlocksLimit
+                                configSnapshot.game().ai().noticeTargetsThroughBlocksLimit()
                         );
 
         cir.setReturnValue(original.copy()

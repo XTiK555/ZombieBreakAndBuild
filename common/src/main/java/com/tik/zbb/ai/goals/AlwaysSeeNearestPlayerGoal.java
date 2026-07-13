@@ -1,6 +1,5 @@
 package com.tik.zbb.ai.goals;
 
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,9 +31,9 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     @Override
     public boolean canUse()
     {
-        ConfigData config = ConfigManager.getConfigSnapshot().data();
+        boolean alwaysSeeNearestPlayer = ConfigManager.getConfigSnapshot().game().ai().alwaysSeeNearestPlayer();
 
-        if (!config.ai.alwaysSeeNearestPlayer) return false;
+        if (!alwaysSeeNearestPlayer) return false;
         if (!(mob.level() instanceof ServerLevel sl)) return false;
         if (mob.getTarget() != null) return false;
 

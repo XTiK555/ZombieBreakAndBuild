@@ -20,7 +20,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
-        int radius = context.getConfigSnapshot().data().balance.dangerousBlocksSearchRadius;
+        int radius = context.getConfigSnapshot().game().balance().dangerousBlocksSearchRadius();
 
         BlockPos dangerousBlockPos = HitboxScanUtility.findNearestBlockInHitbox(
                 context.getLevel(),
@@ -34,7 +34,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
             handleDangerousBlock(dangerousBlockPos, context);
         }
 
-        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().data().balance.cooldowns.searchDangerousBlocksCooldown, 1));
+        context.getAiTimers().setMitigateDangerousBlocksCooldownUntil(now + SecondsToTicksUtility.toTicks(context.getConfigSnapshot().game().balance().cooldowns().searchDangerousBlocksCooldown(), 1));
     }
 
     private void handleDangerousBlock(BlockPos blockPos, MobStateContext context)
@@ -51,7 +51,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         Identifier id = blockRegistry.getKey(state.getBlock());
 
         if (id == null) return false;
-        if (!context.getConfigSnapshot().runtime().dangerousBlockIdMatcher().matches(id)) return false;
+        if (!context.getConfigSnapshot().game().blocks().dangerousBlockIdMatcher().matches(id.toString())) return false;
         if (state.getBlock() instanceof CampfireBlock)
         {
             return state.getValue(CampfireBlock.LIT);

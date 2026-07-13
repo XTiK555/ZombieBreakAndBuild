@@ -1,4 +1,4 @@
-package com.tik.zbb.config.tools;
+package com.tik.zbb.config.io.format;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.tik.zbb.config.annotations.Comment;

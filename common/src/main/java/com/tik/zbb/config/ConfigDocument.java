@@ -3,9 +3,11 @@ package com.tik.zbb.config;
 import com.tik.zbb.config.annotations.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-public class ConfigData
+public class ConfigDocument
 {
     public Blocks blocks = new Blocks();
     public Ai ai = new Ai();
@@ -15,23 +17,27 @@ public class ConfigData
 
     public static class Blocks
     {
-        @ResourceLocationPairList
-        @Comment("Dimension-specific blocks used when mobs build (dimensionId=blockId)")
-        public List<String> dimensionPlaceBlockIdList = new ArrayList<>(List.of(
-                "minecraft:overworld=minecraft:dirt",
-                "minecraft:the_nether=minecraft:netherrack",
-                "minecraft:the_end=minecraft:end_stone"
+        @ResourceLocationPairMap
+        @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
+        @Comment("Dimension-specific blocks used when mobs build")
+        public Map<String, String> dimensionPlaceBlockIdList = linkedMap(List.of(
+                Map.entry("minecraft:overworld", "minecraft:dirt"),
+                Map.entry("minecraft:the_nether", "minecraft:netherrack"),
+                Map.entry("minecraft:the_end", "minecraft:end_stone")
         ));
 
-        @ResourceLocationPairList
-        @Comment("Mob-specific build block overrides. These have priority over dimensionPlaceBlockIdList. Example: \"minecraft:zombie=minecraft:stone\"")
-        public List<String> mobPlaceBlockIdOverrideList = new ArrayList<>();
+        @ResourceLocationPairMap
+        @ResourceLocationSemantics(key = ResourceLocationRegistry.ENTITY, value = ResourceLocationRegistry.BLOCK)
+        @Comment("Mob-specific build block overrides. These have priority over dimensionPlaceBlockIdList.")
+        public Map<String, String> mobPlaceBlockIdOverrideList = new LinkedHashMap<>();
 
         @ResourceLocationString
+        @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
         @Comment("Block used when no mob-specific or dimension-specific build block is configured")
         public String fallbackPlaceBlockId = "minecraft:stone";
 
         @ResourceLocationPatternList
+        @ResourceLocationSemantics(element = ResourceLocationRegistry.BLOCK)
         @Comment("Blocks that zombies will consider dangerous and attempt to cover or break")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
@@ -46,6 +52,16 @@ public class ConfigData
                 "minecraft:lava",
                 "minecraft:cobweb"
         ));
+
+        private static <K, V> LinkedHashMap<K, V> linkedMap(List<Map.Entry<K, V>> entries)
+        {
+            LinkedHashMap<K, V> map = new LinkedHashMap<>();
+            for (Map.Entry<K, V> entry : entries)
+            {
+                map.put(entry.getKey(), entry.getValue());
+            }
+            return map;
+        }
     }
 
     public static class Ai
@@ -68,10 +84,12 @@ public class ConfigData
         public int continueSeeingTargetsThroughBlocksLimit = 6;
 
         @ResourceLocationPatternList
+        @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Entity ID patterns that will be given Zombie Break & Build behavior (only Pathfinder mobs)")
         public List<String> affectedEntityIdList = new ArrayList<>(List.of("*:*"));
 
         @ResourceLocationPatternList
+        @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Entity ID patterns that will NOT be given the ability to place blocks")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
@@ -86,6 +104,7 @@ public class ConfigData
         ));
 
         @ResourceLocationPatternList
+        @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Entity ID patterns that will NOT be given the ability to break blocks")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>();
     }
@@ -96,7 +115,7 @@ public class ConfigData
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
 
-        @Range(min = 0, max = 1000000)
+        @Range(min = 0, max = 100)
         @Comment("The radius within which zombies will detect dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
 
@@ -114,7 +133,7 @@ public class ConfigData
 
         public static class BlockDamage
         {
-            @Range(min = 1, max = 1000000)
+            @Range(min = 0, max = 1000000)
             @Comment("Damage dealt to blocks")
             public int damageToBlocks = 1;
 
@@ -126,9 +145,10 @@ public class ConfigData
             @Comment("Multiplier applied to the calculated block health after hardness contrast is applied.")
             public float blockHardnessMultiplier = 2.0f;
 
-            @ResourceLocationIntPairList
-            @Comment("Manual block health overrides (blockId=health). Example: \"minecraft:dirt=40\"")
-            public List<String> blockHealthOverrideList = new ArrayList<>();
+            @ResourceLocationIntPairMap
+            @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
+            @Comment("Manual block health overrides")
+            public Map<String, Integer> blockHealthOverrideList = new LinkedHashMap<>();
 
             @Range(min = 0, max = 1000000)
             @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 - tools do not affect damage)")
@@ -141,15 +161,15 @@ public class ConfigData
 
         public static class Cooldowns
         {
-            @Range(min = 0.05, max = 1000000)
+            @Range(min = 0, max = 1000000)
             @Comment("Cooldown between block breaking attempts (seconds)")
             public double breakCooldown = 1.0D;
 
-            @Range(min = 0.05, max = 1000000)
+            @Range(min = 0, max = 1000000)
             @Comment("Cooldown between block placing attempts (seconds)")
             public double buildCooldown = 1.0D;
 
-            @Range(min = 0.05, max = 1000000)
+            @Range(min = 0, max = 1000000)
             @Comment("Cooldown between searches for dangerous blocks (seconds)")
             public double searchDangerousBlocksCooldown = 1.0D;
         }

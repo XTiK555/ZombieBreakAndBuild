@@ -6,8 +6,8 @@ public enum ConfigEditOperation
     ADD,
     REMOVE,
     CLEAR,
-    RESET,
-    RESET_ALL,
-    DISCARD,
-    DISCARD_ALL
+    RESET_TO_DEFAULT,
+    RESET_ALL_TO_DEFAULTS,
+    REVERT_TO_PERSISTED,
+    DISCARD_ALL_OVERRIDES
 }

@@ -19,6 +19,6 @@ public final class ShouldApplyToMobUtility
         Registry<EntityType> entityTypeRegistry = mob.level().registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
         Identifier entityId = entityTypeRegistry.getKey(mob.getType());
 
-        return configSnapshot.runtime().affectedEntityIdMatcher().matches(entityId);
+        return configSnapshot.game().ai().affectedEntityIdMatcher().matches(String.valueOf(entityId));
     }
 }

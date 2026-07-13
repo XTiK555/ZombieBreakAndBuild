@@ -1,5 +1,6 @@
 package com.tik.zbb.config.schema;
 
+import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.resources.Identifier;
 
 import java.util.HashSet;
@@ -9,8 +10,8 @@ import java.util.Set;
 public record ResourceLocationPatternMatcher(
         boolean includeAll,
         boolean excludeAll,
-        Set<Identifier> includedIds,
-        Set<Identifier> excludedIds,
+        Set<ResourceLocationId> includedIds,
+        Set<ResourceLocationId> excludedIds,
         Set<String> includedNamespaces,
         Set<String> excludedNamespaces,
         Set<String> includedPaths,
@@ -21,8 +22,8 @@ public record ResourceLocationPatternMatcher(
     {
         boolean includeAll = false;
         boolean excludeAll = false;
-        Set<Identifier> includedIds = new HashSet<>();
-        Set<Identifier> excludedIds = new HashSet<>();
+        Set<ResourceLocationId> includedIds = new HashSet<>();
+        Set<ResourceLocationId> excludedIds = new HashSet<>();
         Set<String> includedNamespaces = new HashSet<>();
         Set<String> excludedNamespaces = new HashSet<>();
         Set<String> includedPaths = new HashSet<>();
@@ -33,7 +34,7 @@ public record ResourceLocationPatternMatcher(
             String normalized;
             try
             {
-                normalized = ResourceLocationPatternParser.normalizeEntry(rawValue);
+                normalized = ResourceLocationPatternListCodec.normalizePattern(rawValue);
             }
             catch (ConfigValidationException ignored)
             {
@@ -63,10 +64,15 @@ public record ResourceLocationPatternMatcher(
             }
             else
             {
-                Identifier id = Identifier.tryParse(body);
-                if (id == null) continue;
-                if (exclude) excludedIds.add(id);
-                else includedIds.add(id);
+                try
+                {
+                    ResourceLocationId id = ResourceLocationId.parse(body);
+                    if (exclude) excludedIds.add(id);
+                    else includedIds.add(id);
+                }
+                catch (ConfigValidationException ignored)
+                {
+                }
             }
         }
 
@@ -82,21 +88,51 @@ public record ResourceLocationPatternMatcher(
         );
     }
 
+    public boolean matches(String rawId)
+    {
+        try
+        {
+            return matches(ResourceLocationId.parse(rawId));
+        }
+        catch (ConfigValidationException e)
+        {
+            return false;
+        }
+    }
+
     public boolean matches(Identifier id)
     {
-        if (id == null) return false;
+        if (id == null)
+        {
+            return false;
+        }
 
+        return matches(id.getNamespace(), id.getPath());
+    }
+
+    public boolean matches(ResourceLocationId id)
+    {
+        if (id == null)
+        {
+            return false;
+        }
+
+        return matches(id.namespace(), id.path());
+    }
+
+    private boolean matches(String namespace, String path)
+    {
         if (excludeAll
-                || excludedIds.contains(id)
-                || excludedNamespaces.contains(id.getNamespace())
-                || excludedPaths.contains(id.getPath()))
+                || excludedIds.contains(new ResourceLocationId(namespace, path))
+                || excludedNamespaces.contains(namespace)
+                || excludedPaths.contains(path))
         {
             return false;
         }
 
         return includeAll
-                || includedIds.contains(id)
-                || includedNamespaces.contains(id.getNamespace())
-                || includedPaths.contains(id.getPath());
+                || includedIds.contains(new ResourceLocationId(namespace, path))
+                || includedNamespaces.contains(namespace)
+                || includedPaths.contains(path);
     }
 }

@@ -2,26 +2,48 @@ package com.tik.zbb.config.io;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.electronwill.nightconfig.core.serde.ObjectSerializer;
-import com.tik.zbb.Constants;
-import com.tik.zbb.config.ConfigData;
-import com.tik.zbb.config.tools.ConfigComments;
-import com.tik.zbb.config.tools.ConfigFormatter;
+import com.electronwill.nightconfig.core.serde.ObjectDeserializer;
+import com.electronwill.nightconfig.toml.TomlWriter;
+import com.tik.zbb.config.ConfigDocument;
+import com.tik.zbb.config.io.format.ConfigComments;
+import com.tik.zbb.config.io.format.ConfigFormatter;
+import com.tik.zbb.config.schema.ConfigFieldDescriptor;
+import com.tik.zbb.config.schema.ConfigPath;
+import com.tik.zbb.config.schema.ConfigSchema;
 
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
-public class ConfigFileStore
+public class ConfigFileStore implements ConfigStorage
 {
-    private final ObjectSerializer serializer;
+    private final Path path;
+    private final ConfigDocumentNormalizer documentNormalizer;
     private final CommentedFileConfig fileConfig;
 
-    public ConfigFileStore(Path path, ObjectSerializer serializer)
+    public ConfigFileStore(Path path)
     {
-        this.serializer = serializer;
+        this(path, new ConfigDocumentNormalizer(ObjectDeserializer.standard()));
+    }
+
+    public ConfigFileStore(Path path, ConfigDocumentNormalizer documentNormalizer)
+    {
+        this.path = path;
+        this.documentNormalizer = documentNormalizer;
         this.fileConfig = CommentedFileConfig.builder(path).sync().build();
     }
 
-    public CommentedConfig loadRaw() throws ConfigPersistenceException
+    @Override
+    public LoadedConfig load() throws ConfigPersistenceException
+    {
+        ConfigDocumentNormalizer.NormalizedConfig normalized = documentNormalizer.normalize(loadRaw());
+        return new LoadedConfig(normalized.document(), normalized.repairReport());
+    }
+
+    private CommentedConfig loadRaw() throws ConfigPersistenceException
     {
         try
         {
@@ -34,30 +56,141 @@ public class ConfigFileStore
         }
     }
 
-    public void save(ConfigData data) throws ConfigPersistenceException
+    @Override
+    public void save(ConfigDocument data) throws ConfigPersistenceException
     {
+        Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
         try
         {
             CommentedConfig config = CommentedConfig.inMemory();
-            serializer.serializeFields(data, config);
+            writeInSchemaOrder(data, config);
             ConfigComments.apply(config, data);
 
-            fileConfig.clear();
-            fileConfig.putAll(config);
-            fileConfig.save();
+            Path parent = path.getParent();
+            if (parent != null)
+            {
+                Files.createDirectories(parent);
+            }
+
+            try (Writer writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8))
+            {
+                new TomlWriter().write(config, writer);
+            }
+            ConfigFormatter.format(tempPath);
+
+            if (Files.exists(path))
+            {
+                Files.copy(path, backupPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            try
+            {
+                Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            }
+            catch (IOException | UnsupportedOperationException e)
+            {
+                Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
         catch (Exception e)
         {
+            try
+            {
+                Files.deleteIfExists(tempPath);
+            }
+            catch (Exception suppressed)
+            {
+                e.addSuppressed(suppressed);
+            }
             throw new ConfigPersistenceException("Failed to save config", e);
         }
+    }
 
+    @Override
+    public RecoveryResult recoverAfterLoadFailure(ConfigDocument fallbackDocument) throws ConfigPersistenceException
+    {
+        Path brokenPath = moveBrokenFile();
+        save(fallbackDocument);
+        return new RecoveryResult(true, "Failed to load config; moved broken config to " + brokenPath + " and restored defaults");
+    }
+
+    private Path moveBrokenFile() throws ConfigPersistenceException
+    {
+        if (!Files.exists(path))
+        {
+            return path;
+        }
+
+        Path brokenPath = brokenPath();
         try
         {
-            ConfigFormatter.format(fileConfig.getNioPath());
+            Files.move(path, brokenPath, StandardCopyOption.REPLACE_EXISTING);
+            return brokenPath;
         }
         catch (Exception e)
         {
-            Constants.LOG.warn("Failed to format config file", e);
+            throw new ConfigPersistenceException("Failed to preserve broken config", e);
         }
+    }
+
+    private Path backupPath()
+    {
+        return path.resolveSibling(path.getFileName() + ".bak");
+    }
+
+    private static void writeInSchemaOrder(ConfigDocument data, CommentedConfig config)
+    {
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+        {
+            setRaw(config, descriptor.path(), descriptor.getValue(data));
+        }
+    }
+
+    private static void setRaw(CommentedConfig root, ConfigPath path, Object value)
+    {
+        String[] parts = path.value().split("\\.");
+        CommentedConfig current = root;
+
+        for (int i = 0; i < parts.length - 1; i++)
+        {
+            Object next = current.getRaw(parts[i]);
+            CommentedConfig nested;
+            if (next instanceof CommentedConfig existingNested)
+            {
+                nested = existingNested;
+            }
+            else
+            {
+                nested = CommentedConfig.inMemory();
+                current.set(parts[i], nested);
+            }
+            current = nested;
+        }
+
+        current.set(parts[parts.length - 1], toConfigValue(value));
+    }
+
+    private static Object toConfigValue(Object value)
+    {
+        if (value instanceof java.util.Map<?, ?> map)
+        {
+            CommentedConfig config = CommentedConfig.inMemory();
+            for (java.util.Map.Entry<?, ?> entry : map.entrySet())
+            {
+                String key = String.valueOf(entry.getKey());
+                config.set(java.util.List.of(key), toConfigValue(entry.getValue()));
+            }
+            return config;
+        }
+        return value;
+    }
+
+    private Path brokenPath()
+    {
+        Path brokenPath = path.resolveSibling(path.getFileName() + ".broken");
+        if (!Files.exists(brokenPath))
+        {
+            return brokenPath;
+        }
+        return path.resolveSibling(path.getFileName() + ".broken." + System.currentTimeMillis());
     }
 }

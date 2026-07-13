@@ -90,8 +90,7 @@ class ResourceLocationPatternMatcherTest
 
     private static boolean matches(ResourceLocationPatternMatcher matcher, String id) throws Exception
     {
-        Object identifier = id(id);
-        return (boolean) matcher.getClass().getMethod("matches", identifierClass()).invoke(matcher, identifier);
+        return matcher.matches(id);
     }
 
     private static Set<?> identifierSet(ResourceLocationPatternMatcher matcher, String method) throws Exception
@@ -99,15 +98,8 @@ class ResourceLocationPatternMatcherTest
         return (Set<?>) matcher.getClass().getMethod(method).invoke(matcher);
     }
 
-    private static Object id(String value) throws Exception
+    private static ResourceLocationId id(String value) throws Exception
     {
-        Object id = identifierClass().getMethod("tryParse", String.class).invoke(null, value);
-        assertNotNull(id);
-        return id;
-    }
-
-    private static Class<?> identifierClass() throws ClassNotFoundException
-    {
-        return Class.forName("net.minecraft.resources.Identifier");
+        return ResourceLocationId.parse(value);
     }
 }

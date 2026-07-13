@@ -1,11 +1,14 @@
 package com.tik.zbb.config.schema;
 
+import com.tik.zbb.config.ConfigDocument;
 import com.tik.zbb.config.annotations.Range;
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ConfigFieldDescriptor
 {
@@ -21,18 +24,13 @@ public final class ConfigFieldDescriptor
         this.ownerFields = List.copyOf(ownerFields);
         this.field = field;
         this.kind = kind;
-        this.codec = ConfigValueCodecs.forKind(kind);
+        this.codec = kind.codec();
         this.field.setAccessible(true);
     }
 
     public ConfigPath path()
     {
         return path;
-    }
-
-    public Field field()
-    {
-        return field;
     }
 
     public ConfigValueKind kind()
@@ -48,6 +46,11 @@ public final class ConfigFieldDescriptor
     public Range range()
     {
         return field.getAnnotation(Range.class);
+    }
+
+    public ResourceLocationSemantics resourceLocationSemantics()
+    {
+        return field.getAnnotation(ResourceLocationSemantics.class);
     }
 
     public Object getValue(Object root)
@@ -80,12 +83,16 @@ public final class ConfigFieldDescriptor
         {
             return new ArrayList<>(list);
         }
+        if (value instanceof Map<?, ?> map)
+        {
+            return new LinkedHashMap<>(map);
+        }
         return value;
     }
 
     public Object defaultValue()
     {
-        return copyValue(getValue(new ConfigData()));
+        return copyValue(getValue(new ConfigDocument()));
     }
 
     private Object getOwner(Object root) throws IllegalAccessException
