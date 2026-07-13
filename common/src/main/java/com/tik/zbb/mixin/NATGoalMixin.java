@@ -43,7 +43,7 @@ public abstract class NATGoalMixin extends TargetGoal
 
         ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (configSnapshot.data().ai.canNoticeTargetsThroughBlocks && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot))
+        if (configSnapshot.game().ai().canNoticeTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot))
         {
             Predicate<LivingEntity> oldSelector =
                     ((TargetingConditionsAccessor) (Object) this.zbb$originalTargetConditions).zbb$getSelector();
@@ -53,7 +53,7 @@ public abstract class NATGoalMixin extends TargetGoal
                             TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                                     this.mob,
                                     candidate,
-                                    configSnapshot.data().ai.noticeTargetsThroughBlocksLimit
+                                    configSnapshot.game().ai().noticeTargetsThroughBlocksLimit()
                             );
 
             this.targetConditions = this.zbb$originalTargetConditions.copy()

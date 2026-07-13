@@ -2,13 +2,18 @@ package com.tik.zbb.config.io;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import com.tik.zbb.config.ConfigData;
-import com.tik.zbb.config.schema.*;
+import com.tik.zbb.config.ConfigDocument;
+import com.tik.zbb.config.schema.ConfigFieldDescriptor;
+import com.tik.zbb.config.schema.ConfigPath;
+import com.tik.zbb.config.schema.ConfigRepairReport;
+import com.tik.zbb.config.schema.ConfigSchema;
 import com.tik.zbb.utilities.ConfigUtilities;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ConfigDocumentNormalizer
 {
@@ -32,71 +37,14 @@ public final class ConfigDocumentNormalizer
             }
             else
             {
-                value = repairOrDecode(descriptor, rawValue, defaultValue, report);
+                value = descriptor.codec().repairDocumentValue(descriptor, rawValue, defaultValue, report);
             }
 
             setRaw(normalized, descriptor.path(), value);
         }
 
-        ConfigData data = readObject(normalized, ConfigData.class);
-        return new NormalizedConfig(data, report);
-    }
-
-    private static Object repairOrDecode(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigRepairReport report)
-    {
-        if (descriptor.kind() == ConfigValueKind.STRING_LIST)
-        {
-            return repairOrDecodeList(descriptor, rawValue, defaultValue, report);
-        }
-
-        try
-        {
-            return descriptor.codec().decodeDocumentValue(descriptor, rawValue);
-        }
-        catch (ConfigValidationException e)
-        {
-            Object fixedValue = descriptor.copyValue(defaultValue);
-            report.repaired(descriptor.path(), rawValue, fixedValue, e.getMessage());
-            return fixedValue;
-        }
-    }
-
-    private static Object repairOrDecodeList(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigRepairReport report)
-    {
-        if (!(rawValue instanceof List<?> list))
-        {
-            Object fixedValue = descriptor.copyValue(defaultValue);
-            report.repaired(descriptor.path(), rawValue, fixedValue, "Expected list");
-            return fixedValue;
-        }
-
-        List<String> cleaned = new ArrayList<>();
-        boolean repaired = false;
-        for (Object entry : list)
-        {
-            try
-            {
-                @SuppressWarnings("unchecked")
-                List<String> decodedEntry = (List<String>) descriptor.codec().decodeDocumentValue(descriptor, List.of(entry));
-                cleaned.addAll(decodedEntry);
-                if (!entry.equals(decodedEntry.get(0)))
-                {
-                    repaired = true;
-                }
-            }
-            catch (ConfigValidationException e)
-            {
-                repaired = true;
-                report.repaired(descriptor.path(), entry, "<removed>", e.getMessage());
-            }
-        }
-
-        if (repaired)
-        {
-            report.repaired(descriptor.path(), rawValue, cleaned, "Repaired list entries");
-        }
-
-        return cleaned;
+        ConfigDocument document = readObject(normalized, ConfigDocument.class);
+        return new NormalizedConfig(document, report);
     }
 
     private static Object getRaw(UnmodifiableConfig root, ConfigPath path)
@@ -202,8 +150,13 @@ public final class ConfigDocumentNormalizer
             return result;
         }
 
+        if (Map.class.isAssignableFrom(targetType) && value instanceof UnmodifiableConfig config)
+        {
+            return new LinkedHashMap<>(config.valueMap());
+        }
+
         return value;
     }
 
-    public record NormalizedConfig(ConfigData data, ConfigRepairReport repairReport) {}
+    public record NormalizedConfig(ConfigDocument document, ConfigRepairReport repairReport) {}
 }

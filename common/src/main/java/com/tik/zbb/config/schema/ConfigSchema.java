@@ -1,6 +1,10 @@
 package com.tik.zbb.config.schema;
 
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigDocument;
+import com.tik.zbb.config.annotations.ResourceLocationIntPairMap;
+import com.tik.zbb.config.annotations.ResourceLocationPairMap;
+import com.tik.zbb.config.annotations.ResourceLocationPatternList;
+import com.tik.zbb.config.annotations.ResourceLocationString;
 import com.tik.zbb.utilities.ConfigUtilities;
 
 import java.lang.reflect.Field;
@@ -46,7 +50,7 @@ public final class ConfigSchema
     private static Map<ConfigPath, ConfigFieldDescriptor> buildDescriptors()
     {
         Map<ConfigPath, ConfigFieldDescriptor> descriptors = new LinkedHashMap<>();
-        collect(ConfigData.class, "", List.of(), descriptors);
+        collect(ConfigDocument.class, "", List.of(), descriptors);
         return Collections.unmodifiableMap(descriptors);
     }
 
@@ -80,8 +84,12 @@ public final class ConfigSchema
         if (type == int.class || type == Integer.class) return ConfigValueKind.INT;
         if (type == double.class || type == Double.class) return ConfigValueKind.DOUBLE;
         if (type == float.class || type == Float.class) return ConfigValueKind.FLOAT;
+        if (type == String.class && field.isAnnotationPresent(ResourceLocationString.class)) return ConfigValueKind.RESOURCE_LOCATION;
         if (type == String.class) return ConfigValueKind.STRING;
+        if (List.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationPatternList.class)) return ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST;
         if (List.class.isAssignableFrom(type)) return ConfigValueKind.STRING_LIST;
+        if (Map.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationPairMap.class)) return ConfigValueKind.RESOURCE_LOCATION_PAIR_MAP;
+        if (Map.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationIntPairMap.class)) return ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP;
         throw new IllegalArgumentException("Unsupported config field type: " + field);
     }
 }

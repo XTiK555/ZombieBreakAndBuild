@@ -7,18 +7,15 @@ import com.tik.zbb.ai.action.actions.build.BuildAction;
 import com.tik.zbb.ai.action.actions.build.BuildRequest;
 import com.tik.zbb.ai.action.actions.freeze.FreezeAction;
 import com.tik.zbb.ai.action.actions.freeze.FreezeRequest;
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 public final class ActionExecutor
 {
@@ -126,32 +123,26 @@ public final class ActionExecutor
     {
         if (configCache == null) configCache = new ConfigCache();
 
-        Registry<Block> blockRegistry = level.registryAccess().registryOrThrow(Registries.BLOCK);
-
-        ResourceLocation blockId = selectBridgeBlockId(level, configSnapshot);
-        Block bridgeBlock = blockRegistry.get(blockId);
-        configCache.bridgeBlock = bridgeBlock != null ? bridgeBlock : Blocks.STONE;
+        configCache.bridgeBlock = selectBridgeBlock(level, configSnapshot);
     }
 
-    private ResourceLocation selectBridgeBlockId(ServerLevel level, ConfigSnapshot configSnapshot)
+    private Block selectBridgeBlock(ServerLevel level, ConfigSnapshot configSnapshot)
     {
-        ConfigData configData = configSnapshot.data();
-        ResourceLocation mobBlockId = mobActionContext.mobId() == null
+        Block mobBlock = mobActionContext.mobId() == null
                 ? null
-                : configSnapshot.runtime().mobPlaceBlockIdOverrideMap().get(mobActionContext.mobId());
-        if (mobBlockId != null)
+                : configSnapshot.game().blocks().mobPlaceBlockOverrideMap().get(mobActionContext.mobId());
+        if (mobBlock != null)
         {
-            return mobBlockId;
+            return mobBlock;
         }
 
-        ResourceLocation dimensionBlockId = configSnapshot.runtime().dimensionPlaceBlockIdMap().get(level.dimension().location());
-        if (dimensionBlockId != null)
+        Block dimensionBlock = configSnapshot.game().blocks().dimensionPlaceBlockMap().get(level.dimension().location());
+        if (dimensionBlock != null)
         {
-            return dimensionBlockId;
+            return dimensionBlock;
         }
 
-        ResourceLocation fallbackBlockId = ResourceLocation.tryParse(configData.blocks.fallbackPlaceBlockId);
-        return fallbackBlockId != null ? fallbackBlockId : ResourceLocation.tryParse("minecraft:stone");
+        return configSnapshot.game().blocks().fallbackPlaceBlock();
     }
 
     private class ConfigCache

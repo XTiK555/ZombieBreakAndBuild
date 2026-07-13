@@ -5,6 +5,7 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.config.edit.ConfigEditRequest;
 import com.tik.zbb.config.edit.ConfigEditResult;
 import com.tik.zbb.config.edit.ConfigEditService;
+import com.tik.zbb.config.edit.MinecraftConfigSemanticValidator;
 import com.tik.zbb.config.io.ConfigDocumentNormalizer;
 import com.tik.zbb.config.io.ConfigFileStore;
 import com.tik.zbb.config.runtime.ConfigRepository;
@@ -24,12 +25,14 @@ public final class ConfigManager
         String modName = Constants.MOD_NAME.replaceAll("\\s", "-").toLowerCase();
         Path configPath = Services.PLATFORM.getConfigDir().resolve(modName + ".toml");
 
-        ConfigFileStore fileStore = new ConfigFileStore(configPath);
-        ConfigDocumentNormalizer normalizer = new ConfigDocumentNormalizer();
-        ConfigRepository repository = new ConfigRepository(new ConfigData());
+        ConfigFileStore fileStore = new ConfigFileStore(
+                configPath,
+                new ConfigDocumentNormalizer()
+        );
+        ConfigRepository repository = new ConfigRepository(new ConfigDocument(), ConfigGame.BlockResolver.MINECRAFT);
 
-        EDIT_SERVICE = new ConfigEditService(repository, fileStore, normalizer);
-        reload();
+        EDIT_SERVICE = new ConfigEditService(repository, fileStore, MinecraftConfigSemanticValidator.INSTANCE);
+        logReloadResult(service().bootstrapFromFile());
     }
 
     public static ConfigSnapshot getConfigSnapshot()
@@ -47,9 +50,20 @@ public final class ConfigManager
         return service().edit(request);
     }
 
-    public static synchronized void reload()
+    public static ConfigEditResult editRaw(ConfigEditRequest request)
+    {
+        return service().editRaw(request);
+    }
+
+    public static synchronized ConfigEditService.ConfigReloadResult reload()
     {
         ConfigEditService.ConfigReloadResult result = service().reloadFromFile();
+        logReloadResult(result);
+        return result;
+    }
+
+    private static void logReloadResult(ConfigEditService.ConfigReloadResult result)
+    {
         if (result.repairReport() != null && result.repairReport().hasEntries())
         {
             for (String entry : result.repairReport().entries())
@@ -58,7 +72,7 @@ public final class ConfigManager
             }
         }
 
-        if (result.saved())
+        if (result.success())
         {
             Constants.LOG.info(result.message());
         }
