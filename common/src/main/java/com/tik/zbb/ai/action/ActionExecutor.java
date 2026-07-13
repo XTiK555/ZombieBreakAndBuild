@@ -7,19 +7,15 @@ import com.tik.zbb.ai.action.actions.build.BuildAction;
 import com.tik.zbb.ai.action.actions.build.BuildRequest;
 import com.tik.zbb.ai.action.actions.freeze.FreezeAction;
 import com.tik.zbb.ai.action.actions.freeze.FreezeRequest;
-import com.tik.zbb.config.ConfigData;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 public final class ActionExecutor
 {
@@ -127,31 +123,26 @@ public final class ActionExecutor
     {
         if (configCache == null) configCache = new ConfigCache();
 
-        Registry<Block> blockRegistry = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-
-        Identifier blockId = selectBridgeBlockId(level, configSnapshot);
-        configCache.bridgeBlock = blockRegistry.get(blockId).map(Holder.Reference::value).orElse(Blocks.STONE);
+        configCache.bridgeBlock = selectBridgeBlock(level, configSnapshot);
     }
 
-    private Identifier selectBridgeBlockId(ServerLevel level, ConfigSnapshot configSnapshot)
+    private Block selectBridgeBlock(ServerLevel level, ConfigSnapshot configSnapshot)
     {
-        ConfigData configData = configSnapshot.data();
-        Identifier mobBlockId = mobActionContext.mobId() == null
+        Block mobBlock = mobActionContext.mobId() == null
                 ? null
-                : configSnapshot.runtime().mobPlaceBlockIdOverrideMap().get(mobActionContext.mobId());
-        if (mobBlockId != null)
+                : configSnapshot.game().blocks().mobPlaceBlockOverrideMap().get(mobActionContext.mobId());
+        if (mobBlock != null)
         {
-            return mobBlockId;
+            return mobBlock;
         }
 
-        Identifier dimensionBlockId = configSnapshot.runtime().dimensionPlaceBlockIdMap().get(level.dimension().identifier());
-        if (dimensionBlockId != null)
+        Block dimensionBlock = configSnapshot.game().blocks().dimensionPlaceBlockMap().get(level.dimension().identifier());
+        if (dimensionBlock != null)
         {
-            return dimensionBlockId;
+            return dimensionBlock;
         }
 
-        Identifier fallbackBlockId = Identifier.tryParse(configData.blocks.fallbackPlaceBlockId);
-        return fallbackBlockId != null ? fallbackBlockId : Identifier.tryParse("minecraft:stone");
+        return configSnapshot.game().blocks().fallbackPlaceBlock();
     }
 
     private class ConfigCache

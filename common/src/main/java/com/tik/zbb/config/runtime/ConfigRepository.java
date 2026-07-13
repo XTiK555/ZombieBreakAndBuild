@@ -1,29 +1,34 @@
 package com.tik.zbb.config.runtime;
 
-import com.tik.zbb.config.ConfigData;
-import com.tik.zbb.config.ConfigDataCopier;
+import com.tik.zbb.config.ConfigDocument;
+import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigSnapshot;
+import com.tik.zbb.config.document.ConfigDocumentCopier;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.config.schema.ConfigSchema;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public final class ConfigRepository
 {
-    private ConfigData persistedData;
+    private ConfigDocument persistedData;
     private final Map<ConfigPath, Object> runtimeOverrides = new LinkedHashMap<>();
-    private ConfigData effectiveData;
+    private final ConfigGame.BlockResolver blockResolver;
+    private ConfigDocument effectiveData;
     private ConfigSnapshot snapshot;
     private long version;
 
-    public ConfigRepository(ConfigData initialData)
+    public ConfigRepository(ConfigDocument initialData)
     {
-        this.persistedData = ConfigDataCopier.copy(initialData);
+        this(initialData, ConfigGame.BlockResolver.NONE);
+    }
+
+    public ConfigRepository(ConfigDocument initialData, ConfigGame.BlockResolver blockResolver)
+    {
+        this.blockResolver = blockResolver;
+        this.persistedData = ConfigDocumentCopier.copy(initialData);
         rebuildEffectiveSnapshot();
     }
 
@@ -32,64 +37,70 @@ public final class ConfigRepository
         return snapshot;
     }
 
-    public synchronized ConfigData persistedCopy()
-    {
-        return ConfigDataCopier.copy(persistedData);
-    }
-
-    public synchronized ConfigData effectiveCopy()
-    {
-        return ConfigDataCopier.copy(effectiveData);
-    }
-
     public synchronized Object effectiveValue(ConfigFieldDescriptor descriptor)
     {
         return descriptor.copyValue(descriptor.getValue(effectiveData));
     }
 
-    public synchronized void replacePersisted(ConfigData data)
+    public synchronized ConfigDocument persistedDocument()
     {
-        mutateAndRebuild(() ->
-        {
-            persistedData = ConfigDataCopier.copy(data);
-            runtimeOverrides.clear();
-        });
+        return ConfigDocumentCopier.copy(persistedData);
     }
 
-    public synchronized void commitPersistent(ConfigData data, Set<ConfigPath> pathsToClear)
+    public synchronized ConfigDocument effectiveDocument()
+    {
+        return ConfigDocumentCopier.copy(effectiveData);
+    }
+
+    public synchronized Object replacePersisted(ConfigDocument data, ConfigFieldDescriptor changedDescriptor)
     {
         mutateAndRebuild(() ->
         {
-            persistedData = ConfigDataCopier.copy(data);
-            for (ConfigPath path : pathsToClear)
+            persistedData = ConfigDocumentCopier.copy(data);
+            if (changedDescriptor == null)
             {
-                runtimeOverrides.keySet().removeIf(runtimePath -> runtimePath.isDescendantOf(path));
+                runtimeOverrides.clear();
+            }
+            else
+            {
+                runtimeOverrides.keySet().removeIf(runtimePath -> runtimePath.isDescendantOf(changedDescriptor.path()));
             }
         });
+        return changedDescriptor == null ? null : effectiveValue(changedDescriptor);
     }
 
-    public synchronized void replaceRuntimeOverrides(Map<ConfigPath, Object> overrides)
+    public synchronized void replacePersisted(ConfigDocument data)
     {
+        replacePersisted(data, null);
+    }
+
+    public synchronized Object updateRuntime(ConfigFieldDescriptor descriptor, Object value)
+    {
+        runtimeOverrides.put(descriptor.path(), descriptor.copyValue(value));
+        rebuildEffectiveSnapshot();
+        return descriptor.copyValue(descriptor.getValue(effectiveData));
+    }
+
+    public synchronized int resetRuntimeOverrides()
+    {
+        int count = runtimeOverrides.size();
         mutateAndRebuild(() ->
         {
+            Map<ConfigPath, Object> defaults = new LinkedHashMap<>();
+            for (ConfigPath path : runtimeOverrides.keySet())
+            {
+                ConfigSchema.find(path).ifPresent(descriptor ->
+                        defaults.put(path, descriptor.defaultValue()));
+            }
+
             runtimeOverrides.clear();
-            for (Map.Entry<ConfigPath, Object> entry : overrides.entrySet())
+            for (Map.Entry<ConfigPath, Object> entry : defaults.entrySet())
             {
                 ConfigSchema.find(entry.getKey()).ifPresent(descriptor ->
                         runtimeOverrides.put(entry.getKey(), descriptor.copyValue(entry.getValue())));
             }
         });
-    }
-
-    public synchronized List<ConfigPath> runtimeOverridePaths()
-    {
-        return new ArrayList<>(runtimeOverrides.keySet());
-    }
-
-    public synchronized void putRuntimeOverride(ConfigFieldDescriptor descriptor, Object value)
-    {
-        mutateAndRebuild(() ->
-                runtimeOverrides.put(descriptor.path(), descriptor.copyValue(value)));
+        return count;
     }
 
     public synchronized int discard(ConfigPath path)
@@ -115,13 +126,13 @@ public final class ConfigRepository
 
     private void rebuildEffectiveSnapshot()
     {
-        effectiveData = ConfigDataCopier.copy(persistedData);
+        effectiveData = ConfigDocumentCopier.copy(persistedData);
         for (Map.Entry<ConfigPath, Object> entry : runtimeOverrides.entrySet())
         {
             ConfigSchema.find(entry.getKey()).ifPresent(descriptor ->
                     descriptor.setValue(effectiveData, entry.getValue()));
         }
         version++;
-        snapshot = ConfigSnapshot.create(effectiveData, version);
+        snapshot = ConfigSnapshot.create(effectiveData, version, blockResolver);
     }
 }
