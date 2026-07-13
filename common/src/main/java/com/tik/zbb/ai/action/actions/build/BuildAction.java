@@ -21,7 +21,7 @@ public class BuildAction implements IMobAction<BuildRequest>
 
         boolean canReplaced = context.level().isLoaded(request.pos()) && blockState.canBeReplaced();
         boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
-        boolean canMobBuild = !context.configSnapshot().runtime().ignoreBuildEntityIdMatcher().matches(context.mobId());
+        boolean canMobBuild = !context.configSnapshot().game().ai().ignoreBuildEntityIdMatcher().matches(context.mobId().toString());
 
         return cooldownPassed && canReplaced && canMobBuild;
     }
@@ -37,6 +37,6 @@ public class BuildAction implements IMobAction<BuildRequest>
             Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot(), placedState, oldState));
         }
 
-        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().data().balance.cooldowns.buildCooldown, 1));
+        context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().buildCooldown(), 1));
     }
 }

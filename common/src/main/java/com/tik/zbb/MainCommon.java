@@ -4,7 +4,7 @@ import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.command.ZbbConfigCommand;
-import com.tik.zbb.config.ConfigData;
+import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.event.EventRegistrar;
@@ -32,14 +32,14 @@ public class MainCommon
 
     public static void onLevelTick(ServerLevel level)
     {
-        ConfigData config = ConfigManager.getConfigSnapshot().data();
+        ConfigGame config = ConfigManager.getConfigSnapshot().game();
 
-        BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance.builtBlocksProtectionTime));
-        BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance.damageStoreTime));
-        if (config.blockRestoration.brokenBlocksRestoring)
-            BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration.brokenBlocksRestoreTime));
-        if (config.blockRestoration.builtBlocksDisappearing)
-            BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration.builtBlocksDisappearTime));
+        BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance().builtBlocksProtectionTime()));
+        BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance().damageStoreTime()));
+        if (config.blockRestoration().brokenBlocksRestoring())
+            BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration().brokenBlocksRestoreTime()));
+        if (config.blockRestoration().builtBlocksDisappearing())
+            BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration().builtBlocksDisappearTime()));
     }
 
     public static void onServerTick(MinecraftServer server)
