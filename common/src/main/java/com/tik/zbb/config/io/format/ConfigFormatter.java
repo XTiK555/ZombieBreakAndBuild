@@ -1,4 +1,4 @@
-package com.tik.zbb.config.tools;
+package com.tik.zbb.config.io.format;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +29,7 @@ public final class ConfigFormatter
                 out.append(line).append('\n');
 
                 if (!trimmed.contains("=")) continue;
+                if (isQuotedTableEntry(trimmed)) continue;
 
                 String next = i + 1 < lines.size() ? lines.get(i + 1).trim() : "";
                 if (!next.isEmpty() && !next.startsWith("[") && !trimmed.startsWith("#"))
@@ -43,6 +44,11 @@ public final class ConfigFormatter
         {
             throw new RuntimeException("Failed to format config", e);
         }
+    }
+
+    private static boolean isQuotedTableEntry(String trimmed)
+    {
+        return trimmed.startsWith("\"") || trimmed.startsWith("'");
     }
 
     private static void addHeader(Path path)

@@ -1,12 +1,21 @@
-package com.tik.zbb.config.schema;
+package com.tik.zbb.config.schema.codecs;
 
-import net.minecraft.resources.Identifier;
+import com.tik.zbb.config.schema.ConfigValidationException;
+import com.tik.zbb.config.schema.ResourceLocationId;
 
-public final class ResourceLocationPatternParser
+public final class ResourceLocationPatternListCodec extends StringListValueCodec
 {
-    private ResourceLocationPatternParser() {}
+    public static final ResourceLocationPatternListCodec INSTANCE = new ResourceLocationPatternListCodec();
 
-    public static String normalizeEntry(String rawValue) throws ConfigValidationException
+    private ResourceLocationPatternListCodec() {}
+
+    @Override
+    protected String normalizeEntry(String rawValue) throws ConfigValidationException
+    {
+        return normalizePattern(rawValue);
+    }
+
+    public static String normalizePattern(String rawValue) throws ConfigValidationException
     {
         String value = rawValue.trim();
         if (value.isBlank()) throw new ConfigValidationException("List entry cannot be empty");
@@ -20,12 +29,7 @@ public final class ResourceLocationPatternParser
 
         if (!body.contains("*"))
         {
-            Identifier id = Identifier.tryParse(body);
-            if (id == null) throw new ConfigValidationException("Expected resource location pattern");
-            if (id.getNamespace().isBlank() || id.getPath().isBlank())
-            {
-                throw new ConfigValidationException("Expected resource location pattern");
-            }
+            ResourceLocationId id = parsePatternId(body);
             return exclude ? "!" + id : id.toString();
         }
 
@@ -48,9 +52,7 @@ public final class ResourceLocationPatternParser
             throw new ConfigValidationException("Expected resource location pattern");
         }
 
-        Identifier sample = Identifier.tryParse(namespace + ":test");
-        if (sample == null) throw new ConfigValidationException("Expected resource location pattern");
-        return sample.getNamespace();
+        return ResourceLocationId.normalizeNamespace(namespace);
     }
 
     private static String normalizeWildcardPath(String path) throws ConfigValidationException
@@ -61,8 +63,18 @@ public final class ResourceLocationPatternParser
             throw new ConfigValidationException("Expected resource location pattern");
         }
 
-        Identifier sample = Identifier.tryParse("minecraft:" + path);
-        if (sample == null) throw new ConfigValidationException("Expected resource location pattern");
-        return sample.getPath();
+        return ResourceLocationId.normalizePath(path);
+    }
+
+    private static ResourceLocationId parsePatternId(String rawValue) throws ConfigValidationException
+    {
+        try
+        {
+            return ResourceLocationId.parse(rawValue);
+        }
+        catch (ConfigValidationException e)
+        {
+            throw new ConfigValidationException("Expected resource location pattern");
+        }
     }
 }
