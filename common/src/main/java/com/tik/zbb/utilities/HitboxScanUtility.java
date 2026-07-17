@@ -17,8 +17,9 @@ public final class HitboxScanUtility
 {
     public static BlockPos getNearestCollidingBlockWithHitbox(ServerLevel level, Mob mob, Vec3 offset)
     {
-        AABB hitbox = mob.getBoundingBox().move(offset);
-        return findNearestCollidingBlock(level, hitbox, mob.getBoundingBox().getCenter(), state -> !state.isAir());
+        AABB mobHitbox = mob.getBoundingBox();
+        AABB scanHitbox = mobHitbox.move(offset);
+        return findNearestCollidingBlock(level, scanHitbox, mobHitbox.getCenter(), state -> !state.isAir());
     }
 
     public static BlockPos findNearestBlockInHitbox(ServerLevel level, Mob mob, double inflate, Predicate<BlockState> predicate)
@@ -81,18 +82,17 @@ public final class HitboxScanUtility
 
                 for (int z = minZ; z <= maxZ; z++)
                 {
-                    pos.set(x, y, z);
-
-                    BlockState state = level.getBlockState(pos);
-                    if (!matcher.matches(level, pos, state))
+                    double dz = (z + 0.5D) - originZ;
+                    double dist = dx * dx + dy * dy + dz * dz;
+                    if (dist >= bestDist)
                     {
                         continue;
                     }
 
-                    double dz = (z + 0.5D) - originZ;
-                    double dist = dx * dx + dy * dy + dz * dz;
+                    pos.set(x, y, z);
 
-                    if (dist < bestDist)
+                    BlockState state = level.getBlockState(pos);
+                    if (matcher.matches(level, pos, state))
                     {
                         bestDist = dist;
                         nearest = pos.immutable();

@@ -1,16 +1,19 @@
 package com.tik.zbb.ai.state.states;
 
-import com.tik.zbb.ai.state.IMobState;
+import com.tik.zbb.ai.state.BaseMobState;
 import com.tik.zbb.ai.state.MobStateContext;
 import com.tik.zbb.ai.state.Priority;
 import com.tik.zbb.ai.state.tactic.IMobTactic;
-import com.tik.zbb.ai.state.tactic.tactics.*;
+import com.tik.zbb.ai.state.tactic.tactics.AdjustHeightToTargetTactic;
+import com.tik.zbb.ai.state.tactic.tactics.BridgeToTargetTactic;
+import com.tik.zbb.ai.state.tactic.tactics.ClearObstaclesToTargetTactic;
+import com.tik.zbb.ai.state.tactic.tactics.MitigateDangerousBlocksTactic;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
-public class BreakAndBuildState implements IMobState
+public class BreakAndBuildState extends BaseMobState
 {
     private final int STUCK_TICKS_TO_BREAKANDBUILD = 40;
 
@@ -19,8 +22,18 @@ public class BreakAndBuildState implements IMobState
     private final IMobTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
-    private int customStuckTicks = 0;
-    private Vec3 lastStuckCheckPos = null;
+    private int customStuckTicks;
+    private Vec3 lastStuckCheckPos;
+
+    public BreakAndBuildState()
+    {
+        mobTactics.add(adjustHeightToTargetTactic);
+        mobTactics.add(bridgeToTargetTactic);
+        mobTactics.add(clearObstaclesToTargetTactic);
+        mobTactics.add(mitigateDangerousBlocksTactic);
+
+        resetTransientState();
+    }
 
     @Override
     public void tick(MobStateContext context)
@@ -40,44 +53,26 @@ public class BreakAndBuildState implements IMobState
         PathNavigation navigation = context.getMob().getNavigation();
         Path path = navigation.getPath();
 
-        if (adjustHeightToTargetTactic.isRunning())
-        {
-            return Priority.High;
-        }
-
-        if (navigation.isStuck() || isCustomStuck(context))
-        {
-            return Priority.High;
-        }
-
-        if (path == null)
-        {
-            return Priority.High;
-        }
+        if (adjustHeightToTargetTactic.isRunning()) return Priority.High;
+        if (navigation.isStuck() || isCustomStuck(context)) return Priority.High;
+        if (path == null) return Priority.High;
 
         boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
         boolean pathCanReachTarget = path.canReach();
 
-        if (hasActivePath && pathCanReachTarget)
-        {
-            return Priority.Low;
-        }
+        if (hasActivePath && pathCanReachTarget) return Priority.Low;
 
         Node endNode = path.getEndNode();
-        if (endNode == null)
-        {
-            return Priority.High;
-        }
+
+        if (endNode == null) return Priority.High;
 
         int breakBuildDistance = context.getConfigSnapshot().game().balance().pathEndBreakBuildDistance();
-        double breakBuildDistanceSq = breakBuildDistance * breakBuildDistance;
+        double breakBuildDistanceSq = (double) breakBuildDistance * breakBuildDistance;
         double mobToEndNodeDistanceSq = context.getMob().distanceToSqr(endNode.x + 0.5D, endNode.y, endNode.z + 0.5D);
 
         boolean hasPartialPathAndMobReachedItsEnd = !pathCanReachTarget && mobToEndNodeDistanceSq < breakBuildDistanceSq;
-        if (hasPartialPathAndMobReachedItsEnd)
-        {
-            return Priority.High;
-        }
+
+        if (hasPartialPathAndMobReachedItsEnd) return Priority.High;
 
         if (path.isDone())
         {
@@ -90,6 +85,15 @@ public class BreakAndBuildState implements IMobState
         }
 
         return Priority.Low;
+    }
+
+    @Override
+    public void resetTransientState()
+    {
+        super.resetTransientState();
+
+        customStuckTicks = 0;
+        lastStuckCheckPos = null;
     }
 
     private boolean isCustomStuck(MobStateContext context)
