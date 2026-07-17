@@ -12,7 +12,7 @@ public class IdBlockStorageManager
 {
     private final IdBlockStorage idBlockStorage = new IdBlockStorage();
 
-    private final AtomicInteger nextId = new AtomicInteger(1);
+    private final AtomicInteger nextId = new AtomicInteger(-1);
 
     @Subscribe
     public void onDamageEntryRemoved(DamageBlockStorage.OnRemovedEvent event)
@@ -27,7 +27,7 @@ public class IdBlockStorageManager
         {
             return existing.id();
         }
-        int newId = nextId.getAndIncrement();
+        int newId = nextId.getAndDecrement();
 
         idBlockStorage.put(level, pos.immutable(), new IdBlockStorageEntry(newId));
         return newId;
