@@ -28,7 +28,7 @@ public final class Scheduler
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    Constants.LOG.error("Scheduled task {} failed at tick {}", task.action, currentTick, e);
                 }
             }
         }

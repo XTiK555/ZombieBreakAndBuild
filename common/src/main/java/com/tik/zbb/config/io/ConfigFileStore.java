@@ -1,6 +1,7 @@
 package com.tik.zbb.config.io;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.InMemoryCommentedFormat;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.serde.ObjectDeserializer;
 import com.electronwill.nightconfig.toml.TomlWriter;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
 
 public class ConfigFileStore implements ConfigStorage
 {
@@ -33,7 +35,10 @@ public class ConfigFileStore implements ConfigStorage
     {
         this.path = path;
         this.documentNormalizer = documentNormalizer;
-        this.fileConfig = CommentedFileConfig.builder(path).sync().build();
+        this.fileConfig = CommentedFileConfig.builder(path)
+                .preserveInsertionOrder()
+                .sync()
+                .build();
     }
 
     @Override
@@ -62,7 +67,7 @@ public class ConfigFileStore implements ConfigStorage
         Path tempPath = path.resolveSibling(path.getFileName() + ".tmp");
         try
         {
-            CommentedConfig config = CommentedConfig.inMemory();
+            CommentedConfig config = newOrderedConfig();
             writeInSchemaOrder(data, config);
             ConfigComments.apply(config, data);
 
@@ -160,7 +165,7 @@ public class ConfigFileStore implements ConfigStorage
             }
             else
             {
-                nested = CommentedConfig.inMemory();
+                nested = newOrderedConfig();
                 current.set(parts[i], nested);
             }
             current = nested;
@@ -173,7 +178,7 @@ public class ConfigFileStore implements ConfigStorage
     {
         if (value instanceof java.util.Map<?, ?> map)
         {
-            CommentedConfig config = CommentedConfig.inMemory();
+            CommentedConfig config = newOrderedConfig();
             for (java.util.Map.Entry<?, ?> entry : map.entrySet())
             {
                 String key = String.valueOf(entry.getKey());
@@ -182,6 +187,11 @@ public class ConfigFileStore implements ConfigStorage
             return config;
         }
         return value;
+    }
+
+    private static CommentedConfig newOrderedConfig()
+    {
+        return CommentedConfig.of(LinkedHashMap::new, InMemoryCommentedFormat.defaultInstance());
     }
 
     private Path brokenPath()
