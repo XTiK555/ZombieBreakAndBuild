@@ -2,4 +2,4 @@ package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import net.minecraft.world.level.block.state.BlockState;
 
-public record BuildDisappearBlockStorageEntry(BlockState placedState, BlockState oldState, long tick) {}
+public record BuildDisappearBlockStorageEntry(BlockState placedState, BlockState oldState) {}
