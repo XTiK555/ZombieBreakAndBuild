@@ -40,7 +40,7 @@ public abstract class NATGoalMixin extends TargetGoal
 
         ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (configSnapshot.game().ai().canNoticeTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot))
+        if (configSnapshot.game().ai().canNoticeTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot))
         {
             TargetingConditions.Selector oldSelector =
                     ((TargetingConditionsAccessor) (Object) this.zbb$originalTargetConditions).zbb$getSelector();
