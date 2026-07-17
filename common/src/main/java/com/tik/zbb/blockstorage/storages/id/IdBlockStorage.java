@@ -3,11 +3,17 @@ package com.tik.zbb.blockstorage.storages.id;
 import com.tik.zbb.blockstorage.BaseBlockStorage;
 import net.minecraft.server.level.ServerLevel;
 
-public class IdBlockStorage extends BaseBlockStorage<IdBlockStorageEntry>
+public class IdBlockStorage extends BaseBlockStorage<IdBlockStorageEntry, IdBlockStorageEntry>
 {
     @Override
-    protected boolean isExpired(ServerLevel level, long posKey, IdBlockStorageEntry entry, long now, long ttlTicks)
+    protected IdBlockStorageEntry toStored(ServerLevel level, IdBlockStorageEntry data)
     {
-        return false;
+        return data;
+    }
+
+    @Override
+    protected IdBlockStorageEntry toData(IdBlockStorageEntry stored)
+    {
+        return stored;
     }
 }
