@@ -2,11 +2,11 @@ package com.tik.zbb.blockstorage;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -36,8 +36,41 @@ public abstract class BaseBlockStorage<TEntry>
         if (removed != null)
         {
             onRemove(level, key, removed);
-            if (map.isEmpty()) entriesByLevel.remove(level);
+            if (map.isEmpty() && entriesByLevel.get(level) == map) entriesByLevel.remove(level);
         }
+    }
+
+    public void remove(ServerLevel level, long posKey)
+    {
+        var map = entriesByLevel.get(level);
+        if (map == null) return;
+
+        TEntry removed = map.remove(posKey);
+        if (removed != null)
+        {
+            onRemove(level, posKey, removed);
+            if (map.isEmpty() && entriesByLevel.get(level) == map) entriesByLevel.remove(level);
+        }
+    }
+
+    @Nullable
+    public TEntry discard(ServerLevel level, BlockPos pos)
+    {
+        Long2ObjectMap<TEntry> entries = entriesByLevel.get(level);
+
+        if (entries == null)
+        {
+            return null;
+        }
+
+        TEntry removed = entries.remove(pos.asLong());
+
+        if (entries.isEmpty())
+        {
+            entriesByLevel.remove(level);
+        }
+
+        return removed;
     }
 
     public void cleanup(ServerLevel level, long ttlTicks)
@@ -45,24 +78,23 @@ public abstract class BaseBlockStorage<TEntry>
         Long2ObjectMap<TEntry> map = entriesByLevel.get(level);
         if (map == null || map.isEmpty()) return;
 
-        List<Long> expiredKeys = new ArrayList<>();
+        LongArrayList expiredKeys = null;
+        long now = level.getGameTime();
 
         for (Long2ObjectMap.Entry<TEntry> entry : map.long2ObjectEntrySet())
         {
-            if (isExpired(level, entry.getLongKey(), entry.getValue(), level.getGameTime(), ttlTicks))
+            if (isExpired(level, entry.getLongKey(), entry.getValue(), now, ttlTicks))
             {
+                if (expiredKeys == null) expiredKeys = new LongArrayList();
                 expiredKeys.add(entry.getLongKey());
             }
         }
 
+        if (expiredKeys == null) return;
+
         for (long posKey : expiredKeys)
         {
-            remove(level, BlockPos.of(posKey));
-        }
-
-        if (map.isEmpty())
-        {
-            entriesByLevel.remove(level);
+            remove(level, posKey);
         }
     }
 
@@ -73,7 +105,7 @@ public abstract class BaseBlockStorage<TEntry>
 
     protected Long2ObjectOpenHashMap<TEntry> entries(ServerLevel level)
     {
-        return entriesByLevel.computeIfAbsent(level, l -> new Long2ObjectOpenHashMap<>());
+        return entriesByLevel.computeIfAbsent(level, _ -> new Long2ObjectOpenHashMap<>());
     }
 
     protected abstract boolean isExpired(ServerLevel level, long posKey, TEntry entry, long now, long ttlTicks);

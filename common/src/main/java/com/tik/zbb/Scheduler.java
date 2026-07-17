@@ -1,34 +1,26 @@
 package com.tik.zbb;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class Scheduler
 {
-    private final List<ScheduledTask> tasks = new ArrayList<>();
-    private final List<ScheduledTask> pendingTasks = new ArrayList<>();
-    private boolean ticking = false;
+    private final Map<Long, List<ScheduledTask>> tasksByDueTick = new HashMap<>();
+    private long currentTick;
 
     public void tick()
     {
-        ticking = true;
-
-        Iterator<ScheduledTask> iterator = tasks.iterator();
-
-        while (iterator.hasNext())
+        List<ScheduledTask> dueTasks = tasksByDueTick.remove(++currentTick);
+        if (dueTasks == null)
         {
-            ScheduledTask task = iterator.next();
+            return;
+        }
 
-            if (task.cancelled)
-            {
-                iterator.remove();
-                continue;
-            }
-
-            task.ticksLeft--;
-
-            if (task.ticksLeft <= 0)
+        for (ScheduledTask task : dueTasks)
+        {
+            if (!task.cancelled)
             {
                 try
                 {
@@ -38,48 +30,33 @@ public final class Scheduler
                 {
                     e.printStackTrace();
                 }
-
-                iterator.remove();
             }
-        }
-
-        ticking = false;
-
-        if (!pendingTasks.isEmpty())
-        {
-            tasks.addAll(pendingTasks);
-            pendingTasks.clear();
         }
     }
 
     public ScheduledTask schedule(Runnable action, int delayTicks)
     {
-        ScheduledTask task = new ScheduledTask(action, delayTicks);
-
-        if (ticking)
-            pendingTasks.add(task);
-        else
-            tasks.add(task);
+        ScheduledTask task = new ScheduledTask(action);
+        long dueTick = currentTick + Math.max(1L, delayTicks);
+        tasksByDueTick.computeIfAbsent(dueTick, ignored -> new ArrayList<>()).add(task);
 
         return task;
     }
 
     public void clear()
     {
-        tasks.clear();
-        pendingTasks.clear();
+        tasksByDueTick.clear();
+        currentTick = 0;
     }
 
     public static class ScheduledTask
     {
         private final Runnable action;
-        private int ticksLeft;
         private boolean cancelled;
 
-        private ScheduledTask(Runnable action, int delayTicks)
+        private ScheduledTask(Runnable action)
         {
             this.action = action;
-            this.ticksLeft = delayTicks;
         }
 
         public void cancel()
