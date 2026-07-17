@@ -46,6 +46,16 @@ public class BuildDisappearBlockStorageManager
         }
     }
 
+    public void discard(ServerLevel level, BlockPos pos)
+    {
+        buildDisappearBlockStorage.discard(level, pos);
+    }
+
+    public BuildDisappearBlockStorageEntry get(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.get(level, pos);
+    }
+
     public boolean contains(ServerLevel level, BlockPos pos)
     {
         return buildDisappearBlockStorage.contains(level, pos);
