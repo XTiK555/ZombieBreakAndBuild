@@ -20,8 +20,6 @@ public final class ConfigManager
 
     public static synchronized void init()
     {
-        Config.setInsertionOrderPreserved(true);
-
         String modName = Constants.MOD_NAME.replaceAll("\\s", "-").toLowerCase();
         Path configPath = Services.PLATFORM.getConfigDir().resolve(modName + ".toml");
 

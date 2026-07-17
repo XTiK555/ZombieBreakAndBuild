@@ -8,8 +8,8 @@
     "${mod_author}"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://modrinth.com/mod/zombies-break-and-build",
+    "sources": "https://github.com/XTiK555/ZombieBreakAndBuild"
   },
   "license": "${license}",
   "icon": "icon.png",
@@ -24,13 +24,9 @@
     "${mod_id}.fabric.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.14",
-    "fabric": "*",
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "*",
     "minecraft": "${minecraft_version}",
-    "java": ">=17"
-  },
-  "suggests": {
-    "another-mod": "*"
+    "java": ">=${java_version}"
   }
 }
-  
