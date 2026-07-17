@@ -20,7 +20,7 @@ public class BuildDisappearBlockStorageManager
     {
         if (!event.configSnapshot().game().blockRestoration().builtBlocksDisappearing()) return;
 
-        buildDisappearBlockStorage.put(event.level(), event.pos(), new BuildDisappearBlockStorageEntry(event.level().getBlockState(event.pos()), event.oldState(), event.level().getGameTime()));
+        buildDisappearBlockStorage.put(event.level(), event.pos(), new BuildDisappearBlockStorageEntry(event.level().getBlockState(event.pos()), event.oldState()));
     }
 
     @Subscribe

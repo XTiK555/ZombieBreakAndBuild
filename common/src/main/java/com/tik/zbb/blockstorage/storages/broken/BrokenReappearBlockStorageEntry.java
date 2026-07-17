@@ -4,5 +4,5 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
-public record BrokenReappearBlockStorageEntry(BlockState oldState, CompoundTag nbt, BlockEntityType<?> blockEntityType,
-                                              long tick) {}
+public record BrokenReappearBlockStorageEntry(BlockState oldState, CompoundTag nbt,
+                                              BlockEntityType<?> blockEntityType) {}

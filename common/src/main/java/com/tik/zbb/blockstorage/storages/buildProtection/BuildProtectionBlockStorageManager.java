@@ -13,7 +13,7 @@ public class BuildProtectionBlockStorageManager
     @Subscribe
     public void onAnyBlockPlaced(BuildAction.OnAnyBlockPlacedEvent event)
     {
-        buildProtectionBlockStorage.put(event.level(), event.pos(), new BuildProtectionBlockStorageEntry(event.level().getGameTime()));
+        buildProtectionBlockStorage.put(event.level(), event.pos(), new BuildProtectionBlockStorageEntry());
     }
 
     @Subscribe

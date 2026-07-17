@@ -45,7 +45,7 @@ public class BrokenReappearBlockStorageManager
         if (blockEntity != null)
             blockEntityTag = blockEntity.saveWithFullMetadata(event.level().registryAccess());
 
-        BrokenReappearBlockStorageEntry newPending = new BrokenReappearBlockStorageEntry(event.state(), blockEntityTag, blockEntityType, event.level().getGameTime());
+        BrokenReappearBlockStorageEntry newPending = new BrokenReappearBlockStorageEntry(event.state(), blockEntityTag, blockEntityType);
         pendingEntries(event.level()).put(event.pos().asLong(), newPending);
 
         if (blockEntity instanceof Clearable clearable)
@@ -83,7 +83,7 @@ public class BrokenReappearBlockStorageManager
         if (pendingEntry == null) return;
 
         removePending(event.level(), event.pos());
-        brokenReappearBlockStorage.put(event.level(), event.pos(), new BrokenReappearBlockStorageEntry(pendingEntry.oldState(), pendingEntry.nbt(), pendingEntry.blockEntityType(), event.level().getGameTime()));
+        brokenReappearBlockStorage.put(event.level(), event.pos(), pendingEntry);
     }
 
     @Subscribe
@@ -167,6 +167,8 @@ public class BrokenReappearBlockStorageManager
     private boolean dropStoredBlock(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
     {
         ItemStack stack = createStoredBlockStack(entry);
+        if (stack == ItemStack.EMPTY) return false;
+
         ItemEntity itemEntity = new ItemEntity(
                 level,
                 pos.getX() + 0.5D,
@@ -208,6 +210,7 @@ public class BrokenReappearBlockStorageManager
     private boolean giveToNearestPlayer(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
     {
         ItemStack stack = createStoredBlockStack(entry);
+        if (stack == ItemStack.EMPTY) return false;
 
         Player player = level.getNearestPlayer(
                 pos.getX() + 0.5D,
