@@ -1,8 +1,6 @@
 package com.tik.zbb.blockstorage;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
@@ -10,105 +8,105 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-public abstract class BaseBlockStorage<TEntry>
+public abstract class BaseBlockStorage<TData, TStored>
 {
-    protected final Map<ServerLevel, Long2ObjectOpenHashMap<TEntry>> entriesByLevel = new WeakHashMap<>();
+    private final Map<ServerLevel, Long2ObjectOpenHashMap<TStored>> entriesByLevel = new WeakHashMap<>();
 
-    public TEntry get(ServerLevel level, BlockPos pos)
+    @Nullable
+    public TData get(ServerLevel level, BlockPos pos)
     {
-        var map = entriesByLevel.get(level);
-        return map != null ? map.get(pos.asLong()) : null;
+        TStored stored = getStored(level, pos.asLong());
+        return stored != null ? toData(stored) : null;
     }
 
     public boolean contains(ServerLevel level, BlockPos pos)
     {
-        var map = entriesByLevel.get(level);
-        return map != null && map.containsKey(pos.asLong());
+        var entries = entriesByLevel.get(level);
+        return entries != null && entries.containsKey(pos.asLong());
+    }
+
+    public void put(ServerLevel level, BlockPos pos, TData data)
+    {
+        long posKey = pos.asLong();
+        TStored stored = toStored(level, data);
+        TStored previous = getStored(level, posKey);
+
+        if (previous != null)
+        {
+            remove(level, posKey);
+        }
+
+        entries(level).put(posKey, stored);
+
+        onStored(level, posKey, previous, stored);
     }
 
     public void remove(ServerLevel level, BlockPos pos)
     {
-        var map = entriesByLevel.get(level);
-        if (map == null) return;
-
-        long key = pos.asLong();
-        TEntry removed = map.remove(key);
-        if (removed != null)
-        {
-            onRemove(level, key, removed);
-            if (map.isEmpty() && entriesByLevel.get(level) == map) entriesByLevel.remove(level);
-        }
+        remove(level, pos.asLong());
     }
 
     public void remove(ServerLevel level, long posKey)
     {
-        var map = entriesByLevel.get(level);
-        if (map == null) return;
-
-        TEntry removed = map.remove(posKey);
-        if (removed != null)
-        {
-            onRemove(level, posKey, removed);
-            if (map.isEmpty() && entriesByLevel.get(level) == map) entriesByLevel.remove(level);
-        }
+        removeStored(level, posKey, null, true);
     }
 
     @Nullable
-    public TEntry discard(ServerLevel level, BlockPos pos)
+    public TData discard(ServerLevel level, BlockPos pos)
     {
-        Long2ObjectMap<TEntry> entries = entriesByLevel.get(level);
-
-        if (entries == null)
-        {
-            return null;
-        }
-
-        TEntry removed = entries.remove(pos.asLong());
-
-        if (entries.isEmpty())
-        {
-            entriesByLevel.remove(level);
-        }
-
-        return removed;
+        TStored removed = removeStored(level, pos.asLong(), null, false);
+        return removed != null ? toData(removed) : null;
     }
 
-    public void cleanup(ServerLevel level, long ttlTicks)
+    @Nullable
+    protected final TStored getStored(ServerLevel level, long posKey)
     {
-        Long2ObjectMap<TEntry> map = entriesByLevel.get(level);
-        if (map == null || map.isEmpty()) return;
-
-        LongArrayList expiredKeys = null;
-        long now = level.getGameTime();
-
-        for (Long2ObjectMap.Entry<TEntry> entry : map.long2ObjectEntrySet())
-        {
-            if (isExpired(level, entry.getLongKey(), entry.getValue(), now, ttlTicks))
-            {
-                if (expiredKeys == null) expiredKeys = new LongArrayList();
-                expiredKeys.add(entry.getLongKey());
-            }
-        }
-
-        if (expiredKeys == null) return;
-
-        for (long posKey : expiredKeys)
-        {
-            remove(level, posKey);
-        }
+        var entries = entriesByLevel.get(level);
+        return entries != null ? entries.get(posKey) : null;
     }
 
-    public void put(ServerLevel level, BlockPos pos, TEntry entry)
+    protected final boolean removeStoredIfSame(ServerLevel level, long posKey, TStored expected)
     {
-        entries(level).put(pos.asLong(), entry);
+        return removeStored(level, posKey, expected, true) != null;
     }
 
-    protected Long2ObjectOpenHashMap<TEntry> entries(ServerLevel level)
+    protected abstract TStored toStored(ServerLevel level, TData data);
+
+    protected abstract TData toData(TStored stored);
+
+    protected void onStored(ServerLevel level, long posKey, @Nullable TStored previous, TStored stored) {}
+
+    protected void onDiscarded(ServerLevel level, long posKey, TStored stored) {}
+
+    protected void onRemove(ServerLevel level, long posKey, TData data) {}
+
+    private Long2ObjectOpenHashMap<TStored> entries(ServerLevel level)
     {
         return entriesByLevel.computeIfAbsent(level, _ -> new Long2ObjectOpenHashMap<>());
     }
 
-    protected abstract boolean isExpired(ServerLevel level, long posKey, TEntry entry, long now, long ttlTicks);
+    @Nullable
+    private TStored removeStored(ServerLevel level, long posKey, @Nullable TStored expected, boolean notify)
+    {
+        var entries = entriesByLevel.get(level);
+        if (entries == null) return null;
 
-    protected void onRemove(ServerLevel level, long posKey, TEntry entry) {}
+        TStored stored = entries.get(posKey);
+        if (stored == null || expected != null && stored != expected) return null;
+
+        entries.remove(posKey);
+        onDiscarded(level, posKey, stored);
+
+        if (notify)
+        {
+            onRemove(level, posKey, toData(stored));
+        }
+
+        if (entries.isEmpty() && entriesByLevel.get(level) == entries)
+        {
+            entriesByLevel.remove(level);
+        }
+
+        return stored;
+    }
 }
