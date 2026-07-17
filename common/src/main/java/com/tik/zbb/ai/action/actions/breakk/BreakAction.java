@@ -90,7 +90,7 @@ public class BreakAction implements IMobAction<BreakRequest>
         if (hardness < 0) return Integer.MAX_VALUE;
         if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
 
-        return (int) Math.round(health);
+        return Math.max(1, (int) Math.round(health));
     }
 
     private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)

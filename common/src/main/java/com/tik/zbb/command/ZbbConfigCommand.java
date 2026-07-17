@@ -3,6 +3,8 @@ package com.tik.zbb.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.edit.ConfigEditOperation;
@@ -27,6 +29,9 @@ public final class ZbbConfigCommand
     private static final String VALUE_ARGUMENT = "value";
     private static final String ENTRY_ARGUMENT = "entry";
     private static final String MODE_ARGUMENT = "mode";
+    private static final SimpleCommandExceptionType INVALID_MODE = new SimpleCommandExceptionType(
+            Component.literal("Expected mode persistent or runtime_only")
+    );
     private static final SuggestionProvider<CommandSourceStack> LEAF_PATH_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(ConfigSchema.descriptors().stream()
                     .map(descriptor -> descriptor.path().value()), builder);
@@ -175,11 +180,6 @@ public final class ZbbConfigCommand
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
     {
-        if (request.writeMode() == null)
-        {
-            return fail(context, "Expected mode persistent or runtime_only");
-        }
-
         ConfigEditResult result = ConfigManager.edit(request);
         if (!result.success())
         {
@@ -263,9 +263,10 @@ public final class ZbbConfigCommand
         return new ConfigPath(StringArgumentType.getString(context, PATH_ARGUMENT));
     }
 
-    private static ConfigWriteMode readMode(CommandContext<CommandSourceStack> context)
+    private static ConfigWriteMode readMode(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
     {
-        return ConfigWriteMode.parse(StringArgumentType.getString(context, MODE_ARGUMENT)).orElse(null);
+        return ConfigWriteMode.parse(StringArgumentType.getString(context, MODE_ARGUMENT))
+                .orElseThrow(INVALID_MODE::create);
     }
 
     private static String readRawValue(CommandContext<CommandSourceStack> context, String argument)
