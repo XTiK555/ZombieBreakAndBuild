@@ -17,13 +17,13 @@ import net.minecraft.world.level.block.state.BlockState;
 public class BreakAction implements IMobAction<BreakRequest>
 {
     public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                           ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+                                           ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
     public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState,
-                                        ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+                                        ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
     public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                               ConfigSnapshot configSnapshot, PathfinderMob mob, int blockId) {}
+                                               ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
     public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
                                 ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
@@ -46,28 +46,31 @@ public class BreakAction implements IMobAction<BreakRequest>
     public void execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
-        int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level(), context.configSnapshot());
         int newDamage = getDamageToBlocks(context, request.pos());
-        int totalDamage = BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()) + newDamage;
+        int totalDamage = saturatingAdd(
+                BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()),
+                newDamage
+        );
 
         if (totalDamage >= blockHealth)
         {
             boolean dropLoot = !context.configSnapshot().game().blockRestoration().brokenBlocksRestoring();
 
-            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
+            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
 
             if (context.level().destroyBlock(request.pos(), dropLoot))
             {
-                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
+                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
             }
             else
             {
-                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockId));
+                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
             }
         }
         else
         {
+            int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
             Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
         }
 
@@ -96,7 +99,18 @@ public class BreakAction implements IMobAction<BreakRequest>
         double hitboxMultiplier = getHitboxSizeMultiplier(context);
         double itemMultiplier = getItemMultiplier(context, breakPos);
 
-        return Math.max(1, (int) Math.round(baseDamage * hitboxMultiplier * itemMultiplier));
+        double damage = baseDamage * hitboxMultiplier * itemMultiplier;
+        if (damage >= Integer.MAX_VALUE)
+        {
+            return Integer.MAX_VALUE;
+        }
+
+        return Math.max(0, (int) Math.round(baseDamage * hitboxMultiplier * itemMultiplier));
+    }
+
+    private int saturatingAdd(int left, int right)
+    {
+        return (int) Math.min(Integer.MAX_VALUE, (long) left + right);
     }
 
     private double getHitboxSizeMultiplier(MobActionContext context)

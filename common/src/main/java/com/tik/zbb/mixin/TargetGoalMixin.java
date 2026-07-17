@@ -26,7 +26,7 @@ public abstract class TargetGoalMixin
     {
         ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
-        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesZbbMobFilter(this.mob, configSnapshot) && target instanceof LivingEntity livingTarget)
+        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot) && target instanceof LivingEntity livingTarget)
         {
             return TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                     this.mob,

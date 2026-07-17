@@ -10,4 +10,8 @@ public interface IMobTactic
     {
         return false;
     }
+
+    default void resetTransientState()
+    {
+    }
 }

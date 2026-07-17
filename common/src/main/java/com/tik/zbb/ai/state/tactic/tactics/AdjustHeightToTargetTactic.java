@@ -16,13 +16,18 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
     private final BlockPos.MutableBlockPos currentMobPos = new BlockPos.MutableBlockPos();
     private final BlockPos.MutableBlockPos beforeJumpMobPos = new BlockPos.MutableBlockPos();
-    private State currentState = State.Idle;
+    private State currentState;
 
     private enum State
     {
         Idle,
         Jumping,
         WaitingForBlock
+    }
+
+    public AdjustHeightToTargetTactic()
+    {
+        resetTransientState();
     }
 
     @Override
@@ -77,6 +82,12 @@ public class AdjustHeightToTargetTactic implements IMobTactic
     public boolean isRunning()
     {
         return currentState != State.Idle;
+    }
+
+    @Override
+    public void resetTransientState()
+    {
+        currentState = State.Idle;
     }
 
     private boolean idle(MobStateContext context, int targetY)

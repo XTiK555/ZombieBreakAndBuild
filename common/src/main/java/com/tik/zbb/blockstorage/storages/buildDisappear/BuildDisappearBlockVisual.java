@@ -1,24 +1,27 @@
 package com.tik.zbb.blockstorage.storages.buildDisappear;
 
+import com.mojang.math.Transformation;
 import com.tik.zbb.Constants;
 import com.tik.zbb.MainCommon;
 import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.level.storage.TagValueInput;
 import org.greenrobot.eventbus.Subscribe;
-
-import java.util.Locale;
-import java.util.UUID;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public class BuildDisappearBlockVisual
 {
+    private static final String DISPLAY_TAG = "zbb_build_disappear";
     private static final int SHRINK_BLOCK_DISPLAY_STEPS = 8;
     private static final int SHRINK_BLOCK_DISPLAY_STEP_DELAY = 1;
     private static final float SHRINK_BLOCK_DISPLAY_START_SCALE = 1.0f;
@@ -51,7 +54,7 @@ public class BuildDisappearBlockVisual
             {
                 if (entity instanceof Display.BlockDisplay blockDisplay)
                 {
-                    if (blockDisplay.entityTags().contains("zbb_build_disappear"))
+                    if (blockDisplay.entityTags().contains(DISPLAY_TAG))
                     {
                         blockDisplay.discard();
                     }
@@ -86,43 +89,21 @@ public class BuildDisappearBlockVisual
 
     private void playShrinkBlockDisplayEffect(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
     {
-        MinecraftServer server = event.level().getServer();
-        if (server == null) return;
-
         double x = event.pos().getX() + 0.5;
         double y = event.pos().getY();
         double z = event.pos().getZ() + 0.5;
 
-        CommandSourceStack source = server.createCommandSourceStack()
-                .withSuppressedOutput()
-                .withLevel(event.level());
+        Display.BlockDisplay blockDisplay = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, event.level())
+        {
+            @Override
+            public boolean shouldBeSaved()
+            {
+                return false;
+            }
+        };
 
-        UUID uuid = UUID.randomUUID();
-        String uuidNbt =
-                "[I;" +
-                        (int) (uuid.getMostSignificantBits() >> 32) + "," +
-                        (int) uuid.getMostSignificantBits() + "," +
-                        (int) (uuid.getLeastSignificantBits() >> 32) + "," +
-                        (int) uuid.getLeastSignificantBits() +
-                        "]";
-
-        CompoundTag blockStateTag = NbtUtils.writeBlockState(event.placedState());
-
-        server.getCommands().performPrefixedCommand(source,
-                "summon minecraft:block_display " + formatDouble(x) + " " + formatDouble(y) + " " + formatDouble(z) + " " +
-                        "{UUID:" + uuidNbt + "," +
-                        "block_state:" + blockStateTag + "," +
-                        "Tags:[\"zbb_build_disappear\"]," +
-                        "transformation:{" +
-                        "translation:[-0.5f,0.0f,-0.5f]," +
-                        "left_rotation:[0.0f,0.0f,0.0f,1.0f]," +
-                        "scale:[" + formatFloat(SHRINK_BLOCK_DISPLAY_START_SCALE) + "f," + formatFloat(SHRINK_BLOCK_DISPLAY_START_SCALE) + "f," + formatFloat(SHRINK_BLOCK_DISPLAY_START_SCALE) + "f]," +
-                        "right_rotation:[0.0f,0.0f,0.0f,1.0f]" +
-                        "}," +
-                        "start_interpolation:0," +
-                        "interpolation_duration:1" +
-                        "}"
-        );
+        updateBlockDisplay(blockDisplay, event, x, y, z, SHRINK_BLOCK_DISPLAY_START_SCALE, 1);
+        if (!event.level().addFreshEntity(blockDisplay)) return;
 
         for (int step = 1; step <= SHRINK_BLOCK_DISPLAY_STEPS; step++)
         {
@@ -130,12 +111,7 @@ public class BuildDisappearBlockVisual
 
             Constants.SCHEDULER.schedule(() ->
             {
-                MinecraftServer scheduledServer = event.level().getServer();
-                if (scheduledServer == null) return;
-
-                CommandSourceStack scheduledSource = scheduledServer.createCommandSourceStack()
-                        .withSuppressedOutput()
-                        .withLevel(event.level());
+                if (blockDisplay.isRemoved()) return;
 
                 float progress = currentStep / (float) SHRINK_BLOCK_DISPLAY_STEPS;
                 float easedProgress = easeIn(progress, SHRINK_BLOCK_DISPLAY_CURVE_POWER);
@@ -146,38 +122,41 @@ public class BuildDisappearBlockVisual
                         easedProgress
                 );
 
-                float tx = -0.5f * scale;
-                float tz = -0.5f * scale;
-
-                scheduledServer.getCommands().performPrefixedCommand(scheduledSource,
-                        "data merge entity @e[type=minecraft:block_display,limit=1,nbt={UUID:" + uuidNbt + "}] " +
-                                "{start_interpolation:0,interpolation_duration:" + SHRINK_BLOCK_DISPLAY_STEP_DELAY + "," +
-                                "transformation:{" +
-                                "translation:[" + formatFloat(tx) + "f,0.0f," + formatFloat(tz) + "f]," +
-                                "left_rotation:[0.0f,0.0f,0.0f,1.0f]," +
-                                "scale:[" + formatFloat(scale) + "f," + formatFloat(scale) + "f," + formatFloat(scale) + "f]," +
-                                "right_rotation:[0.0f,0.0f,0.0f,1.0f]" +
-                                "}" +
-                                "}"
-                );
+                updateBlockDisplay(blockDisplay, event, x, y, z, scale, SHRINK_BLOCK_DISPLAY_STEP_DELAY);
 
             }, currentStep * SHRINK_BLOCK_DISPLAY_STEP_DELAY);
         }
 
-        Constants.SCHEDULER.schedule(() ->
-        {
-            MinecraftServer scheduledServer = event.level().getServer();
-            if (scheduledServer == null) return;
+        Constants.SCHEDULER.schedule(blockDisplay::discard,
+                (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+    }
 
-            CommandSourceStack scheduledSource = scheduledServer.createCommandSourceStack()
-                    .withSuppressedOutput()
-                    .withLevel(event.level());
+    private void updateBlockDisplay(Display.BlockDisplay blockDisplay,
+                                    BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event,
+                                    double x, double y, double z, float scale, int interpolationDuration)
+    {
+        float translation = -0.5f * scale;
+        Transformation transformation = new Transformation(
+                new Vector3f(translation, 0.0f, translation),
+                new Quaternionf(),
+                new Vector3f(scale),
+                new Quaternionf()
+        );
 
-            scheduledServer.getCommands().performPrefixedCommand(scheduledSource,
-                    "kill @e[type=minecraft:block_display,limit=1,nbt={UUID:" + uuidNbt + "}]"
-            );
+        CompoundTag displayData = new CompoundTag();
+        displayData.put(Display.BlockDisplay.TAG_BLOCK_STATE, NbtUtils.writeBlockState(event.placedState()));
+        displayData.put(Display.TAG_TRANSFORMATION,
+                Transformation.CODEC.encodeStart(NbtOps.INSTANCE, transformation).getOrThrow());
+        displayData.putInt(Display.TAG_TRANSFORMATION_START_INTERPOLATION, 0);
+        displayData.putInt(Display.TAG_TRANSFORMATION_INTERPOLATION_DURATION, interpolationDuration);
 
-        }, (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+        blockDisplay.load(TagValueInput.create(
+                ProblemReporter.DISCARDING,
+                event.level().registryAccess(),
+                displayData
+        ));
+        blockDisplay.setPos(x, y, z);
+        blockDisplay.addTag(DISPLAY_TAG);
     }
 
     private static float easeIn(float t, float power)
@@ -190,13 +169,4 @@ public class BuildDisappearBlockVisual
         return start + (end - start) * progress;
     }
 
-    private static String formatFloat(float value)
-    {
-        return String.format(Locale.ROOT, "%.4f", value);
-    }
-
-    private static String formatDouble(double value)
-    {
-        return String.format(Locale.ROOT, "%.4f", value);
-    }
 }

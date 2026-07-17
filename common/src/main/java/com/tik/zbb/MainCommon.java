@@ -1,16 +1,15 @@
 package com.tik.zbb;
 
+import com.mojang.brigadier.CommandDispatcher;
 import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.command.ZbbConfigCommand;
 import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
-import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
-import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -36,10 +35,8 @@ public class MainCommon
 
         BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance().builtBlocksProtectionTime()));
         BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance().damageStoreTime()));
-        if (config.blockRestoration().brokenBlocksRestoring())
-            BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration().brokenBlocksRestoreTime()));
-        if (config.blockRestoration().builtBlocksDisappearing())
-            BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration().builtBlocksDisappearTime()));
+        BlockStorages.BROKEN_MANAGER.cleanup(level, toTicks(config.blockRestoration().brokenBlocksRestoreTime()));
+        BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration().builtBlocksDisappearTime()));
     }
 
     public static void onServerTick(MinecraftServer server)
@@ -55,9 +52,7 @@ public class MainCommon
 
     public static void onJoin(Mob mob)
     {
-        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
-
-        if (!ShouldApplyToMobUtility.matchesZbbMobFilter(mob, configSnapshot)) return;
+        if (!ShouldApplyToMobUtility.matchesSimpleZbbMobFilter(mob)) return;
         if (!(mob instanceof MobAccessor mobAccessor)) return;
 
         PathfinderMob pFMob = (PathfinderMob) mob;
