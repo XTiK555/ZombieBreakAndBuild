@@ -28,10 +28,7 @@ public class DamageBlockStorageManager
     @Subscribe
     public void onAnyBlockHit(BreakAction.OnAnyBlockHit event)
     {
-        DamageBlockStorageEntry current = damageBlockStorage.get(event.level(), event.pos());
-        int newDamage = (current == null ? 0 : current.damage()) + event.newDamage();
-
-        damageBlockStorage.put(event.level(), event.pos(), new DamageBlockStorageEntry(newDamage, event.blockId(), event.level().getGameTime()));
+        damageBlockStorage.put(event.level(), event.pos(), new DamageBlockStorageEntry(event.totalDamage(), event.blockId(), event.level().getGameTime()));
     }
 
     @Subscribe

@@ -9,7 +9,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class MitigateDangerousBlocksTactic implements IMobTactic
@@ -51,11 +50,7 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
         Identifier id = blockRegistry.getKey(state.getBlock());
 
         if (id == null) return false;
-        if (!context.getConfigSnapshot().game().blocks().dangerousBlockIdMatcher().matches(id.toString())) return false;
-        if (state.getBlock() instanceof CampfireBlock)
-        {
-            return state.getValue(CampfireBlock.LIT);
-        }
+        if (!context.getConfigSnapshot().game().blocks().dangerousBlockIdMatcher().matches(id)) return false;
 
         return true;
     }

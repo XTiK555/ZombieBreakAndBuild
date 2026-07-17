@@ -44,39 +44,38 @@ public final class ActionExecutor
         reloadConfigCache(mobActionContext.level(), mobActionContext.configSnapshot());
     }
 
-    public boolean canExecuteBreakAction(BlockPos breakPos)
+    public void tick()
     {
         keepDataUpToDate();
+    }
+
+    public boolean canExecuteBreakAction(BlockPos breakPos)
+    {
         return canExecuteAction(breakAction, new BreakRequest(breakPos));
     }
 
     public boolean canExecuteBuildAction(BlockPos buildPos)
     {
-        keepDataUpToDate();
         return canExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
     }
 
     public boolean canExecuteFreezeAction()
     {
-        keepDataUpToDate();
         return canExecuteAction(freezeAction, new FreezeRequest());
     }
 
     public boolean tryExecuteBreakAction(BlockPos breakPos)
     {
-        keepDataUpToDate();
         return tryExecuteAction(breakAction, new BreakRequest(breakPos));
     }
 
     public boolean tryExecuteBuildAction(BlockPos buildPos)
     {
-        keepDataUpToDate();
         return tryExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
     }
 
     public boolean tryExecuteFreezeAction()
     {
-        keepDataUpToDate();
         return tryExecuteAction(freezeAction, new FreezeRequest());
     }
 
@@ -100,14 +99,16 @@ public final class ActionExecutor
         if (!(mobActionContext.mob().level() instanceof ServerLevel level))
             throw new IllegalStateException("The mob level is not the serverLevel.");
 
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
+
         boolean levelOutdated = mobActionContext.level() != level;
-        boolean configDataOutdated = mobActionContext.configSnapshot().version() != ConfigManager.getConfigSnapshot().version();
+        boolean configDataOutdated = mobActionContext.configSnapshot().version() != configSnapshot.version();
         boolean needNewContext = levelOutdated || configDataOutdated;
         if (needNewContext)
         {
             mobActionContext = new MobActionContext(
                     level,
-                    ConfigManager.getConfigSnapshot(),
+                    configSnapshot,
                     mobActionContext.mob(),
                     mobActionContext.aiTimers(),
                     mobActionContext.mobId()
