@@ -100,6 +100,7 @@ public record ConfigGame(
     }
 
     public record BlockDamage(
+            float maximumBreakableBlockHardness,
             int damageToBlocks,
             float blockHardnessContrast,
             float blockHardnessMultiplier,
@@ -111,6 +112,7 @@ public record ConfigGame(
         private static BlockDamage create(ConfigDocument data, BlockResolver blockResolver)
         {
             return new BlockDamage(
+                    data.balance.blockDamage.maximumBreakableBlockHardness,
                     data.balance.blockDamage.damageToBlocks,
                     data.balance.blockDamage.blockHardnessContrast,
                     data.balance.blockDamage.blockHardnessMultiplier,

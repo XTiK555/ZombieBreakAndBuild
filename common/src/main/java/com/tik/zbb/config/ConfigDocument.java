@@ -134,6 +134,10 @@ public class ConfigDocument
         public static class BlockDamage
         {
             @Range(min = 0, max = 1000000)
+            @Comment("Maximum vanilla block hardness mobs can break (0 - infinity)")
+            public float maximumBreakableBlockHardness = 0.0f;
+
+            @Range(min = 0, max = 1000000)
             @Comment("Damage dealt to blocks")
             public int damageToBlocks = 1;
 

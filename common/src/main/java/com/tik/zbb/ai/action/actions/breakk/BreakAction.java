@@ -80,12 +80,13 @@ public class BreakAction implements IMobAction<BreakRequest>
 
     private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
     {
-        ConfigGame.BlockDamage blockDamage = configSnapshot.game().balance().blockDamage();
+        ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
         BlockState blockState = level.getBlockState(blockPos);
-        Integer blockHealthOverride = blockDamage.blockHealthOverrideMap().get(blockState.getBlock());
+        Integer blockHealthOverride = blockDamageCfg.blockHealthOverrideMap().get(blockState.getBlock());
         float hardness = blockState.getDestroySpeed(level, blockPos);
-        double health = Math.pow(hardness, blockDamage.blockHardnessContrast()) * blockDamage.blockHardnessMultiplier();
+        double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
 
+        if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;
         if (blockHealthOverride != null) return blockHealthOverride;
         if (hardness < 0) return Integer.MAX_VALUE;
         if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
@@ -141,5 +142,10 @@ public class BreakAction implements IMobAction<BreakRequest>
         float toolMultiplier = (float) (1.0 + (destroySpeed - 1.0) * context.configSnapshot().game().balance().blockDamage().itemDamageMultiplierStrength());
 
         return toolMultiplier;
+    }
+
+    private boolean exceedsMaximumBreakableHardness(float hardness, ConfigGame.BlockDamage blockDamage)
+    {
+        return blockDamage.maximumBreakableBlockHardness() > 0.0f && hardness > blockDamage.maximumBreakableBlockHardness();
     }
 }
