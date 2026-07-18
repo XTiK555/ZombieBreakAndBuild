@@ -16,6 +16,8 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
+        if (!context.getConfigSnapshot().game().ai().tactics().mitigateDangerousBlocks()) return;
+
         long now = context.getLevel().getGameTime();
         if (!context.getAiTimers().mitigateDangerousBlocksCooldownPassed(now)) return;
 
