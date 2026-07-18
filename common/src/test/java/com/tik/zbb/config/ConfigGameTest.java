@@ -4,7 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigGameTest
 {
@@ -37,6 +38,30 @@ class ConfigGameTest
         assertTrue(matches(game.ai().ignoreBuildEntityIdMatcher(), "minecraft:ghast"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:vex"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:zombie"));
+    }
+
+    @Test
+    void zeroMaximumHardnessIsUnlimited()
+    {
+        ConfigGame.BlockDamage blockDamage = ConfigGame.create(new ConfigDocument()).balance().blockDamage();
+
+        assertFalse(exceedsMaximumBreakableHardness(Float.MAX_VALUE, blockDamage));
+    }
+
+    @Test
+    void configuredMaximumHardnessRejectsOnlyHarderBlocks()
+    {
+        ConfigDocument data = new ConfigDocument();
+        data.balance.blockDamage.maximumBreakableBlockHardness = 5.0f;
+        ConfigGame.BlockDamage blockDamage = ConfigGame.create(data).balance().blockDamage();
+
+        assertFalse(exceedsMaximumBreakableHardness(5.0f, blockDamage));
+        assertTrue(exceedsMaximumBreakableHardness(5.01f, blockDamage));
+    }
+
+    private boolean exceedsMaximumBreakableHardness(float hardness, ConfigGame.BlockDamage blockDamage)
+    {
+        return blockDamage.maximumBreakableBlockHardness() > 0.0f && hardness > blockDamage.maximumBreakableBlockHardness();
     }
 
     private static boolean matches(Object matcher, String id) throws Exception
