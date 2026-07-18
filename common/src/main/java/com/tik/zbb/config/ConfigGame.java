@@ -52,6 +52,7 @@ public record ConfigGame(
     }
 
     public record Ai(
+            Tactics tactics,
             boolean alwaysSeeNearestPlayer,
             boolean canNoticeTargetsThroughBlocks,
             int noticeTargetsThroughBlocksLimit,
@@ -65,6 +66,7 @@ public record ConfigGame(
         private static Ai create(ConfigDocument data)
         {
             return new Ai(
+                    Tactics.create(data),
                     data.ai.alwaysSeeNearestPlayer,
                     data.ai.canNoticeTargetsThroughBlocks,
                     data.ai.noticeTargetsThroughBlocksLimit,
@@ -73,6 +75,24 @@ public record ConfigGame(
                     ResourceLocationPatternMatcher.compile(data.ai.affectedEntityIdList),
                     ResourceLocationPatternMatcher.compile(data.ai.ignoreBuildEntityIdList),
                     ResourceLocationPatternMatcher.compile(data.ai.ignoreBreakEntityIdList)
+            );
+        }
+    }
+
+    public record Tactics(
+            boolean adjustHeightToTarget,
+            boolean bridgeToTarget,
+            boolean clearObstaclesToTarget,
+            boolean mitigateDangerousBlocks
+    )
+    {
+        private static Tactics create(ConfigDocument data)
+        {
+            return new Tactics(
+                    data.ai.tactics.adjustHeightToTarget,
+                    data.ai.tactics.bridgeToTarget,
+                    data.ai.tactics.clearObstaclesToTarget,
+                    data.ai.tactics.mitigateDangerousBlocks
             );
         }
     }

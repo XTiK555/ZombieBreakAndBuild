@@ -42,6 +42,29 @@ class ConfigGameTest
     }
 
     @Test
+    void tacticsAreEnabledByDefaultAndCanBeDisabledIndividually()
+    {
+        ConfigDocument defaults = new ConfigDocument();
+        ConfigGame.Tactics defaultTactics = ConfigGame.create(defaults).ai().tactics();
+
+        assertTrue(defaultTactics.adjustHeightToTarget());
+        assertTrue(defaultTactics.bridgeToTarget());
+        assertTrue(defaultTactics.clearObstaclesToTarget());
+        assertTrue(defaultTactics.mitigateDangerousBlocks());
+
+        defaults.ai.tactics.adjustHeightToTarget = false;
+        defaults.ai.tactics.bridgeToTarget = false;
+        defaults.ai.tactics.clearObstaclesToTarget = false;
+        defaults.ai.tactics.mitigateDangerousBlocks = false;
+        ConfigGame.Tactics disabledTactics = ConfigGame.create(defaults).ai().tactics();
+
+        assertFalse(disabledTactics.adjustHeightToTarget());
+        assertFalse(disabledTactics.bridgeToTarget());
+        assertFalse(disabledTactics.clearObstaclesToTarget());
+        assertFalse(disabledTactics.mitigateDangerousBlocks());
+    }
+
+    @Test
     void zeroMaximumHardnessIsUnlimited()
     {
         ConfigGame.BlockDamage blockDamage = ConfigGame.create(new ConfigDocument()).balance().blockDamage();

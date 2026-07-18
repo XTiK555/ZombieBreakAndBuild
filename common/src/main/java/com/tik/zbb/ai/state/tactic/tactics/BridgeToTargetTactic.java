@@ -22,6 +22,8 @@ public class BridgeToTargetTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
+        if (!context.getConfigSnapshot().game().ai().tactics().bridgeToTarget()) return;
+
         int mobX = Mth.floor(context.getMob().getX());
         int mobY = Mth.floor(context.getMob().getY());
         int mobZ = Mth.floor(context.getMob().getZ());

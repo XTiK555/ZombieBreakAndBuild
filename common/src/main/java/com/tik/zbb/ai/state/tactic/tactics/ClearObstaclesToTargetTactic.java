@@ -16,6 +16,8 @@ public class ClearObstaclesToTargetTactic implements IMobTactic
     @Override
     public void execute(MobStateContext context)
     {
+        if (!context.getConfigSnapshot().game().ai().tactics().clearObstaclesToTarget()) return;
+
         double randomMultiplier = Mth.randomBetween(context.getMob().getRandom(), MIN_STEP_MULTIPLIER, MAX_STEP_MULTIPLIER);
         double checkDistance = MAX_CHECK_DISTANCE * randomMultiplier;
 

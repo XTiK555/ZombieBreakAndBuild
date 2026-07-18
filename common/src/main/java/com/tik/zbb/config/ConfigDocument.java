@@ -66,6 +66,8 @@ public class ConfigDocument
 
     public static class Ai
     {
+        public Tactics tactics = new Tactics();
+
         @Comment("Zombies can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
@@ -107,6 +109,21 @@ public class ConfigDocument
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Entity ID patterns that will NOT be given the ability to break blocks")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>();
+
+        public static class Tactics
+        {
+            @Comment("Whether mobs can adjust their height to reach a target")
+            public boolean adjustHeightToTarget = true;
+
+            @Comment("Whether mobs can build bridges toward a target")
+            public boolean bridgeToTarget = true;
+
+            @Comment("Whether mobs can clear obstacles between themselves and a target")
+            public boolean clearObstaclesToTarget = true;
+
+            @Comment("Whether mobs can cover or break dangerous blocks")
+            public boolean mitigateDangerousBlocks = true;
+        }
     }
 
     public static class Balance
