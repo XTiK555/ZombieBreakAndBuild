@@ -40,6 +40,7 @@ public class BridgeToTargetTactic implements IMobTactic
             if (context.getActionExecutor().tryExecuteBuildAction(belowMobPos))
             {
                 context.getActionExecutor().tryExecuteFreezeAction();
+                return;
             }
         }
 

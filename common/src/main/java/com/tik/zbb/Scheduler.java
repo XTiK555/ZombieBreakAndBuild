@@ -1,9 +1,6 @@
 package com.tik.zbb;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class Scheduler
 {
@@ -36,8 +33,11 @@ public final class Scheduler
 
     public ScheduledTask schedule(Runnable action, int delayTicks)
     {
+        Objects.requireNonNull(action, "action");
+        long normalizedDelayTicks = delayTicks <= 0 ? 1 : Math.addExact(delayTicks, 1);
+        long dueTick = Math.addExact(currentTick, normalizedDelayTicks);
+
         ScheduledTask task = new ScheduledTask(action);
-        long dueTick = currentTick + Math.max(1L, delayTicks);
         tasksByDueTick.computeIfAbsent(dueTick, ignored -> new ArrayList<>()).add(task);
 
         return task;
