@@ -66,7 +66,7 @@ public final class ShouldApplyToMobUtility
 
     private static boolean calculateAffectedEntityType(Mob mob, ConfigSnapshot configSnapshot)
     {
-        Registry<EntityType> registry = mob.level().registryAccess().registryOrThrow(Registries.ENTITY_TYPE);
+        Registry<EntityType<?>> registry = mob.level().registryAccess().registryOrThrow(Registries.ENTITY_TYPE);
 
         ResourceLocation entityId = registry.getKey(mob.getType());
         if (entityId == null) return false;
