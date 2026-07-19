@@ -89,20 +89,19 @@ public class BrokenReappearBlockStorageManager
     @Subscribe
     public void onBrokenBlockStorageRemove(BrokenReappearBlockStorage.OnRemovedEvent event)
     {
-        boolean successful = true;
+        boolean normalReappear = true;
 
         if (!restoreBlock(event.level(), event.pos(), event.entry()))
         {
+            normalReappear = false;
+
             if (!giveToNearestPlayer(event.level(), event.pos(), event.entry()))
             {
-                if (!placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2))
-                {
-                    successful = false;
-                }
+                placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
             }
         }
 
-        if (successful)
+        if (normalReappear)
             Constants.EVENT_BUS.post(new OnBrokenBlockReappearEvent(event.level(), event.pos(), event.entry().oldState()));
     }
 

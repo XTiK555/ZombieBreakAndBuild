@@ -37,12 +37,7 @@ public final class ConfigEditService
     {
         return repository.effectiveValue(descriptor);
     }
-
-    /**
-     * Loads the initial runtime state without consulting external game registries.
-     * File-format normalization and recovery still run, but registry-backed semantic
-     * validation is deferred until a normal reload after mod registration completes.
-     */
+    
     public synchronized ConfigReloadResult bootstrapFromFile()
     {
         return loadFromFile(ConfigSemanticValidator.NONE);

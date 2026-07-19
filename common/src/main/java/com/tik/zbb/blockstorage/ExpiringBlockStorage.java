@@ -9,8 +9,6 @@ import java.util.WeakHashMap;
 
 public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData, ExpiringBlockStorage.StoredEntry<TData>>
 {
-    record StoredEntry<TData>(TData data, long storedAtTick) {}
-
     private final Map<ServerLevel, ExpirationIndex> expirationIndexesByLevel = new WeakHashMap<>();
 
     public final void cleanup(ServerLevel level, long ttlTicks)
@@ -24,7 +22,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
 
         ExpirationIndex.Snapshot dueEntries = expirationIndex.collectDueEntries(processingCutoff, expirationCutoff);
         ObjectArrayList<StoredEntry<TData>> expectedEntries = new ObjectArrayList<>(dueEntries.size());
-        
+
         for (int i = 0; i < dueEntries.size(); i++)
         {
             StoredEntry<TData> stored = getStored(level, dueEntries.posKeyAt(i));
@@ -116,4 +114,6 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
             expirationIndexesByLevel.remove(level);
         }
     }
+
+    record StoredEntry<TData>(TData data, long storedAtTick) {}
 }

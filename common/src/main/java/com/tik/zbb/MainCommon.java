@@ -23,10 +23,16 @@ import static com.tik.zbb.utilities.SecondsToTicksUtility.toTicks;
 
 public class MainCommon
 {
+    private static boolean isInitialized = false;
+
     public static void init()
     {
+        if (isInitialized) return;
+
         ConfigManager.init();
         EventRegistrar.registerAll();
+
+        isInitialized = true;
     }
 
     public static void onLevelTick(ServerLevel level)
@@ -65,14 +71,7 @@ public class MainCommon
         }
         if (!hasGoal(targetSelector, AlwaysSeeNearestPlayerGoal.class))
         {
-            int maxTargetPriority = 0;
-
-            for (WrappedGoal wg : (targetSelector.getAvailableGoals()))
-            {
-                maxTargetPriority = Math.max(maxTargetPriority, wg.getPriority());
-            }
-
-            targetSelector.addGoal(maxTargetPriority + 1, new AlwaysSeeNearestPlayerGoal(pFMob));
+            targetSelector.addGoal(Integer.MAX_VALUE, new AlwaysSeeNearestPlayerGoal(pFMob));
         }
     }
 

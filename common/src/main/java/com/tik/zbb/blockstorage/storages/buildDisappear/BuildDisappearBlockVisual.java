@@ -90,7 +90,7 @@ public class BuildDisappearBlockVisual
     private void playShrinkBlockDisplayEffect(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
     {
         double x = event.pos().getX() + 0.5;
-        double y = event.pos().getY();
+        double y = event.pos().getY() + 0.5;
         double z = event.pos().getZ() + 0.5;
 
         Display.BlockDisplay blockDisplay = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, event.level())
@@ -137,7 +137,7 @@ public class BuildDisappearBlockVisual
     {
         float translation = -0.5f * scale;
         Transformation transformation = new Transformation(
-                new Vector3f(translation, 0.0f, translation),
+                new Vector3f(translation),
                 new Quaternionf(),
                 new Vector3f(scale),
                 new Quaternionf()
