@@ -1,10 +1,10 @@
 package com.tik.zbb.command;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.edit.ConfigEditOperation;
@@ -28,22 +28,12 @@ public final class ZbbConfigCommand
     private static final String PATH_ARGUMENT = "path";
     private static final String VALUE_ARGUMENT = "value";
     private static final String ENTRY_ARGUMENT = "entry";
-    private static final String MODE_ARGUMENT = "mode";
-    private static final SimpleCommandExceptionType INVALID_MODE = new SimpleCommandExceptionType(
-            Component.literal("Expected mode persistent or runtime_only")
-    );
     private static final SuggestionProvider<CommandSourceStack> LEAF_PATH_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(ConfigSchema.descriptors().stream()
                     .map(descriptor -> descriptor.path().value()), builder);
 
     private static final SuggestionProvider<CommandSourceStack> PATH_OR_SECTION_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(pathAndSectionSuggestions(), builder);
-
-    private static final SuggestionProvider<CommandSourceStack> MODE_SUGGESTIONS = (context, builder) ->
-            SharedSuggestionProvider.suggest(Set.of(
-                    ConfigWriteMode.PERSISTENT.commandName(),
-                    ConfigWriteMode.RUNTIME_ONLY.commandName()
-            ), builder);
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
@@ -59,58 +49,51 @@ public final class ZbbConfigCommand
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
                                         .executes(ZbbConfigCommand::get)))
+                        .then(literal("runtime_overrides")
+                                .executes(ZbbConfigCommand::runtimeOverrides))
                         .then(literal("set")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .then(argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> set(context, ConfigWriteMode.RUNTIME_ONLY))))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .then(argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> set(context, ConfigWriteMode.PERSISTENT))))
-                                        .then(argument(VALUE_ARGUMENT, StringArgumentType.string())
+                                        .then(modeValue(ConfigWriteMode.PERSISTENT, VALUE_ARGUMENT, context -> set(context, ConfigWriteMode.PERSISTENT)))
+                                        .then(modeValue(ConfigWriteMode.RUNTIME_ONLY, VALUE_ARGUMENT, context -> set(context, ConfigWriteMode.RUNTIME_ONLY)))
+                                        .then(argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
                                                 .executes(context -> set(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("add")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> add(context, ConfigWriteMode.RUNTIME_ONLY))))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> add(context, ConfigWriteMode.PERSISTENT))))
-                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.string())
+                                        .then(modeValue(ConfigWriteMode.PERSISTENT, ENTRY_ARGUMENT, context -> add(context, ConfigWriteMode.PERSISTENT)))
+                                        .then(modeValue(ConfigWriteMode.RUNTIME_ONLY, ENTRY_ARGUMENT, context -> add(context, ConfigWriteMode.RUNTIME_ONLY)))
+                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
                                                 .executes(context -> add(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("remove")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> remove(context, ConfigWriteMode.RUNTIME_ONLY))))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
-                                                        .executes(context -> remove(context, ConfigWriteMode.PERSISTENT))))
-                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.string())
+                                        .then(modeValue(ConfigWriteMode.PERSISTENT, ENTRY_ARGUMENT, context -> remove(context, ConfigWriteMode.PERSISTENT)))
+                                        .then(modeValue(ConfigWriteMode.RUNTIME_ONLY, ENTRY_ARGUMENT, context -> remove(context, ConfigWriteMode.RUNTIME_ONLY)))
+                                        .then(argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
                                                 .executes(context -> remove(context, ConfigWriteMode.PERSISTENT)))))
                         .then(literal("clear")
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
                                         .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT)))
-                                        .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), readMode(context)))))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.RUNTIME_ONLY))))))
                         .then(literal("reset")
                                 .then(literal("all")
                                         .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT)))
-                                        .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(readMode(context))))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY)))))
                                 .then(argument(PATH_ARGUMENT, StringArgumentType.word())
                                         .suggests(LEAF_PATH_SUGGESTIONS)
                                         .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT)))
-                                        .then(argument(MODE_ARGUMENT, StringArgumentType.word())
-                                                .suggests(MODE_SUGGESTIONS)
-                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), readMode(context)))))))
+                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT))))
+                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.RUNTIME_ONLY))))))
                         .then(literal("discard_runtime_overrides")
                                 .executes(context -> edit(context, ConfigEditRequest.discardAll()))
                                 .then(literal("all")
@@ -120,6 +103,15 @@ public final class ZbbConfigCommand
                                         .executes(context -> edit(context, ConfigEditRequest.discard(readPath(context))))))
                         .then(literal("reload")
                                 .executes(ZbbConfigCommand::reload))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> modeValue(
+            ConfigWriteMode mode,
+            String valueArgument,
+            Command<CommandSourceStack> command)
+    {
+        return literal(mode.commandName())
+                .then(argument(valueArgument, StringArgumentType.greedyString()).executes(command));
     }
 
     private static int list(CommandContext<CommandSourceStack> context, ConfigPath path)
@@ -149,6 +141,17 @@ public final class ZbbConfigCommand
 
         success(context, descriptor.path() + " = " + format(ConfigManager.getEffectiveValue(descriptor)));
         return 1;
+    }
+
+    private static int runtimeOverrides(CommandContext<CommandSourceStack> context)
+    {
+        Map<ConfigPath, Object> overrides = ConfigManager.getRuntimeOverrides();
+        success(context, "runtime overrides (" + overrides.size() + ")");
+        for (Map.Entry<ConfigPath, Object> entry : overrides.entrySet())
+        {
+            success(context, entry.getKey() + " = " + format(entry.getValue()));
+        }
+        return overrides.size();
     }
 
     private static int set(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
@@ -188,7 +191,7 @@ public final class ZbbConfigCommand
 
         String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
         success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
-        return Math.max(1, result.affectedCount());
+        return result.affectedCount();
     }
 
     private static int editRaw(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -201,7 +204,7 @@ public final class ZbbConfigCommand
 
         String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
         success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
-        return Math.max(1, result.affectedCount());
+        return result.affectedCount();
     }
 
     private static String operationName(ConfigEditOperation operation)
@@ -261,12 +264,6 @@ public final class ZbbConfigCommand
     private static ConfigPath readPath(CommandContext<CommandSourceStack> context)
     {
         return new ConfigPath(StringArgumentType.getString(context, PATH_ARGUMENT));
-    }
-
-    private static ConfigWriteMode readMode(CommandContext<CommandSourceStack> context) throws CommandSyntaxException
-    {
-        return ConfigWriteMode.parse(StringArgumentType.getString(context, MODE_ARGUMENT))
-                .orElseThrow(INVALID_MODE::create);
     }
 
     private static String readRawValue(CommandContext<CommandSourceStack> context, String argument)

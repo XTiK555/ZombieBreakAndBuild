@@ -1,6 +1,9 @@
 package com.tik.zbb.config;
 
 import com.tik.zbb.config.schema.ResourceLocationPatternMatcher;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -10,6 +13,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigGameTest
 {
+    @BeforeAll
+    static void bootstrapMinecraft()
+    {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
     @Test
     void createCompilesPatternLists() throws Exception
     {

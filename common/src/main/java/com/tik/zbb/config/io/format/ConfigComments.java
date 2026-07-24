@@ -32,10 +32,7 @@ public final class ConfigComments
             try
             {
                 Object nested = field.get(obj);
-                if (nested != null)
-                {
-                    apply(config, nested, fullPath);
-                }
+                ConfigUtilities.forEachNestedConfigValue(nested, value -> apply(config, value, fullPath));
             }
             catch (IllegalAccessException ignored)
             {

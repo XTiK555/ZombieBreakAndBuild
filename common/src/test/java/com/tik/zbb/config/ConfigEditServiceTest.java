@@ -8,6 +8,9 @@ import com.tik.zbb.config.edit.*;
 import com.tik.zbb.config.io.*;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.*;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,6 +31,13 @@ class ConfigEditServiceTest
 
     @TempDir
     Path tempDir;
+
+    @BeforeAll
+    static void bootstrapMinecraft()
+    {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
 
     @Test
     void codecStrictCommandsRejectValuesThatFileRepairCanFix() throws Exception
@@ -303,7 +314,7 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void runtimeResetAllOnlyResetsExistingTemporaryValues()
+    void runtimeResetAllOverridesEveryDescriptorWithItsDefault()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
@@ -321,9 +332,73 @@ class ConfigEditServiceTest
         ConfigEditResult result = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
 
         assertTrue(result.success());
-        assertEquals(1, result.affectedCount());
-        assertTrue(service.snapshot().document().ai.alwaysSeeNearestPlayer);
+        assertEquals(ConfigSchema.descriptors().size(), result.affectedCount());
+        assertEquals(ConfigSchema.descriptors().size(), service.runtimeOverrides().size());
+        assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
         assertEquals(6, service.snapshot().document().balance.pathEndBreakBuildDistance);
+
+        ConfigEditResult repeated = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
+        assertFalse(repeated.success());
+        assertEquals(0, repeated.affectedCount());
+    }
+
+    @Test
+    void unchangedEditsReportZeroAffectedValuesAndAvoidPersistence()
+    {
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigRepairReport());
+        ConfigEditService service = service(storage);
+
+        ConfigEditResult persistentSet = service.edit(ConfigEditRequest.set(
+                new ConfigPath("ai.alwaysSeeNearestPlayer"),
+                false,
+                ConfigWriteMode.PERSISTENT
+        ));
+        ConfigEditResult runtimeSet = service.edit(ConfigEditRequest.set(
+                new ConfigPath("ai.alwaysSeeNearestPlayer"),
+                false,
+                ConfigWriteMode.RUNTIME_ONLY
+        ));
+        ConfigEditResult removeMissing = service.edit(ConfigEditRequest.remove(
+                new ConfigPath("ai.ignoreBreakEntityIdList"),
+                "minecraft:zombie",
+                ConfigWriteMode.RUNTIME_ONLY
+        ));
+        ConfigEditResult clearEmpty = service.edit(ConfigEditRequest.clear(
+                new ConfigPath("balance.blockDamage.blockHealthOverrideList"),
+                ConfigWriteMode.PERSISTENT
+        ));
+
+        assertAll(
+                () -> assertFalse(persistentSet.success()),
+                () -> assertEquals(0, persistentSet.affectedCount()),
+                () -> assertFalse(runtimeSet.success()),
+                () -> assertEquals(0, runtimeSet.affectedCount()),
+                () -> assertFalse(removeMissing.success()),
+                () -> assertEquals(0, removeMissing.affectedCount()),
+                () -> assertFalse(clearEmpty.success()),
+                () -> assertEquals(0, clearEmpty.affectedCount()),
+                () -> assertEquals(0, storage.saveCount),
+                () -> assertTrue(service.runtimeOverrides().isEmpty())
+        );
+    }
+
+    @Test
+    void runtimeOverridesAreExposedAsDefensiveReadOnlyValues()
+    {
+        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        ConfigPath path = new ConfigPath("ai.ignoreBreakEntityIdList");
+
+        assertTrue(service.edit(ConfigEditRequest.add(
+                path,
+                "minecraft:zombie",
+                ConfigWriteMode.RUNTIME_ONLY
+        )).success());
+
+        java.util.Map<ConfigPath, Object> overrides = service.runtimeOverrides();
+        assertThrows(UnsupportedOperationException.class, overrides::clear);
+        ((java.util.List<?>) overrides.get(path)).clear();
+
+        assertEquals(java.util.List.of("minecraft:zombie"), service.runtimeOverrides().get(path));
     }
 
     @Test
@@ -489,7 +564,7 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void bootstrapDefersRegistryBackedSemanticRepairUntilReload()
+    void bootstrapDefersRegistryBackedValidationAndResolutionUntilRuntimeStart()
     {
         ConfigDocument loaded = new ConfigDocument();
         loaded.ai.affectedEntityIdList = new java.util.ArrayList<>(java.util.List.of(
@@ -515,11 +590,17 @@ class ConfigEditServiceTest
         );
         assertTrue(repairReport.entries().isEmpty());
 
-        ConfigEditService.ConfigReloadResult reloadResult = service.reloadFromFile();
+        AtomicInteger blockResolutions = new AtomicInteger();
+        ConfigEditService.ConfigReloadResult reloadResult = service.startRuntime((rawValue, defaultBlock) ->
+        {
+            blockResolutions.incrementAndGet();
+            return defaultBlock;
+        });
 
         assertTrue(reloadResult.success());
         assertTrue(reloadResult.saved());
         assertEquals(1, storage.saveCount);
+        assertTrue(blockResolutions.get() > 0);
         assertEquals(
                 java.util.List.of("minecraft:zombie"),
                 service.snapshot().document().ai.affectedEntityIdList

@@ -2,13 +2,17 @@ package com.tik.zbb.config.edit;
 
 import com.tik.zbb.Constants;
 import com.tik.zbb.config.ConfigDocument;
+import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.config.io.ConfigStorage;
 import com.tik.zbb.config.io.ConfigStorageException;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.*;
 
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public final class ConfigEditService
 {
@@ -37,6 +41,11 @@ public final class ConfigEditService
     {
         return repository.effectiveValue(descriptor);
     }
+
+    public Map<ConfigPath, Object> runtimeOverrides()
+    {
+        return repository.runtimeOverrides();
+    }
     
     public synchronized ConfigReloadResult bootstrapFromFile()
     {
@@ -46,6 +55,13 @@ public final class ConfigEditService
     public synchronized ConfigReloadResult reloadFromFile()
     {
         return loadFromFile(semanticValidator);
+    }
+
+    public synchronized ConfigReloadResult startRuntime(ConfigGame.BlockResolver blockResolver)
+    {
+        ConfigReloadResult result = loadFromFile(semanticValidator);
+        repository.activateBlockResolution(blockResolver);
+        return result;
     }
 
     private ConfigReloadResult loadFromFile(ConfigSemanticValidator reloadValidator)
@@ -209,10 +225,40 @@ public final class ConfigEditService
         if (request.writeMode() == ConfigWriteMode.PERSISTENT)
         {
             ConfigDocument defaults = new ConfigDocument();
+            ConfigDocument persisted = repository.persistedDocument();
+            Map<ConfigPath, Object> runtimeOverrides = repository.runtimeOverrides();
+            Set<ConfigPath> changedPaths = new LinkedHashSet<>();
+            boolean persistedChanged = false;
+
+            for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+            {
+                if (!Objects.equals(descriptor.getValue(persisted), descriptor.defaultValue()))
+                {
+                    persistedChanged = true;
+                    changedPaths.add(descriptor.path());
+                }
+                if (runtimeOverrides.containsKey(descriptor.path()))
+                {
+                    changedPaths.add(descriptor.path());
+                }
+            }
+
+            if (changedPaths.isEmpty())
+            {
+                return ConfigEditResult.unchanged(request, null, true);
+            }
+
             try
             {
-                storage.save(defaults);
-                repository.replacePersisted(defaults);
+                if (persistedChanged)
+                {
+                    storage.save(defaults);
+                    repository.replacePersisted(defaults);
+                }
+                else
+                {
+                    repository.discardAll();
+                }
             }
             catch (ConfigStorageException e)
             {
@@ -220,11 +266,11 @@ public final class ConfigEditService
                 return ConfigEditResult.failure(request, "Failed to save config: " + e.getMessage());
             }
 
-            return ConfigEditResult.success(request, null, true, ConfigSchema.descriptors().size(), "reset all");
+            return ConfigEditResult.success(request, null, true, changedPaths.size(), "reset all");
         }
 
         int count = repository.resetRuntimeOverrides();
-        return ConfigEditResult.success(request, null, false, count, "reset all temporary value(s)");
+        return countResult(request, count, "reset all temporary value(s)");
     }
 
     private ConfigEditResult discard(ConfigEditRequest request)
@@ -235,13 +281,20 @@ public final class ConfigEditService
         }
 
         int count = repository.discard(request.path());
-        return ConfigEditResult.success(request, null, false, count, "discarded " + count + " temporary value(s)");
+        return countResult(request, count, "discarded " + count + " temporary value(s)");
     }
 
     private ConfigEditResult discardAll(ConfigEditRequest request)
     {
         int count = repository.discardAll();
-        return ConfigEditResult.success(request, null, false, count, "discarded " + count + " temporary value(s)");
+        return countResult(request, count, "discarded " + count + " temporary value(s)");
+    }
+
+    private ConfigEditResult countResult(ConfigEditRequest request, int count, String message)
+    {
+        return count == 0
+                ? ConfigEditResult.unchanged(request, null, false)
+                : ConfigEditResult.success(request, null, false, count, message);
     }
 
     private ConfigEditResult applyValue(
@@ -252,16 +305,19 @@ public final class ConfigEditService
     {
         try
         {
-            Object effectiveValue = request.writeMode() == ConfigWriteMode.PERSISTENT
+            ConfigMutationResult mutationResult = request.writeMode() == ConfigWriteMode.PERSISTENT
                     ? updatePersistent(descriptor, mutation)
                     : updateRuntime(descriptor, mutation);
-            return ConfigEditResult.success(
-                    request,
-                    effectiveValue,
-                    request.writeMode() == ConfigWriteMode.PERSISTENT,
-                    1,
-                    "updated"
-            );
+            if (!mutationResult.changed())
+            {
+                return ConfigEditResult.unchanged(
+                        request,
+                        mutationResult.effectiveValue(),
+                        request.writeMode() == ConfigWriteMode.PERSISTENT
+                );
+            }
+            return ConfigEditResult.success(request, mutationResult.effectiveValue(),
+                    request.writeMode() == ConfigWriteMode.PERSISTENT, 1, "updated");
         }
         catch (ConfigValidationException e)
         {
@@ -274,22 +330,32 @@ public final class ConfigEditService
         }
     }
 
-    private Object updatePersistent(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
+    private ConfigMutationResult updatePersistent(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
             throws ConfigValidationException, ConfigStorageException
     {
         ConfigDocument newPersisted = repository.persistedDocument();
         Object value = validateValue(descriptor, mutation.apply(newPersisted, descriptor));
+        if (Objects.equals(descriptor.getValue(newPersisted), value))
+        {
+            boolean discardedRuntimeOverride = repository.discard(descriptor.path()) > 0;
+            return new ConfigMutationResult(repository.effectiveValue(descriptor), discardedRuntimeOverride);
+        }
+
         descriptor.setValue(newPersisted, value);
         storage.save(newPersisted);
-        return repository.replacePersisted(newPersisted, descriptor);
+        return new ConfigMutationResult(repository.replacePersisted(newPersisted, descriptor), true);
     }
 
-    private Object updateRuntime(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
+    private ConfigMutationResult updateRuntime(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
             throws ConfigValidationException
     {
         ConfigDocument newEffective = repository.effectiveDocument();
         Object value = validateValue(descriptor, mutation.apply(newEffective, descriptor));
-        return repository.updateRuntime(descriptor, value);
+        if (Objects.equals(descriptor.getValue(newEffective), value))
+        {
+            return new ConfigMutationResult(repository.effectiveValue(descriptor), false);
+        }
+        return new ConfigMutationResult(repository.updateRuntime(descriptor, value), true);
     }
 
     private Object validateValue(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException
@@ -304,6 +370,8 @@ public final class ConfigEditService
     {
         Object apply(ConfigDocument baseData, ConfigFieldDescriptor descriptor) throws ConfigValidationException;
     }
+
+    private record ConfigMutationResult(Object effectiveValue, boolean changed) {}
 
     private static Object externalEntry(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException
     {

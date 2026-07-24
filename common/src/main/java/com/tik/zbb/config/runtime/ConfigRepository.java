@@ -8,14 +8,16 @@ import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.config.schema.ConfigSchema;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public final class ConfigRepository
 {
     private ConfigDocument persistedData;
     private final Map<ConfigPath, Object> runtimeOverrides = new LinkedHashMap<>();
-    private final ConfigGame.BlockResolver blockResolver;
+    private ConfigGame.BlockResolver blockResolver;
     private ConfigDocument effectiveData;
     private ConfigSnapshot snapshot;
     private long version;
@@ -52,6 +54,26 @@ public final class ConfigRepository
         return ConfigDocumentCopier.copy(effectiveData);
     }
 
+    public synchronized Map<ConfigPath, Object> runtimeOverrides()
+    {
+        Map<ConfigPath, Object> copy = new LinkedHashMap<>();
+        for (Map.Entry<ConfigPath, Object> entry : runtimeOverrides.entrySet())
+        {
+            ConfigSchema.find(entry.getKey()).ifPresent(descriptor ->
+                    copy.put(entry.getKey(), descriptor.copyValue(entry.getValue())));
+        }
+        return Collections.unmodifiableMap(copy);
+    }
+
+    public synchronized void activateBlockResolution(ConfigGame.BlockResolver resolver)
+    {
+        Objects.requireNonNull(resolver, "resolver");
+        if (blockResolver == resolver) return;
+
+        blockResolver = resolver;
+        rebuildEffectiveSnapshot();
+    }
+
     public synchronized Object replacePersisted(ConfigDocument data, ConfigFieldDescriptor changedDescriptor)
     {
         mutateAndRebuild(() ->
@@ -76,29 +98,31 @@ public final class ConfigRepository
 
     public synchronized Object updateRuntime(ConfigFieldDescriptor descriptor, Object value)
     {
-        runtimeOverrides.put(descriptor.path(), descriptor.copyValue(value));
-        rebuildEffectiveSnapshot();
+        Object copiedValue = descriptor.copyValue(value);
+        if (!runtimeOverrides.containsKey(descriptor.path())
+                || !Objects.equals(runtimeOverrides.get(descriptor.path()), copiedValue))
+        {
+            runtimeOverrides.put(descriptor.path(), copiedValue);
+            rebuildEffectiveSnapshot();
+        }
         return descriptor.copyValue(descriptor.getValue(effectiveData));
     }
 
     public synchronized int resetRuntimeOverrides()
     {
-        int count = runtimeOverrides.size();
+        Map<ConfigPath, Object> defaults = new LinkedHashMap<>();
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+        {
+            defaults.put(descriptor.path(), descriptor.defaultValue());
+        }
+
+        int count = changedEntryCount(runtimeOverrides, defaults);
+        if (count == 0) return 0;
+
         mutateAndRebuild(() ->
         {
-            Map<ConfigPath, Object> defaults = new LinkedHashMap<>();
-            for (ConfigPath path : runtimeOverrides.keySet())
-            {
-                ConfigSchema.find(path).ifPresent(descriptor ->
-                        defaults.put(path, descriptor.defaultValue()));
-            }
-
             runtimeOverrides.clear();
-            for (Map.Entry<ConfigPath, Object> entry : defaults.entrySet())
-            {
-                ConfigSchema.find(entry.getKey()).ifPresent(descriptor ->
-                        runtimeOverrides.put(entry.getKey(), descriptor.copyValue(entry.getValue())));
-            }
+            runtimeOverrides.putAll(defaults);
         });
         return count;
     }
@@ -106,15 +130,33 @@ public final class ConfigRepository
     public synchronized int discard(ConfigPath path)
     {
         int before = runtimeOverrides.size();
-        mutateAndRebuild(() ->
-                runtimeOverrides.keySet().removeIf(runtimePath -> runtimePath.isDescendantOf(path)));
-        return before - runtimeOverrides.size();
+        runtimeOverrides.keySet().removeIf(runtimePath -> runtimePath.isDescendantOf(path));
+        int count = before - runtimeOverrides.size();
+        if (count > 0) rebuildEffectiveSnapshot();
+        return count;
     }
 
     public synchronized int discardAll()
     {
         int count = runtimeOverrides.size();
-        mutateAndRebuild(runtimeOverrides::clear);
+        if (count > 0) mutateAndRebuild(runtimeOverrides::clear);
+        return count;
+    }
+
+    private static int changedEntryCount(Map<ConfigPath, Object> current, Map<ConfigPath, Object> replacement)
+    {
+        int count = 0;
+        for (Map.Entry<ConfigPath, Object> entry : replacement.entrySet())
+        {
+            if (!current.containsKey(entry.getKey()) || !Objects.equals(current.get(entry.getKey()), entry.getValue()))
+            {
+                count++;
+            }
+        }
+        for (ConfigPath path : current.keySet())
+        {
+            if (!replacement.containsKey(path)) count++;
+        }
         return count;
     }
 
