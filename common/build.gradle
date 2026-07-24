@@ -5,6 +5,7 @@ plugins {
 
 legacyForge {
     mcpVersion = minecraft_version
+    addModdingDependenciesTo sourceSets.test
     if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
         accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
     }

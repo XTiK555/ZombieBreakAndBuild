@@ -3,12 +3,10 @@ package com.tik.zbb.config.schema;
 import com.tik.zbb.config.ConfigDocument;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationSemantics;
+import com.tik.zbb.utilities.ConfigUtilities;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public final class ConfigFieldDescriptor
 {
@@ -79,15 +77,7 @@ public final class ConfigFieldDescriptor
 
     public Object copyValue(Object value)
     {
-        if (value instanceof List<?> list)
-        {
-            return new ArrayList<>(list);
-        }
-        if (value instanceof Map<?, ?> map)
-        {
-            return new LinkedHashMap<>(map);
-        }
-        return value;
+        return ConfigUtilities.deepCopyConfigValue(value);
     }
 
     public Object defaultValue()

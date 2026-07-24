@@ -60,7 +60,7 @@ public final class ConfigSchema
         {
             String path = prefix.isEmpty() ? field.getName() : prefix + "." + field.getName();
 
-            if (ConfigUtilities.isNestedConfigField(field))
+            if (ConfigUtilities.isConfigSectionField(field))
             {
                 List<Field> nestedOwnerFields = new ArrayList<>(ownerFields);
                 nestedOwnerFields.add(field);
