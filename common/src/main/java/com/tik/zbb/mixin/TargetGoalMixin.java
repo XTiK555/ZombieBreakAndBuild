@@ -25,9 +25,12 @@ public abstract class TargetGoalMixin
     @Redirect(method = "canContinueToUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/sensing/Sensing;hasLineOfSight(Lnet/minecraft/world/entity/Entity;)Z"))
     private boolean zbb$hasLineOfSight(Sensing sensing, Entity target)
     {
-        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
+        if (sensing.hasLineOfSight(target)) return true;
 
-        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot) && target instanceof LivingEntity livingTarget)
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
+        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks()
+                && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot)
+                && target instanceof LivingEntity livingTarget)
         {
             return TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                     this.mob,
@@ -36,6 +39,6 @@ public abstract class TargetGoalMixin
             );
         }
 
-        return sensing.hasLineOfSight(target);
+        return false;
     }
 }

@@ -17,7 +17,6 @@ legacyForge {
 dependencies {
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
-
     implementation "com.electronwill.night-config:toml:3.8.3"
     implementation "org.greenrobot:eventbus-java:3.3.1"
 
@@ -28,6 +27,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    workingDir = layout.buildDirectory.dir('test-run')
 }
 
 configurations {
