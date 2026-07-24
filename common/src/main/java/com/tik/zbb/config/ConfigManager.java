@@ -10,9 +10,11 @@ import com.tik.zbb.config.io.ConfigDocumentNormalizer;
 import com.tik.zbb.config.io.ConfigFileStore;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
+import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.platform.Services;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class ConfigManager
 {
@@ -29,10 +31,15 @@ public final class ConfigManager
                 configPath,
                 new ConfigDocumentNormalizer(DESERIALIZER)
         );
-        ConfigRepository repository = new ConfigRepository(new ConfigDocument(), ConfigGame.BlockResolver.MINECRAFT);
+        ConfigRepository repository = new ConfigRepository(new ConfigDocument());
 
         EDIT_SERVICE = new ConfigEditService(repository, fileStore, MinecraftConfigSemanticValidator.INSTANCE);
         logReloadResult(service().bootstrapFromFile());
+    }
+
+    public static synchronized void startRuntime()
+    {
+        logReloadResult(service().startRuntime(ConfigGame.BlockResolver.MINECRAFT));
     }
 
     public static ConfigSnapshot getConfigSnapshot()
@@ -43,6 +50,11 @@ public final class ConfigManager
     public static Object getEffectiveValue(ConfigFieldDescriptor descriptor)
     {
         return service().effectiveValue(descriptor);
+    }
+
+    public static Map<ConfigPath, Object> getRuntimeOverrides()
+    {
+        return service().runtimeOverrides();
     }
 
     public static ConfigEditResult edit(ConfigEditRequest request)
