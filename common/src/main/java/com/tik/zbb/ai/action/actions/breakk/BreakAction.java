@@ -125,8 +125,11 @@ public class BreakAction implements IMobAction<BreakRequest>
 
         double mobVolume = width * width * height;
 
-        double hitboxMultiplier = mobVolume / baseVolume;
-        double finalMultiplier = 1.0D + (hitboxMultiplier - 1.0D) * context.configSnapshot().game().balance().blockDamage().hitboxSizeMultiplierStrength();
+        double hitboxRatio = mobVolume / baseVolume;
+        double finalMultiplier = Math.pow(
+                hitboxRatio,
+                context.configSnapshot().game().balance().blockDamage().hitboxSizeMultiplierStrength()
+        );
 
         return finalMultiplier;
     }
@@ -139,7 +142,10 @@ public class BreakAction implements IMobAction<BreakRequest>
         float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
         float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
         float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
-        float toolMultiplier = (float) (1.0 + (destroySpeed - 1.0) * context.configSnapshot().game().balance().blockDamage().itemDamageMultiplierStrength());
+        double toolMultiplier = Math.pow(
+                destroySpeed,
+                context.configSnapshot().game().balance().blockDamage().itemDamageMultiplierStrength()
+        );
 
         return toolMultiplier;
     }
