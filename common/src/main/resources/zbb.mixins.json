@@ -1,9 +1,8 @@
 {
   "required": true,
-  "minVersion": "0.8",
+  "minVersion": "0.8.7",
   "package": "com.tik.zbb.mixin",
-  "refmap": "${mod_id}.refmap.json",
-  "compatibilityLevel": "JAVA_18",
+  "compatibilityLevel": "JAVA_25",
   "mixins": [
     "accessor.MobAccessor",
     "LevelChunkMixin",
@@ -18,4 +17,3 @@
     "defaultRequire": 1
   }
 }
-
