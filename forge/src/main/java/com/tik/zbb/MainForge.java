@@ -1,13 +1,12 @@
 package com.tik.zbb;
 
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -44,17 +43,17 @@ public class MainForge
     }
 
     @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event)
+    {
+        MainCommon.onServerStarting(event.getServer());
+    }
+
+    @SubscribeEvent
     public void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
 
         MainCommon.onJoin(mob);
-    }
-
-    @SubscribeEvent
-    public void onAddReloadListeners(AddReloadListenerEvent event)
-    {
-        event.addListener((ResourceManagerReloadListener) resourceManager -> MainCommon.onReload());
     }
 
     @SubscribeEvent
