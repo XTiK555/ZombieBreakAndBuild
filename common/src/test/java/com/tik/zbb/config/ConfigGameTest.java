@@ -1,6 +1,8 @@
 package com.tik.zbb.config;
 
 import com.tik.zbb.config.schema.ResourceLocationPatternMatcher;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -12,10 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConfigGameTest
 {
     @BeforeAll
-    static void bootstrapMinecraft() throws Exception
+    static void bootstrapMinecraft()
     {
-        Class.forName("net.minecraft.SharedConstants").getMethod("tryDetectVersion").invoke(null);
-        Class.forName("net.minecraft.server.Bootstrap").getMethod("bootStrap").invoke(null);
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
     }
 
     @Test
