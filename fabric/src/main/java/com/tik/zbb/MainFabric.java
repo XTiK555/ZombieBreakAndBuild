@@ -28,7 +28,7 @@ public class MainFabric implements ModInitializer
 
         ServerLifecycleEvents.SERVER_STOPPING.register(MainCommon::onServerStopping);
 
-        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> MainCommon.onReload());
+        ServerLifecycleEvents.SERVER_STARTING.register(MainCommon::onServerStarting);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> MainCommon.registerCommands(dispatcher));
     }
