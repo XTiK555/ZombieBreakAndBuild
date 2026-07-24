@@ -1,23 +1,17 @@
 package com.tik.zbb;
 
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-
-import java.util.Objects;
 
 @Mod(Constants.MOD_ID)
 public class MainNeoForge
@@ -50,30 +44,17 @@ public class MainNeoForge
     }
 
     @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event)
+    {
+        MainCommon.onServerStarting(event.getServer());
+    }
+
+    @SubscribeEvent
     public void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
 
         MainCommon.onJoin(mob);
-    }
-
-    @SubscribeEvent
-    public void onAddReloadListeners(AddServerReloadListenersEvent event)
-    {
-        event.addListener(Objects.requireNonNull(Identifier.tryParse(Constants.MOD_ID + ":config_reload")), new SimplePreparableReloadListener<Void>()
-        {
-            @Override
-            protected Void prepare(ResourceManager resourceManager, ProfilerFiller profiler)
-            {
-                return null;
-            }
-
-            @Override
-            protected void apply(Void object, ResourceManager resourceManager, ProfilerFiller profiler)
-            {
-                MainCommon.onReload();
-            }
-        });
     }
 
     @SubscribeEvent

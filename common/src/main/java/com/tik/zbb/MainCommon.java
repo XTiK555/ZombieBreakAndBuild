@@ -50,6 +50,11 @@ public class MainCommon
         Constants.SCHEDULER.tick();
     }
 
+    public static void onServerStarting(MinecraftServer server)
+    {
+        ConfigManager.startRuntime();
+    }
+
     public static void onServerStopping(MinecraftServer server)
     {
         Constants.SCHEDULER.clear();
@@ -73,11 +78,6 @@ public class MainCommon
         {
             targetSelector.addGoal(Integer.MAX_VALUE, new AlwaysSeeNearestPlayerGoal(pFMob));
         }
-    }
-
-    public static void onReload()
-    {
-        ConfigManager.reload();
     }
 
     public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher)
