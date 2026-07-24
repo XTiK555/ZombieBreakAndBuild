@@ -3,8 +3,17 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+repositories {
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net'
+        content { includeGroup('net.fabricmc') }
+    }
+}
+
 neoForge {
     neoFormVersion = neo_form_version
+    addModdingDependenciesTo sourceSets.test
 
     // Automatically enable AccessTransformers if the file exists
     def at = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -14,7 +23,10 @@ neoForge {
 }
 
 dependencies {
-    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    def mixinVersion = '0.17.3+mixin.0.8.7'
+
+    compileOnly group: 'net.fabricmc', name: 'sponge-mixin', version: mixinVersion
+    // Minecraft 26.2 uses runtime names directly, so these mixins need neither a refmap nor the Mixin AP.
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
     compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
@@ -29,6 +41,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    workingDir = layout.buildDirectory.dir('test-run')
 }
 
 configurations {

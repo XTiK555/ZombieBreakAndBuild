@@ -4,15 +4,15 @@ import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import com.tik.zbb.utilities.TargetVisibilityThroughBlocksUtility;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
-import net.minecraft.world.entity.ai.sensing.Sensing;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(TargetGoal.class)
 public abstract class TargetGoalMixin
@@ -21,20 +21,23 @@ public abstract class TargetGoalMixin
     @Final
     protected Mob mob;
 
-    @Redirect(method = "canContinueToUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/sensing/Sensing;hasLineOfSight(Lnet/minecraft/world/entity/Entity;)Z"))
-    private boolean zbb$hasLineOfSight(Sensing sensing, net.minecraft.world.entity.Entity target)
+    @ModifyExpressionValue(method = "canContinueToUse", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/sensing/Sensing;hasLineOfSight(Lnet/minecraft/world/entity/Entity;)Z"))
+    private boolean zbb$hasLineOfSight(boolean original, @Local LivingEntity target)
     {
-        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
+        if (original) return true;
 
-        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks() && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot) && target instanceof LivingEntity livingTarget)
+        ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
+        if (configSnapshot.game().ai().canContinueSeeingTargetsThroughBlocks()
+                && ShouldApplyToMobUtility.matchesFullZbbMobFilter(this.mob, configSnapshot)
+                && target != null)
         {
             return TargetVisibilityThroughBlocksUtility.canSeeThroughSolidBlocks(
                     this.mob,
-                    livingTarget,
+                    target,
                     configSnapshot.game().ai().continueSeeingTargetsThroughBlocksLimit()
             );
         }
 
-        return sensing.hasLineOfSight(target);
+        return false;
     }
 }

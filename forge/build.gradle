@@ -18,6 +18,13 @@ jar {
     }
 }
 
+processResources {
+    // Forge 65 embeds upstream Mixin 0.8.7, whose highest recognised level is JAVA_21.
+    filesMatching("${mod_id}.mixins.json") {
+        filter { line -> line.replace('"compatibilityLevel": "JAVA_25"', '"compatibilityLevel": "JAVA_21"') }
+    }
+}
+
 minecraft {
     mappings channel: 'official', version: minecraft_version
 
