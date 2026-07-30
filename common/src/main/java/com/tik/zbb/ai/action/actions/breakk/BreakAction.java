@@ -61,6 +61,8 @@ public class BreakAction implements IMobAction<BreakRequest>
 
             if (context.level().destroyBlock(request.pos(), dropLoot))
             {
+                BlockStorages.DAMAGE_MANAGER.removeRecord(context.level(), request.pos());
+
                 Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
             }
             else
@@ -71,6 +73,9 @@ public class BreakAction implements IMobAction<BreakRequest>
         else
         {
             int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
+
+            BlockStorages.DAMAGE_MANAGER.addDamageRecord(context.level(), request.pos(), totalDamage, blockId);
+
             Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
         }
 
