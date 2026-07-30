@@ -6,13 +6,15 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BuildAction implements IMobAction<BuildRequest>
 {
     public record OnAnyBlockPlacedEvent(ServerLevel level, BlockPos pos, ConfigSnapshot configSnapshot,
-                                        BlockState placedState, BlockState oldState) {}
+                                        BlockState placedState, BlockState oldState, CompoundTag oldNbt) {}
 
     @Override
     public boolean canExecute(MobActionContext context, BuildRequest request)
@@ -31,10 +33,12 @@ public class BuildAction implements IMobAction<BuildRequest>
     {
         BlockState oldState = context.level().getBlockState(request.pos());
         BlockState placedState = request.bridgeBlock().defaultBlockState();
+        BlockEntity oldBlockEntity = context.level().getBlockEntity(request.pos());
+        CompoundTag oldNbt = oldBlockEntity != null ? oldBlockEntity.saveWithFullMetadata(context.level().registryAccess()) : null;
 
-        if (context.level().setBlockAndUpdate(request.pos(), request.bridgeBlock().defaultBlockState()))
+        if (context.level().setBlockAndUpdate(request.pos(), placedState))
         {
-            Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot(), placedState, oldState));
+            Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot(), placedState, oldState, oldNbt));
         }
 
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().buildCooldown(), 1));
