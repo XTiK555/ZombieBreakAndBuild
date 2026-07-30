@@ -33,12 +33,17 @@ public abstract class BaseBlockStorage<TData, TStored>
 
         if (previous != null)
         {
-            remove(level, posKey);
+            removeStored(level, posKey, previous, false);
         }
 
         entries(level).put(posKey, stored);
 
         onStored(level, posKey, previous, stored);
+
+        if (previous != null)
+        {
+            onReplaced(level, posKey, toData(previous), data);
+        }
     }
 
     public void remove(ServerLevel level, BlockPos pos)
@@ -77,6 +82,8 @@ public abstract class BaseBlockStorage<TData, TStored>
     protected void onStored(ServerLevel level, long posKey, @Nullable TStored previous, TStored stored) {}
 
     protected void onDiscarded(ServerLevel level, long posKey, TStored stored) {}
+
+    protected void onReplaced(ServerLevel level, long posKey, TData previous, TData replacement) {}
 
     protected void onRemove(ServerLevel level, long posKey, TData data) {}
 
