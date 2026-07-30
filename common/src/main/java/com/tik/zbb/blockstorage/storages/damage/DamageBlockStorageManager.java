@@ -1,7 +1,6 @@
 package com.tik.zbb.blockstorage.storages.damage;
 
 import com.tik.zbb.Constants;
-import com.tik.zbb.ai.action.actions.breakk.BreakAction;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,21 +13,9 @@ public class DamageBlockStorageManager
     private final DamageBlockStorage damageBlockStorage = new DamageBlockStorage();
 
     @Subscribe
-    public void onAnyBlockBroken(BreakAction.OnAnyBlockBrokenEvent event)
-    {
-        damageBlockStorage.remove(event.level(), event.pos());
-    }
-
-    @Subscribe
     public void onLevelChunkBlockChanged(MixinEvents.OnLevelChunkBlockChangedEvent event)
     {
         damageBlockStorage.remove(event.level(), event.pos());
-    }
-
-    @Subscribe
-    public void onAnyBlockHit(BreakAction.OnAnyBlockHit event)
-    {
-        damageBlockStorage.put(event.level(), event.pos(), new DamageBlockStorageEntry(event.totalDamage(), event.blockId()));
     }
 
     @Subscribe
@@ -41,6 +28,16 @@ public class DamageBlockStorageManager
     {
         DamageBlockStorageEntry entry = damageBlockStorage.get(level, pos);
         return entry == null ? 0 : entry.damage();
+    }
+
+    public void addDamageRecord(ServerLevel level, BlockPos pos, int damage, int blockId)
+    {
+        damageBlockStorage.put(level, pos, new DamageBlockStorageEntry(damage, blockId));
+    }
+
+    public void removeRecord(ServerLevel level, BlockPos pos)
+    {
+        damageBlockStorage.remove(level, pos);
     }
 
     public boolean contains(ServerLevel level, BlockPos pos)
