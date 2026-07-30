@@ -16,6 +16,7 @@ public final class EventRegistrar
         Constants.EVENT_BUS.register(BlockStorages.DAMAGE_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.BUILD_PROTECTION_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.BUILD_DISAPPEAR_MANAGER);
+        Constants.EVENT_BUS.register(BlockStorages.ZOMBIE_PLACED_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.BROKEN_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.ID_MANAGER);
 

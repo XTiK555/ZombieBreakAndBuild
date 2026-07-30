@@ -124,7 +124,7 @@ public class BrokenReappearBlockStorageManager
     private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
     {
         if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
-        if (BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, pos)) return false;
+        if (BlockStorages.ZOMBIE_PLACED_MANAGER.contains(level, pos)) return false;
 
         return true;
     }
@@ -134,7 +134,7 @@ public class BrokenReappearBlockStorageManager
     private boolean restoreBlock(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
     {
         BlockState currentState = level.getBlockState(pos);
-        boolean isTrackedZombieBlock = BlockStorages.BUILD_DISAPPEAR_MANAGER.get(level, pos) != null;
+        boolean isTrackedZombieBlock = BlockStorages.ZOMBIE_PLACED_MANAGER.contains(level, pos);
 
         if (currentState.isAir())
         {
@@ -142,7 +142,7 @@ public class BrokenReappearBlockStorageManager
         }
         if (isTrackedZombieBlock)
         {
-            BlockStorages.BUILD_DISAPPEAR_MANAGER.discard(level, pos);
+            BlockStorages.ZOMBIE_PLACED_MANAGER.remove(level, pos);
 
             level.destroyBlock(pos, false);
 
