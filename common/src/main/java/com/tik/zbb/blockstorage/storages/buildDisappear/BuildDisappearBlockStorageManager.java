@@ -4,9 +4,13 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.actions.build.BuildAction;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueInput;
 import org.greenrobot.eventbus.Subscribe;
 
 public class BuildDisappearBlockStorageManager
@@ -20,7 +24,8 @@ public class BuildDisappearBlockStorageManager
     {
         if (!event.configSnapshot().game().blockRestoration().builtBlocksDisappearing()) return;
 
-        buildDisappearBlockStorage.put(event.level(), event.pos(), new BuildDisappearBlockStorageEntry(event.level().getBlockState(event.pos()), event.oldState()));
+        buildDisappearBlockStorage.put(event.level(), event.pos(),
+                new BuildDisappearBlockStorageEntry(event.placedState(), event.oldState(), event.oldNbt()));
     }
 
     @Subscribe
@@ -36,14 +41,37 @@ public class BuildDisappearBlockStorageManager
 
         if (currentState.is(event.entry().placedState().getBlock()))
         {
-            event.level().setBlockAndUpdate(event.pos(), event.entry().oldState());
+            restoreOldBlock(event);
 
             Constants.EVENT_BUS.post(new OnBuildBlockDisappearEvent(event.level(), event.pos(), event.entry().placedState()));
         }
         else if (currentState.is(Blocks.AIR))
         {
-            event.level().setBlockAndUpdate(event.pos(), event.entry().oldState());
+            restoreOldBlock(event);
         }
+    }
+
+    private void restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
+    {
+        if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return;
+
+        CompoundTag savedNbt = event.entry().oldNbt();
+        BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
+        if (savedNbt == null || blockEntity == null) return;
+
+        CompoundTag nbt = savedNbt.copy();
+        nbt.putInt("x", event.pos().getX());
+        nbt.putInt("y", event.pos().getY());
+        nbt.putInt("z", event.pos().getZ());
+        blockEntity.loadWithComponents(TagValueInput.create(
+                ProblemReporter.DISCARDING,
+                event.level().registryAccess(),
+                nbt
+        ));
+        blockEntity.setChanged();
+
+        BlockState state = event.level().getBlockState(event.pos());
+        event.level().sendBlockUpdated(event.pos(), state, state, 3);
     }
 
     public void discard(ServerLevel level, BlockPos pos)
