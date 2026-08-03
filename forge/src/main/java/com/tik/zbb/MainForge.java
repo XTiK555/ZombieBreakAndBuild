@@ -16,24 +16,24 @@ public class MainForge
     {
         MainCommon.init();
 
-        TickEvent.LevelTickEvent.Post.BUS.addListener(this::onLevelTick);
-        TickEvent.ServerTickEvent.Post.BUS.addListener(this::onServerTick);
+        TickEvent.LevelTickEvent.Post.BUS.addListener(this::onLevelTickPost);
+        TickEvent.ServerTickEvent.Pre.BUS.addListener(this::onServerTickPre);
         ServerStartingEvent.BUS.addListener(this::onServerStarting);
         ServerStoppingEvent.BUS.addListener(this::onServerStopping);
         EntityJoinLevelEvent.BUS.addListener(this::onJoin);
         RegisterCommandsEvent.BUS.addListener(this::onRegisterCommands);
     }
 
-    private void onLevelTick(TickEvent.LevelTickEvent.Post event)
+    private void onLevelTickPost(TickEvent.LevelTickEvent.Post event)
     {
         if (!(event.level() instanceof ServerLevel serverLevel)) return;
 
-        MainCommon.onLevelTick(serverLevel);
+        MainCommon.onLevelTickPost(serverLevel);
     }
 
-    private void onServerTick(TickEvent.ServerTickEvent.Post event)
+    private void onServerTickPre(TickEvent.ServerTickEvent.Pre event)
     {
-        MainCommon.onServerTick(event.server());
+        MainCommon.onServerTickPre(event.server());
     }
 
     private void onServerStopping(ServerStoppingEvent event)
