@@ -22,18 +22,20 @@ public class MainForge
     }
 
     @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent event)
+    public void onLevelTickPost(TickEvent.LevelTickEvent event)
     {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.level instanceof ServerLevel serverLevel)) return;
 
-        MainCommon.onLevelTick(serverLevel);
+        MainCommon.onLevelTickPost(serverLevel);
     }
 
     @SubscribeEvent
-    public void onServerTick(TickEvent.ServerTickEvent.Post event)
+    public void onServerTickPre(TickEvent.ServerTickEvent event)
     {
-        MainCommon.onServerTick(event.getServer());
+        if (event.phase != TickEvent.Phase.START) return;
+
+        MainCommon.onServerTickPre(event.getServer());
     }
 
     @SubscribeEvent
