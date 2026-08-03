@@ -91,8 +91,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         float hardness = blockState.getDestroySpeed(level, blockPos);
         double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
 
-        if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;
         if (blockHealthOverride != null) return blockHealthOverride;
+        if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;
         if (hardness < 0) return Integer.MAX_VALUE;
         if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
 
