@@ -98,14 +98,21 @@ public class BrokenReappearBlockStorageManager
         {
             normalReappear = false;
 
-            if (!giveToNearestPlayer(event.level(), event.pos(), event.entry()))
+            if (!dropStoredBlock(event.level(), event.pos(), event.entry()))
             {
-                placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
+                if (!giveToNearestPlayer(event.level(), event.pos(), event.entry()))
+                {
+                    placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
+                }
             }
         }
 
         if (normalReappear)
             Constants.EVENT_BUS.post(new OnBrokenBlockReappearEvent(event.level(), event.pos(), event.entry().oldState()));
+        else
+        {
+            Constants.LOG.warn("Failed to restore stored block at {}", event.pos());
+        }
     }
 
     @Subscribe
@@ -157,7 +164,7 @@ public class BrokenReappearBlockStorageManager
             return placeStoredBlock(level, pos, entry);
         }
 
-        return dropStoredBlock(level, pos, entry);
+        return false;
     }
 
     private boolean placeStoredBlock(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
