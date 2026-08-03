@@ -3,7 +3,6 @@ package com.tik.zbb;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -20,45 +19,44 @@ public class MainNeoForge
     {
         MainCommon.init();
 
-        NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.addListener(this::onLevelTick);
+        NeoForge.EVENT_BUS.addListener(this::onServerTick);
+        NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+        NeoForge.EVENT_BUS.addListener(this::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(this::onJoin);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
-    @SubscribeEvent
-    public void onLevelTick(LevelTickEvent.Post event)
+    private void onLevelTick(LevelTickEvent.Post event)
     {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
 
         MainCommon.onLevelTick(serverLevel);
     }
 
-    @SubscribeEvent
-    public void onServerTick(ServerTickEvent.Post event)
+    private void onServerTick(ServerTickEvent.Post event)
     {
         MainCommon.onServerTick(event.getServer());
     }
 
-    @SubscribeEvent
-    public void onServerStopping(ServerStoppingEvent event)
+    private void onServerStopping(ServerStoppingEvent event)
     {
         MainCommon.onServerStopping(event.getServer());
     }
 
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event)
+    private void onServerStarting(ServerStartingEvent event)
     {
         MainCommon.onServerStarting(event.getServer());
     }
 
-    @SubscribeEvent
-    public void onJoin(EntityJoinLevelEvent event)
+    private void onJoin(EntityJoinLevelEvent event)
     {
         if (!(event.getEntity() instanceof Mob mob)) return;
 
         MainCommon.onJoin(mob);
     }
 
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event)
+    private void onRegisterCommands(RegisterCommandsEvent event)
     {
         MainCommon.registerCommands(event.getDispatcher());
     }
