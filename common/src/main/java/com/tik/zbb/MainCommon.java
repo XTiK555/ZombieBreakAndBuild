@@ -35,7 +35,7 @@ public class MainCommon
         isInitialized = true;
     }
 
-    public static void onLevelTick(ServerLevel level)
+    public static void onLevelTickPost(ServerLevel level)
     {
         ConfigGame config = ConfigManager.getConfigSnapshot().game();
 
@@ -45,7 +45,7 @@ public class MainCommon
         BlockStorages.BUILD_DISAPPEAR_MANAGER.cleanup(level, toTicks(config.blockRestoration().builtBlocksDisappearTime()));
     }
 
-    public static void onServerTick(MinecraftServer server)
+    public static void onServerTickPre(MinecraftServer server)
     {
         Constants.SCHEDULER.tick();
     }

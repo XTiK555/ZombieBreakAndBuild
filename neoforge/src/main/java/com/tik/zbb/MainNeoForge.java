@@ -19,24 +19,24 @@ public class MainNeoForge
     {
         MainCommon.init();
 
-        NeoForge.EVENT_BUS.addListener(this::onLevelTick);
-        NeoForge.EVENT_BUS.addListener(this::onServerTick);
+        NeoForge.EVENT_BUS.addListener(this::onLevelTickPost);
+        NeoForge.EVENT_BUS.addListener(this::onServerTickPre);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
         NeoForge.EVENT_BUS.addListener(this::onJoin);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
-    private void onLevelTick(LevelTickEvent.Post event)
+    private void onLevelTickPost(LevelTickEvent.Post event)
     {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
 
-        MainCommon.onLevelTick(serverLevel);
+        MainCommon.onLevelTickPost(serverLevel);
     }
 
-    private void onServerTick(ServerTickEvent.Post event)
+    private void onServerTickPre(ServerTickEvent.Pre event)
     {
-        MainCommon.onServerTick(event.getServer());
+        MainCommon.onServerTickPre(event.getServer());
     }
 
     private void onServerStopping(ServerStoppingEvent event)

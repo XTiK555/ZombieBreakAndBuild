@@ -14,8 +14,8 @@ public class MainFabric implements ModInitializer
     {
         MainCommon.init();
 
-        ServerTickEvents.END_LEVEL_TICK.register(MainCommon::onLevelTick);
-        ServerTickEvents.END_SERVER_TICK.register(MainCommon::onServerTick);
+        ServerTickEvents.END_LEVEL_TICK.register(MainCommon::onLevelTickPost);
+        ServerTickEvents.START_SERVER_TICK.register(MainCommon::onServerTickPre);
         ServerLifecycleEvents.SERVER_STARTING.register(MainCommon::onServerStarting);
         ServerLifecycleEvents.SERVER_STOPPING.register(MainCommon::onServerStopping);
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) ->
