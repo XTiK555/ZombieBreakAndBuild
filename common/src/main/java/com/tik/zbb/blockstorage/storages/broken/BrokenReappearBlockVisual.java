@@ -1,10 +1,12 @@
 package com.tik.zbb.blockstorage.storages.broken;
 
 import com.tik.zbb.Constants;
+import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -14,6 +16,11 @@ import org.greenrobot.eventbus.Subscribe;
 
 public class BrokenReappearBlockVisual
 {
+    // position marker visual
+    private static final int POSITION_MARKER_PARTICLE_INTERVAL = 20;
+    private static final float POSITION_MARKER_PARTICLE_SCALE = 1.0f;
+
+    // reappear visual
     private static final int REAPPEAR_PARTICLE_STEPS = 15;
     private static final int REAPPEAR_PARTICLE_STEP_DELAY = 1;
     private static final double REAPPEAR_PARTICLE_BLOCK_START_SCALE = 1.5;
@@ -30,6 +37,12 @@ public class BrokenReappearBlockVisual
     private static final float REAPPEAR_CHARGE_SOUND_PITCH = 0.01f;
 
     @Subscribe
+    public void onBrokenBlockStored(BrokenReappearBlockStorageManager.OnBrokenBlockStoredEvent event)
+    {
+        schedulePositionMarkerParticle(event);
+    }
+
+    @Subscribe
     public void onBrokenBlockWillReappear(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)
     {
         ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
@@ -44,6 +57,28 @@ public class BrokenReappearBlockVisual
         ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
         if (visualEffects.brokenReappearSound()) playReappearSound(event);
+    }
+
+    private void schedulePositionMarkerParticle(BrokenReappearBlockStorageManager.OnBrokenBlockStoredEvent event)
+    {
+        Constants.SCHEDULER.schedule(() ->
+        {
+            if (!BlockStorages.BROKEN_MANAGER.contains(event.level(), event.pos(), event.entry())) return;
+
+            if (ConfigManager.getConfigSnapshot().game().visualEffects().brokenReappearMarkerParticle())
+            {
+                int color = event.entry().oldState().getMapColor(event.level(), event.pos()).col;
+                event.level().sendParticles(
+                        new DustParticleOptions(color, POSITION_MARKER_PARTICLE_SCALE),
+                        event.pos().getX() + 0.5,
+                        event.pos().getY() + 0.5,
+                        event.pos().getZ() + 0.5,
+                        1, 0, 0, 0, 0
+                );
+            }
+
+            schedulePositionMarkerParticle(event);
+        }, POSITION_MARKER_PARTICLE_INTERVAL);
     }
 
     private void playReappearAssemblingBlockEffect(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)
