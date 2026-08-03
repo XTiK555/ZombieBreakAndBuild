@@ -59,10 +59,9 @@ public final class ConfigFormatter
                     "# -----------------------------------------------------------------------------------",
                     "# Zombies Break & Build config",
                     "#",
-                    "# This config can be reloaded with /reload",
-                    "# You do NOT need to restart the server for MOST changes",
-                    "# Existing mobs may keep already-added AI goals until they respawn,",
-                    "# but config values themselves are reloaded by /reload",
+                    "# This config can be reloaded with /zbb config reload,",
+                    "# and can be changed with `/zbb config ...` commands.",
+                    "# You do NOT need to restart the server for changes.",
                     "# -----------------------------------------------------------------------------------",
                     "",
                     ""
