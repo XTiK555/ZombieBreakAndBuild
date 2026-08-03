@@ -17,6 +17,8 @@ public class BreakAndBuildGoal extends Goal
     private ActionExecutor actionExecutor;
     private MobStateHandler stateHandler;
 
+    private boolean wasInitialized = false;
+
     public BreakAndBuildGoal(PathfinderMob mob)
     {
         this.mob = mob;
@@ -57,10 +59,12 @@ public class BreakAndBuildGoal extends Goal
 
     private void ensureInitialized()
     {
-        if (stateHandler != null || actionExecutor != null || aiTimers != null) return;
+        if (wasInitialized) return;
 
         aiTimers = new AiTimers();
         actionExecutor = new ActionExecutor(mob, aiTimers);
         stateHandler = new MobStateHandler(actionExecutor, mob, aiTimers);
+
+        wasInitialized = true;
     }
 }
