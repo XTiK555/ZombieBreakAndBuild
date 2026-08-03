@@ -5,7 +5,7 @@ plugins {
     id 'idea'
 }
 base {
-    archivesName = "${mod_name}-forge-${minecraft_version}"
+    archivesName = "${mod_id}-forge-${minecraft_version}"
 }
 
 jarJar.register() {
