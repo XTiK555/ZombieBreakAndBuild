@@ -31,6 +31,8 @@ public class BrokenReappearBlockStorageManager
 
     public record OnBrokenBlockWillReappearEvent(ServerLevel level, BlockPos pos, BlockState newState) {}
 
+    public record OnBrokenBlockStoredEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
+
     private final BrokenReappearBlockStorage brokenReappearBlockStorage = new BrokenReappearBlockStorage();
     private final Map<ServerLevel, Long2ObjectOpenHashMap<BrokenReappearBlockStorageEntry>> pendingEntriesByLevel = new WeakHashMap<>();
 
@@ -84,6 +86,7 @@ public class BrokenReappearBlockStorageManager
 
         removePending(event.level(), event.pos());
         brokenReappearBlockStorage.put(event.level(), event.pos(), pendingEntry);
+        Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(event.level(), event.pos(), pendingEntry));
     }
 
     @Subscribe
@@ -114,6 +117,11 @@ public class BrokenReappearBlockStorageManager
     public boolean contains(ServerLevel level, BlockPos pos)
     {
         return brokenReappearBlockStorage.contains(level, pos);
+    }
+
+    public boolean contains(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
+    {
+        return brokenReappearBlockStorage.get(level, pos) == entry;
     }
 
     public void cleanup(ServerLevel level, long ttlTicks)

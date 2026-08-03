@@ -224,6 +224,9 @@ public class ConfigDocument
         @Comment("[BrokenReappear] Whether a reappearing broken block will spawn particles")
         public boolean brokenReappearParticles = true;
 
+        @Comment("[BrokenReappear] Whether to show a marker particle at the future reappearance position")
+        public boolean brokenReappearMarkerParticle = true;
+
         @Comment("[BrokenReappear] Whether a reappearing broken block will play a charge sound")
         public boolean brokenReappearChargeSound = true;
 

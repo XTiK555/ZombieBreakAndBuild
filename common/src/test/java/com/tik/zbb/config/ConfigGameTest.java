@@ -93,6 +93,16 @@ class ConfigGameTest
         assertTrue(exceedsMaximumBreakableHardness(5.01f, blockDamage));
     }
 
+    @Test
+    void positionParticleCanBeDisabled()
+    {
+        ConfigDocument data = new ConfigDocument();
+        assertTrue(ConfigGame.create(data).visualEffects().brokenReappearMarkerParticle());
+
+        data.visualEffects.brokenReappearMarkerParticle = false;
+        assertFalse(ConfigGame.create(data).visualEffects().brokenReappearMarkerParticle());
+    }
+
     private boolean exceedsMaximumBreakableHardness(float hardness, ConfigGame.BlockDamage blockDamage)
     {
         return blockDamage.maximumBreakableBlockHardness() > 0.0f && hardness > blockDamage.maximumBreakableBlockHardness();
