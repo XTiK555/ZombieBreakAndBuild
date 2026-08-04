@@ -69,7 +69,7 @@ public final class ConfigFormatter
 
             String original = Files.readString(path, StandardCharsets.UTF_8);
 
-            if (!original.contains("# This config can be reloaded with /reload"))
+            if (!original.contains("# Zombies Break & Build config"))
             {
                 original = header + original;
                 Files.writeString(path, original, StandardCharsets.UTF_8);
