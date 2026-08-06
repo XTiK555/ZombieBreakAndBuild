@@ -57,17 +57,22 @@ public class BreakAction implements IMobAction<BreakRequest>
         {
             boolean dropLoot = !context.configSnapshot().game().blockRestoration().brokenBlocksRestoring();
 
-            Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
-
-            if (context.level().destroyBlock(request.pos(), dropLoot))
+            boolean destroyed = false;
+            try
             {
-                BlockStorages.DAMAGE_MANAGER.removeRecord(context.level(), request.pos());
+                Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
+                destroyed = context.level().destroyBlock(request.pos(), dropLoot);
 
-                Constants.EVENT_BUS.post(new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
+                if (destroyed)
+                {
+                    BlockStorages.DAMAGE_MANAGER.removeRecord(context.level(), request.pos());
+                }
             }
-            else
+            finally
             {
-                Constants.EVENT_BUS.post(new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
+                Constants.EVENT_BUS.post(destroyed
+                        ? new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob())
+                        : new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
             }
         }
         else
