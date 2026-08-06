@@ -8,6 +8,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigUtilitiesTest
@@ -50,6 +52,21 @@ class ConfigUtilitiesTest
         assertEquals(1, original.sectionsByName.get("first").value);
     }
 
+    @Test
+    void deepCopyPreservesAliasesAndCyclesWithoutSharingMutableObjects()
+    {
+        RecursiveConfig original = new RecursiveConfig();
+        original.alias = original.child;
+        original.self = original;
+
+        RecursiveConfig copy = (RecursiveConfig) ConfigUtilities.deepCopyConfigValue(original);
+
+        assertNotSame(original, copy);
+        assertNotSame(original.child, copy.child);
+        assertSame(copy.child, copy.alias);
+        assertSame(copy, copy.self);
+    }
+
     private static class ParentConfig
     {
         int inherited;
@@ -77,5 +94,12 @@ class ConfigUtilitiesTest
     private static class NestedConfig
     {
         int value = 1;
+    }
+
+    private static class RecursiveConfig
+    {
+        NestedConfig child = new NestedConfig();
+        NestedConfig alias;
+        RecursiveConfig self;
     }
 }
