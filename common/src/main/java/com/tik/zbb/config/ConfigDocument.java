@@ -132,7 +132,7 @@ public class ConfigDocument
         @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
 
-        @Range(min = 0, max = 100)
+        @Range(min = 0, max = 16)
         @Comment("The radius within which zombies will detect dangerous blocks")
         public int dangerousBlocksSearchRadius = 1;
 
