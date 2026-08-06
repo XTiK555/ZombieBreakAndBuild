@@ -10,6 +10,12 @@ import java.util.WeakHashMap;
 
 public abstract class BaseBlockStorage<TData, TStored>
 {
+    public enum RemovalResult
+    {
+        CONTINUE_REMOVE,
+        CANCEL_AND_REASSIGN
+    }
+
     private final Map<ServerLevel, Long2ObjectOpenHashMap<TStored>> entriesByLevel = new WeakHashMap<>();
 
     @Nullable
@@ -85,7 +91,10 @@ public abstract class BaseBlockStorage<TData, TStored>
 
     protected void onReplaced(ServerLevel level, long posKey, TData previous, TData replacement) {}
 
-    protected void onRemove(ServerLevel level, long posKey, TData data) {}
+    protected RemovalResult onRemove(ServerLevel level, long posKey, TData data)
+    {
+        return RemovalResult.CONTINUE_REMOVE;
+    }
 
     private Long2ObjectOpenHashMap<TStored> entries(ServerLevel level)
     {
@@ -106,7 +115,17 @@ public abstract class BaseBlockStorage<TData, TStored>
 
         if (notify)
         {
-            onRemove(level, posKey, toData(stored));
+            TData data = toData(stored);
+            if (onRemove(level, posKey, data) == RemovalResult.CANCEL_AND_REASSIGN)
+            {
+                if (getStored(level, posKey) == null)
+                {
+                    TStored reassigned = toStored(level, data);
+                    entries(level).put(posKey, reassigned);
+                    onStored(level, posKey, null, reassigned);
+                }
+                return null;
+            }
         }
 
         if (entries.isEmpty() && entriesByLevel.get(level) == entries)
