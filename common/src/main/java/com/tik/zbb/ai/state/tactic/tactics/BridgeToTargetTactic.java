@@ -30,7 +30,7 @@ public class BridgeToTargetTactic implements IMobTactic
         int targetY = Mth.floor(context.getTarget().getY());
 
         updateFrontBlock(context.getMob(), context.getTarget());
-        belowMobPos.set(mobX, mobY - 1, mobZ);
+        belowMobPos.set(mobX, context.getMob().getBoundingBox().minY - 1, mobZ);
         belowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 1, frontBlockPos.getZ());
         twoBelowFrontPos.set(frontBlockPos.getX(), frontBlockPos.getY() - 2, frontBlockPos.getZ());
 
