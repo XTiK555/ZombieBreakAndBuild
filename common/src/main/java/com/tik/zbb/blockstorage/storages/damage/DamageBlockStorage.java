@@ -10,9 +10,10 @@ public class DamageBlockStorage extends ExpiringBlockStorage<DamageBlockStorageE
     public record OnRemovedEvent(ServerLevel level, BlockPos pos, DamageBlockStorageEntry entry) {}
 
     @Override
-    protected void onRemove(ServerLevel level, long posKey, DamageBlockStorageEntry entry)
+    protected RemovalResult onRemove(ServerLevel level, long posKey, DamageBlockStorageEntry entry)
     {
         BlockPos pos = BlockPos.of(posKey);
         Constants.EVENT_BUS.post(new OnRemovedEvent(level, pos, entry));
+        return RemovalResult.CONTINUE_REMOVE;
     }
 }
