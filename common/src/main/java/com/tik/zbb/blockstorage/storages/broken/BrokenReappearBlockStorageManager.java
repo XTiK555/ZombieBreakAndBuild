@@ -256,7 +256,7 @@ public class BrokenReappearBlockStorageManager
                         );
 
                         if (!level.hasChunkAt(candidatePos)) continue;
-                        if (!level.getBlockState(candidatePos).isAir()) continue;
+                        if (!level.getBlockState(candidatePos).canBeReplaced()) continue;
                         if (!storedState.canSurvive(level, candidatePos)) continue;
 
                         if (placeStoredBlock(level, candidatePos, entry)) return true;
