@@ -10,6 +10,7 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -68,42 +69,54 @@ public final class ConfigUtilities
 
     public static Object deepCopyConfigValue(Object value)
     {
+        return deepCopyConfigValue(value, new IdentityHashMap<>());
+    }
+
+    private static Object deepCopyConfigValue(Object value, IdentityHashMap<Object, Object> copies)
+    {
         if (value == null || isSimpleValueType(value.getClass())) return value;
+        Object existingCopy = copies.get(value);
+        if (existingCopy != null) return existingCopy;
 
         if (value.getClass().isArray())
         {
             int length = Array.getLength(value);
             Object copy = Array.newInstance(value.getClass().getComponentType(), length);
+            copies.put(value, copy);
             for (int index = 0; index < length; index++)
             {
-                Array.set(copy, index, deepCopyConfigValue(Array.get(value, index)));
+                Array.set(copy, index, deepCopyConfigValue(Array.get(value, index), copies));
             }
             return copy;
         }
         if (value instanceof List<?> list)
         {
             List<Object> copy = new ArrayList<>(list.size());
-            for (Object element : list) copy.add(deepCopyConfigValue(element));
+            copies.put(value, copy);
+            for (Object element : list) copy.add(deepCopyConfigValue(element, copies));
             return copy;
         }
         if (value instanceof Set<?> set)
         {
             Set<Object> copy = new LinkedHashSet<>();
-            for (Object element : set) copy.add(deepCopyConfigValue(element));
+            copies.put(value, copy);
+            for (Object element : set) copy.add(deepCopyConfigValue(element, copies));
             return copy;
         }
         if (value instanceof Collection<?> collection)
         {
             List<Object> copy = new ArrayList<>(collection.size());
-            for (Object element : collection) copy.add(deepCopyConfigValue(element));
+            copies.put(value, copy);
+            for (Object element : collection) copy.add(deepCopyConfigValue(element, copies));
             return copy;
         }
         if (value instanceof Map<?, ?> map)
         {
             Map<Object, Object> copy = new LinkedHashMap<>();
+            copies.put(value, copy);
             for (Map.Entry<?, ?> entry : map.entrySet())
             {
-                copy.put(deepCopyConfigValue(entry.getKey()), deepCopyConfigValue(entry.getValue()));
+                copy.put(deepCopyConfigValue(entry.getKey(), copies), deepCopyConfigValue(entry.getValue(), copies));
             }
             return copy;
         }
@@ -113,9 +126,10 @@ public final class ConfigUtilities
             var constructor = value.getClass().getDeclaredConstructor();
             constructor.setAccessible(true);
             Object copy = constructor.newInstance();
+            copies.put(value, copy);
             for (Field field : getConfigFields(value.getClass()))
             {
-                field.set(copy, deepCopyConfigValue(field.get(value)));
+                field.set(copy, deepCopyConfigValue(field.get(value), copies));
             }
             return copy;
         }
