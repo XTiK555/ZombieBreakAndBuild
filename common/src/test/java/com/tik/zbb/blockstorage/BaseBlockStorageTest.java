@@ -64,6 +64,20 @@ class BaseBlockStorageTest
         assertEquals(0, storage.replaced);
     }
 
+    @Test
+    void removalCanCancelAndReassignTheEntry()
+    {
+        TestStorage storage = new TestStorage();
+        storage.put(null, POS, "value");
+        storage.removeResult = BaseBlockStorage.RemovalResult.CANCEL_AND_REASSIGN;
+
+        storage.remove(null, POS);
+
+        assertEquals("value", storage.get(null, POS));
+        assertEquals(1, storage.removed);
+        assertEquals(1, storage.discarded);
+    }
+
     private static final class TestStorage extends BaseBlockStorage<String, String>
     {
         private int removed;
@@ -72,6 +86,7 @@ class BaseBlockStorageTest
         private String removedValue;
         private String replacedPrevious;
         private String replacedWith;
+        private RemovalResult removeResult = RemovalResult.CONTINUE_REMOVE;
 
         @Override
         protected String toStored(ServerLevel level, String data)
@@ -86,10 +101,11 @@ class BaseBlockStorageTest
         }
 
         @Override
-        protected void onRemove(ServerLevel level, long posKey, String data)
+        protected RemovalResult onRemove(ServerLevel level, long posKey, String data)
         {
             removed++;
             removedValue = data;
+            return removeResult;
         }
 
         @Override

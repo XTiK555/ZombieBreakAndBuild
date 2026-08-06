@@ -13,7 +13,25 @@ public class BrokenReappearBlockStorage extends ExpiringBlockStorage<BrokenReapp
 {
     public record OnWillRemoveEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
 
-    public record OnRemovedEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
+    public static final class OnRemovedEvent
+    {
+        private final ServerLevel level;
+        private final BlockPos pos;
+        private final BrokenReappearBlockStorageEntry entry;
+        private RemovalResult result = RemovalResult.CONTINUE_REMOVE;
+
+        private OnRemovedEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
+        {
+            this.level = level;
+            this.pos = pos;
+            this.entry = entry;
+        }
+
+        public ServerLevel level() { return level; }
+        public BlockPos pos() { return pos; }
+        public BrokenReappearBlockStorageEntry entry() { return entry; }
+        public void cancelAndReassign() { result = RemovalResult.CANCEL_AND_REASSIGN; }
+    }
 
     private final Map<ServerLevel, LongOpenHashSet> warnedByLevel = new WeakHashMap<>();
     private static final int WILL_BE_REMOVED_OFFSET = 16;
@@ -46,9 +64,11 @@ public class BrokenReappearBlockStorage extends ExpiringBlockStorage<BrokenReapp
     }
 
     @Override
-    protected void onRemove(ServerLevel level, long posKey, BrokenReappearBlockStorageEntry entry)
+    protected RemovalResult onRemove(ServerLevel level, long posKey, BrokenReappearBlockStorageEntry entry)
     {
-        Constants.EVENT_BUS.post(new OnRemovedEvent(level, BlockPos.of(posKey), entry));
+        OnRemovedEvent event = new OnRemovedEvent(level, BlockPos.of(posKey), entry);
+        Constants.EVENT_BUS.post(event);
+        return event.result;
     }
 
     private LongOpenHashSet warned(ServerLevel level)

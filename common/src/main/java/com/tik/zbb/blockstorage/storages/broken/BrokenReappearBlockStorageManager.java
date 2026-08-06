@@ -100,13 +100,16 @@ public class BrokenReappearBlockStorageManager
         {
             normalReappear = false;
 
-            if (!dropStoredBlock(event.level(), event.pos(), event.entry()))
+            boolean recovered = dropStoredBlock(event.level(), event.pos(), event.entry());
+            if (!recovered)
             {
-                if (!giveToNearestPlayer(event.level(), event.pos(), event.entry()))
+                recovered = giveToNearestPlayer(event.level(), event.pos(), event.entry());
+                if (!recovered)
                 {
-                    placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
+                    recovered = placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
                 }
             }
+            if (!recovered) event.cancelAndReassign();
         }
 
         if (normalReappear)
