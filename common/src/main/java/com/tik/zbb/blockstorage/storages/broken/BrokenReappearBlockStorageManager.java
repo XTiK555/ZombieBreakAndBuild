@@ -62,31 +62,25 @@ public class BrokenReappearBlockStorageManager
     @Subscribe
     public void onAnyBlockFailedToBroke(BreakAction.OnAnyBlockFailedToBrokeEvent event)
     {
-        BrokenReappearBlockStorageEntry entry = getPending(event.level(), event.pos());
+        BrokenReappearBlockStorageEntry entry = takePending(event.level(), event.pos());
         if (entry == null) return;
 
-        BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
-        BlockState currentState = event.level().getBlockState(event.pos());
-
-        if (blockEntity == null || entry.nbt() == null || currentState.getBlock() != entry.oldState().getBlock())
+        if (entry.nbt() != null)
         {
-            removePending(event.level(), event.pos());
-            return;
+            if (event.level().getBlockState(event.pos()).getBlock() != entry.oldState().getBlock())
+            {
+                event.level().setBlockAndUpdate(event.pos(), entry.oldState());
+            }
+            restoreBlockEntity(event.level(), event.pos(), entry.nbt());
         }
-
-        restoreBlockEntity(event.level(), event.pos(), entry.nbt());
-        removePending(event.level(), event.pos());
     }
 
     @Subscribe
     public void onAnyBlockBroken(BreakAction.OnAnyBlockBrokenEvent event)
     {
-        if (!brokenBlockStorageAddConditions(event.configSnapshot(), event.level(), event.pos())) return;
-
-        BrokenReappearBlockStorageEntry pendingEntry = getPending(event.level(), event.pos());
+        BrokenReappearBlockStorageEntry pendingEntry = takePending(event.level(), event.pos());
         if (pendingEntry == null) return;
 
-        removePending(event.level(), event.pos());
         brokenReappearBlockStorage.put(event.level(), event.pos(), pendingEntry);
         Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(event.level(), event.pos(), pendingEntry));
     }
@@ -285,22 +279,17 @@ public class BrokenReappearBlockStorageManager
 
     //region Local
 
-    private void removePending(ServerLevel level, BlockPos pos)
+    private BrokenReappearBlockStorageEntry takePending(ServerLevel level, BlockPos pos)
     {
         var map = pendingEntriesByLevel.get(level);
-        if (map == null) return;
+        if (map == null) return null;
 
-        map.remove(pos.asLong());
+        BrokenReappearBlockStorageEntry entry = map.remove(pos.asLong());
         if (map.isEmpty())
         {
             pendingEntriesByLevel.remove(level);
         }
-    }
-
-    private BrokenReappearBlockStorageEntry getPending(ServerLevel level, BlockPos pos)
-    {
-        var map = pendingEntriesByLevel.get(level);
-        return map != null ? map.get(pos.asLong()) : null;
+        return entry;
     }
 
     private Long2ObjectOpenHashMap<BrokenReappearBlockStorageEntry> pendingEntries(ServerLevel level)
