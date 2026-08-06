@@ -19,7 +19,7 @@ public record ConfigEditResult(
 
     public static ConfigEditResult unchanged(ConfigEditRequest request, Object effectiveValue, boolean persisted)
     {
-        return new ConfigEditResult(false, request.operation(), request.path(), effectiveValue, request.writeMode(), persisted, 0, "unchanged");
+        return new ConfigEditResult(true, request.operation(), request.path(), effectiveValue, request.writeMode(), persisted, 0, "updated 0 elements");
     }
 
     public static ConfigEditResult failure(ConfigEditRequest request, String error)
