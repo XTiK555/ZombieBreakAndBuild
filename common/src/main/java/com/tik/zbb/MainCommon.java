@@ -53,7 +53,7 @@ public class MainCommon
 
     public static void onServerStarting(MinecraftServer server)
     {
-        ConfigManager.startRuntime();
+        ConfigManager.startRuntime(server);
     }
 
     public static void onServerStopping(MinecraftServer server)
