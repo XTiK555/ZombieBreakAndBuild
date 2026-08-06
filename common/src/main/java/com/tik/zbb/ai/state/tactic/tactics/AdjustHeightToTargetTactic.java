@@ -98,15 +98,23 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
     private boolean idle(MobStateContext context, int targetY)
     {
-        if (targetY <= currentMobPos.getY() + 1)
-        {
-            return false;
-        }
+        if (targetY <= currentMobPos.getY() + 1) return false;
 
         BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), UP_SCAN_VEC);
         BlockPos posUnderBottomCenter = getBlockUnderBottomCenter(context);
 
-        return (blockAboveUs == null || isFreePass(blockAboveUs, context.getLevel())) && context.getActionExecutor().canExecuteBuildAction(posUnderBottomCenter.above());
+        if (blockAboveUs != null && !isFreePass(blockAboveUs, context.getLevel()))
+        {
+            context.getActionExecutor().tryExecuteBreakAction(blockAboveUs);
+            return false;
+        }
+        if (!context.getActionExecutor().canExecuteBuildAction(posUnderBottomCenter.above()))
+        {
+            context.getActionExecutor().tryExecuteBreakAction(posUnderBottomCenter.above());
+            return false;
+        }
+
+        return true;
     }
 
     private boolean jumping(MobStateContext context)
