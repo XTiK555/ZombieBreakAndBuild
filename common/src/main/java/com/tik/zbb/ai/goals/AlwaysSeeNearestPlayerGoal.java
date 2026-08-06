@@ -9,8 +9,6 @@ import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
@@ -20,7 +18,9 @@ import java.util.List;
 
 public class AlwaysSeeNearestPlayerGoal extends Goal
 {
+    private final TargetingConditions targetingConditions = TargetingConditions.forCombat().range(Double.MAX_VALUE).ignoreLineOfSight();
     private final Mob mob;
+
     private Player target;
 
     public AlwaysSeeNearestPlayerGoal(Mob mob)
@@ -29,7 +29,6 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         this.setFlags(EnumSet.of(Flag.TARGET));
     }
 
-    @SuppressWarnings("resource")
     @Override
     public boolean canUse()
     {
@@ -67,16 +66,17 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     private Player findNearestValidPlayer(List<ServerPlayer> players)
     {
         Player best = null;
-        double bestDist = Double.POSITIVE_INFINITY;
+        double bestDistanceSq = Double.POSITIVE_INFINITY;
 
         for (ServerPlayer player : players)
         {
-            if (!passesVanillaChecks(mob, player, true, true)) continue;
+            if (!passesVanillaChecks(mob, player)) continue;
 
-            double d = player.distanceToSqr(mob);
-            if (d < bestDist)
+            double distanceSq = player.distanceToSqr(mob);
+
+            if (distanceSq < bestDistanceSq)
             {
-                bestDist = d;
+                bestDistanceSq = distanceSq;
                 best = player;
             }
         }
@@ -84,30 +84,14 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         return best;
     }
 
-    public static boolean passesVanillaChecks(Mob mob, LivingEntity candidate, boolean ignoreLineOfSight, boolean ignoreDistance)
+    private boolean passesVanillaChecks(Mob mob, LivingEntity candidate)
     {
         if (candidate == null || !candidate.isAlive()) return false;
         if (!(mob.level() instanceof ServerLevel level)) return false;
-
-        if (candidate instanceof Player p && !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(p))
-        {
-            return false;
-        }
-
+        if (candidate instanceof Player p && !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(p)) return false;
         if (!mob.canAttack(candidate)) return false;
+        if (mob instanceof NeutralMob neutral && !neutral.isAngryAt(candidate, level)) return false;
 
-        if (mob instanceof NeutralMob neutral)
-        {
-            if (!neutral.isAngryAt(candidate, level)) return false;
-        }
-
-        AttributeInstance followRangeAttribute = mob.getAttribute(Attributes.FOLLOW_RANGE);
-        double followRange = followRangeAttribute != null ? followRangeAttribute.getValue() : Double.MAX_VALUE;
-        double range = ignoreDistance ? Double.MAX_VALUE : followRange;
-
-        TargetingConditions cond = TargetingConditions.forCombat().range(range);
-        if (ignoreLineOfSight) cond = cond.ignoreLineOfSight();
-
-        return cond.test(level, mob, candidate);
+        return targetingConditions.test(level, mob, candidate);
     }
 }
