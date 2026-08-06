@@ -8,9 +8,9 @@ import net.minecraft.world.level.Level;
 
 public final class TargetVisibilityThroughBlocksUtility
 {
-    private static final int AXIS_X = 1;
-    private static final int AXIS_Y = 2;
-    private static final int AXIS_Z = 4;
+    static final int AXIS_X = 1;
+    static final int AXIS_Y = 2;
+    static final int AXIS_Z = 4;
 
     private static final double TIE_TOLERANCE_ULPS = 8.0D;
 
@@ -116,7 +116,11 @@ public final class TargetVisibilityThroughBlocksUtility
         BlockPos.MutableBlockPos mutablePos =
                 new BlockPos.MutableBlockPos();
 
-        while (x != endX || y != endY || z != endZ)
+        long remainingSteps = Math.abs((long) endX - x)
+                + Math.abs((long) endY - y)
+                + Math.abs((long) endZ - z);
+
+        while ((x != endX || y != endY || z != endZ) && remainingSteps-- > 0)
         {
             double nextIntersection =
                     Math.min(tMaxX, Math.min(tMaxY, tMaxZ));
@@ -124,22 +128,14 @@ public final class TargetVisibilityThroughBlocksUtility
             double tolerance =
                     Math.ulp(nextIntersection) * TIE_TOLERANCE_ULPS;
 
-            int crossedAxes = 0;
+            int crossedAxes = crossedAxes(
+                    x, y, z,
+                    endX, endY, endZ,
+                    tMaxX, tMaxY, tMaxZ,
+                    nextIntersection + tolerance
+            );
 
-            if (tMaxX <= nextIntersection + tolerance)
-            {
-                crossedAxes |= AXIS_X;
-            }
-
-            if (tMaxY <= nextIntersection + tolerance)
-            {
-                crossedAxes |= AXIS_Y;
-            }
-
-            if (tMaxZ <= nextIntersection + tolerance)
-            {
-                crossedAxes |= AXIS_Z;
-            }
+            if (crossedAxes == 0) return false;
 
             if ((crossedAxes & (crossedAxes - 1)) == 0)
             {
@@ -231,7 +227,21 @@ public final class TargetVisibilityThroughBlocksUtility
             }
         }
 
-        return true;
+        return isEndPosition(x, y, z, endX, endY, endZ);
+    }
+
+    static int crossedAxes(
+            int x, int y, int z,
+            int endX, int endY, int endZ,
+            double tMaxX, double tMaxY, double tMaxZ,
+            double maximumIntersection
+    )
+    {
+        int crossedAxes = 0;
+        if (x != endX && tMaxX <= maximumIntersection) crossedAxes |= AXIS_X;
+        if (y != endY && tMaxY <= maximumIntersection) crossedAxes |= AXIS_Y;
+        if (z != endZ && tMaxZ <= maximumIntersection) crossedAxes |= AXIS_Z;
+        return crossedAxes;
     }
 
     private static int countSolidVariants(
