@@ -102,8 +102,16 @@ processResources {
             'java_version'                 : java_version
     ]
 
-    filesMatching(['pack.mcmeta', 'fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml', '*.mixins.json']) {
+    var jsonExpandProps = expandProps.collectEntries {
+        key, value -> [(key): value instanceof String ? groovy.json.JsonOutput.toJson(value).drop(1).dropRight(1) : value]
+    }
+
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
         expand expandProps
+    }
+
+    filesMatching(['pack.mcmeta', 'fabric.mod.json', '*.mixins.json']) {
+        expand jsonExpandProps
     }
     inputs.properties(expandProps)
 }
@@ -116,8 +124,11 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url System.getenv('local_maven_url')
+        def localMavenUrl = System.getenv('local_maven_url')
+        if (localMavenUrl) {
+            maven {
+                url = uri(localMavenUrl)
+            }
         }
     }
 }
