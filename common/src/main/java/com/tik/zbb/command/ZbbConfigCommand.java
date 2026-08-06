@@ -190,8 +190,8 @@ public final class ZbbConfigCommand
         }
 
         String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
-        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
-        return result.affectedCount();
+        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", changed=" + result.affectedCount() + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
+        return Math.max(1, result.affectedCount());
     }
 
     private static int editRaw(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -203,8 +203,8 @@ public final class ZbbConfigCommand
         }
 
         String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
-        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
-        return result.affectedCount();
+        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", changed=" + result.affectedCount() + ", mode=" + result.writeMode().commandName() + ", persisted=" + result.persisted());
+        return Math.max(1, result.affectedCount());
     }
 
     private static String operationName(ConfigEditOperation operation)
