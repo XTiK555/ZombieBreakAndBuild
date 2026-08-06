@@ -41,23 +41,27 @@ public class BuildDisappearBlockStorageManager
 
         if (currentState.is(event.entry().placedState().getBlock()))
         {
-            restoreOldBlock(event);
+            if (!restoreOldBlock(event))
+            {
+                event.cancelAndReassign();
+                return;
+            }
 
             Constants.EVENT_BUS.post(new OnBuildBlockDisappearEvent(event.level(), event.pos(), event.entry().placedState()));
         }
         else if (currentState.is(Blocks.AIR))
         {
-            restoreOldBlock(event);
+            if (!restoreOldBlock(event)) event.cancelAndReassign();
         }
     }
 
-    private void restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
+    private boolean restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
     {
-        if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return;
+        if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return false;
 
         CompoundTag savedNbt = event.entry().oldNbt();
         BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
-        if (savedNbt == null || blockEntity == null) return;
+        if (savedNbt == null || blockEntity == null) return true;
 
         CompoundTag nbt = savedNbt.copy();
         nbt.putInt("x", event.pos().getX());
@@ -72,6 +76,7 @@ public class BuildDisappearBlockStorageManager
 
         BlockState state = event.level().getBlockState(event.pos());
         event.level().sendBlockUpdated(event.pos(), state, state, 3);
+        return true;
     }
 
     public void discard(ServerLevel level, BlockPos pos)
