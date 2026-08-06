@@ -25,8 +25,7 @@ public final class ConfigManager
 
     public static synchronized void init()
     {
-        String modName = Constants.MOD_NAME.replaceAll("\\s", "-").toLowerCase();
-        Path configPath = Services.PLATFORM.getConfigDir().resolve(modName + ".toml");
+        Path configPath = Services.PLATFORM.getConfigDir().resolve("zombies-break-build.toml");
 
         ConfigFileStore fileStore = new ConfigFileStore(
                 configPath,
