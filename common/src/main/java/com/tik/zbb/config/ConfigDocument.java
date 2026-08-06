@@ -18,7 +18,7 @@ public class ConfigDocument
     public static class Blocks
     {
         @ResourceLocationPairMap
-        @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
+        @ResourceLocationSemantics(key = ResourceLocationRegistry.DIMENSION, value = ResourceLocationRegistry.BLOCK)
         @Comment("Dimension-specific blocks used when mobs build")
         public Map<String, String> dimensionPlaceBlockIdList = linkedMap(List.of(
                 Map.entry("minecraft:overworld", "minecraft:dirt"),

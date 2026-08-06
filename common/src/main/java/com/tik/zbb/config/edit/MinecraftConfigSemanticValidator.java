@@ -5,7 +5,8 @@ import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigRepairReport;
 import com.tik.zbb.config.schema.ConfigValidationException;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
@@ -15,9 +16,12 @@ import java.util.Map;
 
 public final class MinecraftConfigSemanticValidator implements ConfigSemanticValidator
 {
-    public static final MinecraftConfigSemanticValidator INSTANCE = new MinecraftConfigSemanticValidator();
+    private final RegistryAccess registries;
 
-    private MinecraftConfigSemanticValidator() {}
+    public MinecraftConfigSemanticValidator(RegistryAccess registries)
+    {
+        this.registries = registries;
+    }
 
     @Override
     public void validate(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException
@@ -64,7 +68,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         return ConfigSemanticValidator.super.repairValue(descriptor, value, defaultValue, report);
     }
 
-    private static void requireMapEntries(Map<?, ?> map, ResourceLocationSemantics semantics) throws ConfigValidationException
+    private void requireMapEntries(Map<?, ?> map, ResourceLocationSemantics semantics) throws ConfigValidationException
     {
         for (Map.Entry<?, ?> entry : map.entrySet())
         {
@@ -79,7 +83,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         }
     }
 
-    private static Object repairMapEntries(
+    private Object repairMapEntries(
             ConfigFieldDescriptor descriptor,
             Map<?, ?> map,
             ResourceLocationSemantics semantics,
@@ -119,7 +123,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         return rawValue;
     }
 
-    private static void requireExactPatternsExist(Object value, ResourceLocationRegistry registry) throws ConfigValidationException
+    private void requireExactPatternsExist(Object value, ResourceLocationRegistry registry) throws ConfigValidationException
     {
         if (!(value instanceof Iterable<?> patterns))
         {
@@ -132,7 +136,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         }
     }
 
-    private static Object repairExactPatterns(
+    private Object repairExactPatterns(
             ConfigFieldDescriptor descriptor,
             Object value,
             ResourceLocationRegistry registry,
@@ -171,7 +175,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         return value;
     }
 
-    private static void requireExactPatternExists(Object rawPattern, ResourceLocationRegistry registry) throws ConfigValidationException
+    private void requireExactPatternExists(Object rawPattern, ResourceLocationRegistry registry) throws ConfigValidationException
     {
         String pattern = String.valueOf(rawPattern);
         if (pattern.startsWith("!")) pattern = pattern.substring(1);
@@ -179,7 +183,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         requireExists(pattern, registry);
     }
 
-    private static void requireExists(String rawId, ResourceLocationRegistry registry) throws ConfigValidationException
+    private void requireExists(String rawId, ResourceLocationRegistry registry) throws ConfigValidationException
     {
         Identifier id = Identifier.tryParse(rawId);
         if (id == null || !exists(id, registry))
@@ -188,13 +192,14 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         }
     }
 
-    private static boolean exists(Identifier id, ResourceLocationRegistry registry)
+    private boolean exists(Identifier id, ResourceLocationRegistry registry)
     {
         return switch (registry)
         {
             case NONE -> true;
-            case BLOCK -> BuiltInRegistries.BLOCK.get(id).isPresent();
-            case ENTITY -> BuiltInRegistries.ENTITY_TYPE.get(id).isPresent();
+            case BLOCK -> registries.lookupOrThrow(Registries.BLOCK).get(id).isPresent();
+            case ENTITY -> registries.lookupOrThrow(Registries.ENTITY_TYPE).get(id).isPresent();
+            case DIMENSION -> registries.lookupOrThrow(Registries.DIMENSION).get(id).isPresent();
         };
     }
 }

@@ -18,7 +18,7 @@ public final class ConfigEditService
 {
     private final ConfigRepository repository;
     private final ConfigStorage storage;
-    private final ConfigSemanticValidator semanticValidator;
+    private ConfigSemanticValidator semanticValidator;
 
     public ConfigEditService(ConfigRepository repository, ConfigStorage storage)
     {
@@ -46,7 +46,7 @@ public final class ConfigEditService
     {
         return repository.runtimeOverrides();
     }
-    
+
     public synchronized ConfigReloadResult bootstrapFromFile()
     {
         return loadFromFile(ConfigSemanticValidator.NONE);
@@ -59,6 +59,12 @@ public final class ConfigEditService
 
     public synchronized ConfigReloadResult startRuntime(ConfigGame.BlockResolver blockResolver)
     {
+        return startRuntime(blockResolver, semanticValidator);
+    }
+
+    public synchronized ConfigReloadResult startRuntime(ConfigGame.BlockResolver blockResolver, ConfigSemanticValidator runtimeValidator)
+    {
+        semanticValidator = Objects.requireNonNull(runtimeValidator, "runtimeValidator");
         ConfigReloadResult result = loadFromFile(semanticValidator);
         repository.activateBlockResolution(blockResolver);
         return result;

@@ -12,6 +12,7 @@ import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.platform.Services;
+import net.minecraft.server.MinecraftServer;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -33,13 +34,16 @@ public final class ConfigManager
         );
         ConfigRepository repository = new ConfigRepository(new ConfigDocument());
 
-        EDIT_SERVICE = new ConfigEditService(repository, fileStore, MinecraftConfigSemanticValidator.INSTANCE);
+        EDIT_SERVICE = new ConfigEditService(repository, fileStore);
         logReloadResult(service().bootstrapFromFile());
     }
 
-    public static synchronized void startRuntime()
+    public static synchronized void startRuntime(MinecraftServer server)
     {
-        logReloadResult(service().startRuntime(ConfigGame.BlockResolver.MINECRAFT));
+        logReloadResult(service().startRuntime(
+                ConfigGame.BlockResolver.MINECRAFT,
+                new MinecraftConfigSemanticValidator(server.registryAccess())
+        ));
     }
 
     public static ConfigSnapshot getConfigSnapshot()

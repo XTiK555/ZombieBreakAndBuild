@@ -4,5 +4,6 @@ public enum ResourceLocationRegistry
 {
     NONE,
     BLOCK,
-    ENTITY
+    ENTITY,
+    DIMENSION
 }
