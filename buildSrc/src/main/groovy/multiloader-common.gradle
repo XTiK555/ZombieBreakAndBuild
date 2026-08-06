@@ -77,7 +77,7 @@ processResources {
     ]
 
     var jsonExpandProps = expandProps.collectEntries {
-        key, value -> [(key): value instanceof String ? value.replace("\n", "\\\\n") : value]
+        key, value -> [(key): value instanceof String ? groovy.json.JsonOutput.toJson(value).drop(1).dropRight(1) : value]
     }
 
     filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
@@ -99,8 +99,11 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url System.getenv('local_maven_url')
+        def localMavenUrl = System.getenv('local_maven_url')
+        if (localMavenUrl) {
+            maven {
+                url = uri(localMavenUrl)
+            }
         }
     }
 }
