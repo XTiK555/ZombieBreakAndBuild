@@ -100,11 +100,11 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
             {
                 if (semantics.key() != ResourceLocationRegistry.NONE)
                 {
-                    requireExists(String.valueOf(entry.getKey()), semantics.key());
+                    requireValidId(String.valueOf(entry.getKey()));
                 }
                 if (semantics.value() != ResourceLocationRegistry.NONE)
                 {
-                    requireExists(String.valueOf(entry.getValue()), semantics.value());
+                    requireValidId(String.valueOf(entry.getValue()));
                 }
                 repairedMap.put(entry.getKey(), entry.getValue());
             }
@@ -157,7 +157,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         {
             try
             {
-                requireExactPatternExists(rawPattern, registry);
+                requireValidPattern(rawPattern);
                 repairedPatterns.add(rawPattern);
             }
             catch (ConfigValidationException e)
@@ -181,6 +181,22 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         if (pattern.startsWith("!")) pattern = pattern.substring(1);
         if (pattern.contains("*")) return;
         requireExists(pattern, registry);
+    }
+
+    private void requireValidPattern(Object rawPattern) throws ConfigValidationException
+    {
+        String pattern = String.valueOf(rawPattern);
+        if (pattern.startsWith("!")) pattern = pattern.substring(1);
+        if (pattern.contains("*")) return;
+        requireValidId(pattern);
+    }
+
+    private void requireValidId(String rawId) throws ConfigValidationException
+    {
+        if (Identifier.tryParse(rawId) == null)
+        {
+            throw new ConfigValidationException("Invalid resource id: " + rawId);
+        }
     }
 
     private void requireExists(String rawId, ResourceLocationRegistry registry) throws ConfigValidationException
