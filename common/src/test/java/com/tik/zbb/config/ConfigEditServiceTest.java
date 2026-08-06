@@ -338,7 +338,7 @@ class ConfigEditServiceTest
         assertEquals(6, service.snapshot().document().balance.pathEndBreakBuildDistance);
 
         ConfigEditResult repeated = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
-        assertFalse(repeated.success());
+        assertTrue(repeated.success());
         assertEquals(0, repeated.affectedCount());
     }
 
@@ -369,13 +369,14 @@ class ConfigEditServiceTest
         ));
 
         assertAll(
-                () -> assertFalse(persistentSet.success()),
+                () -> assertTrue(persistentSet.success()),
                 () -> assertEquals(0, persistentSet.affectedCount()),
-                () -> assertFalse(runtimeSet.success()),
+                () -> assertEquals("updated 0 elements", persistentSet.message()),
+                () -> assertTrue(runtimeSet.success()),
                 () -> assertEquals(0, runtimeSet.affectedCount()),
-                () -> assertFalse(removeMissing.success()),
+                () -> assertTrue(removeMissing.success()),
                 () -> assertEquals(0, removeMissing.affectedCount()),
-                () -> assertFalse(clearEmpty.success()),
+                () -> assertTrue(clearEmpty.success()),
                 () -> assertEquals(0, clearEmpty.affectedCount()),
                 () -> assertEquals(0, storage.saveCount),
                 () -> assertTrue(service.runtimeOverrides().isEmpty())
