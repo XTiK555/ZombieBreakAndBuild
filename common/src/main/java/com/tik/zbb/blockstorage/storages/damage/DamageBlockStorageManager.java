@@ -1,6 +1,6 @@
 package com.tik.zbb.blockstorage.storages.damage;
 
-import com.tik.zbb.Constants;
+import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -8,8 +8,6 @@ import org.greenrobot.eventbus.Subscribe;
 
 public class DamageBlockStorageManager
 {
-    public record OnDamageBlockDataRemovedEvent(int blockPosId, BlockPos pos, ServerLevel level) {}
-
     private final DamageBlockStorage damageBlockStorage = new DamageBlockStorage();
 
     @Subscribe
@@ -21,7 +19,7 @@ public class DamageBlockStorageManager
     @Subscribe
     public void onDamageBlockStorageRemove(DamageBlockStorage.OnRemovedEvent event)
     {
-        Constants.EVENT_BUS.post(new OnDamageBlockDataRemovedEvent(event.entry().blockPosId(), event.pos(), event.level()));
+        BlockStorages.ID_MANAGER.release(event.level(), event.pos(), event.entry().blockPosId());
     }
 
     public int getTotalBlockDamage(ServerLevel level, BlockPos pos)
