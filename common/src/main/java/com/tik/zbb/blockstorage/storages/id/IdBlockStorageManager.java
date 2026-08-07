@@ -1,24 +1,15 @@
 package com.tik.zbb.blockstorage.storages.id;
 
-import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorage;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import org.greenrobot.eventbus.Subscribe;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdBlockStorageManager
 {
     private final IdBlockStorage idBlockStorage = new IdBlockStorage();
+    private final IntArrayFIFOQueue freeIds = new IntArrayFIFOQueue();
 
-    private final AtomicInteger nextId = new AtomicInteger(-1);
-
-    @Subscribe
-    public void onDamageEntryRemoved(DamageBlockStorage.OnRemovedEvent event)
-    {
-        idBlockStorage.remove(event.level(), event.pos());
-    }
+    private int nextId = -1;
 
     public int getOrCreate(ServerLevel level, BlockPos pos)
     {
@@ -27,7 +18,19 @@ public class IdBlockStorageManager
         {
             return existing.id();
         }
-        int newId = nextId.getAndDecrement();
+
+        int newId;
+
+        if (!freeIds.isEmpty())
+        {
+            newId = freeIds.dequeueInt();
+        }
+        else
+        {
+            if (nextId == Integer.MIN_VALUE) throw new IllegalStateException("IdBlockStorageManager exhausted all negative block IDs");
+
+            newId = nextId--;
+        }
 
         idBlockStorage.put(level, pos.immutable(), new IdBlockStorageEntry(newId));
         return newId;
@@ -37,5 +40,16 @@ public class IdBlockStorageManager
     {
         IdBlockStorageEntry entry = idBlockStorage.get(level, pos);
         return entry == null ? null : entry.id();
+    }
+
+    public void release(ServerLevel level, BlockPos pos, int id)
+    {
+        Integer realId = getId(level, pos);
+
+        if (realId == null) return;
+        if (realId.intValue() != id) return;
+
+        idBlockStorage.remove(level, pos);
+        freeIds.enqueue(id);
     }
 }
