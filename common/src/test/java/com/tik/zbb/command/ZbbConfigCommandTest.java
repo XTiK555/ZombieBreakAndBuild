@@ -2,18 +2,27 @@ package com.tik.zbb.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.ParseResults;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.ResourceKeyArgument;
 import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ZbbConfigCommandTest
@@ -53,13 +62,48 @@ class ZbbConfigCommandTest
     }
 
     @Test
-    void valueCommandsAcceptModesWithoutModeLiteral()
+    void valueCommandsRequireModeBeforeValue()
     {
-        assertParses("zbb config set ai.alwaysSeeNearestPlayer true");
         assertParses("zbb config set ai.alwaysSeeNearestPlayer persistent true");
         assertParses("zbb config set ai.alwaysSeeNearestPlayer runtime_only true");
         assertParses("zbb config add ai.affectedEntityIdList runtime_only minecraft:zombie");
         assertParses("zbb config remove ai.affectedEntityIdList persistent minecraft:zombie");
+        assertDoesNotParse("zbb config set ai.alwaysSeeNearestPlayer true");
+        assertDoesNotParse("zbb config add ai.affectedEntityIdList minecraft:zombie");
+    }
+
+    @Test
+    void setGrammarComesFromSchemaAndUsesTypedArguments()
+    {
+        CommandNode<CommandSourceStack> set = configCommand("set");
+        assertNull(set.getChild("path"));
+
+        assertInstanceOf(BoolArgumentType.class, argumentType(set, "ai.alwaysSeeNearestPlayer", "boolean"));
+        IntegerArgumentType radius = assertInstanceOf(IntegerArgumentType.class,
+                argumentType(set, "balance.dangerousBlocksSearchRadius", "integer"));
+        assertEquals(0, radius.getMinimum());
+        assertEquals(16, radius.getMaximum());
+        assertInstanceOf(ResourceKeyArgument.class, argumentType(set, "blocks.fallbackPlaceBlockId", "id"));
+        assertTrue(dispatcher.getCompletionSuggestions(
+                        dispatcher.parse("zbb config set ai.alwaysSeeNearestPlayer persistent ", null))
+                .join().getList().stream().map(suggestion -> suggestion.getText()).toList()
+                .containsAll(List.of("false", "true")));
+    }
+
+    @Test
+    void mapSetTakesSuggestedRegistryKeyThenTypedValue()
+    {
+        assertParses("zbb config set blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:dirt");
+        assertParses("zbb config set blocks.mobPlaceBlockIdOverrideList runtime_only minecraft:zombie minecraft:stone");
+        assertParses("zbb config set balance.blockDamage.blockHealthOverrideList persistent minecraft:stone 20");
+        assertDoesNotParse("zbb config set blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:dirt");
+
+        CommandNode<CommandSourceStack> key = configCommand("set")
+                .getChild("blocks.dimensionPlaceBlockIdList")
+                .getChild("persistent")
+                .getChild("key");
+        assertInstanceOf(ResourceKeyArgument.class, ((ArgumentCommandNode<?, ?>) key).getType());
+        assertInstanceOf(ResourceKeyArgument.class, ((ArgumentCommandNode<?, ?>) key.getChild("id")).getType());
     }
 
     @Test
@@ -101,13 +145,23 @@ class ZbbConfigCommandTest
 
     private void assertNoModeLiteralUnderValueCommand(String command)
     {
-        CommandNode<CommandSourceStack> pathNode = dispatcher.getRoot()
-                .getChild("zbb")
-                .getChild("config")
-                .getChild(command)
-                .getChild("path");
+        CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild(
+                command.equals("set") ? "ai.alwaysSeeNearestPlayer" : "path");
 
         assertNotNull(pathNode);
         assertTrue(pathNode.getChildren().stream().noneMatch(child -> child.getName().equals("mode")));
+    }
+
+    private CommandNode<CommandSourceStack> configCommand(String command)
+    {
+        return dispatcher.getRoot()
+                .getChild("zbb")
+                .getChild("config")
+                .getChild(command);
+    }
+
+    private Object argumentType(CommandNode<CommandSourceStack> parent, String path, String argument)
+    {
+        return ((ArgumentCommandNode<?, ?>) parent.getChild(path).getChild("persistent").getChild(argument)).getType();
     }
 }
