@@ -80,8 +80,8 @@ public class BridgeToTargetTactic implements IMobTactic
         dx /= len;
         dz /= len;
 
-        double frontX = dx > 0 ? box.maxX : box.minX;
-        double frontZ = dz > 0 ? box.maxZ : box.minZ;
+        double frontX = dx == 0.0D ? mob.getX() : dx > 0.0D ? box.maxX : box.minX;
+        double frontZ = dz == 0.0D ? mob.getZ() : dz > 0.0D ? box.maxZ : box.minZ;
 
         frontX += dx;
         frontZ += dz;
