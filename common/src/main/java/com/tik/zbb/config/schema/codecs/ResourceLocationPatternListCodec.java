@@ -2,6 +2,9 @@ package com.tik.zbb.config.schema.codecs;
 
 import com.tik.zbb.config.schema.ConfigValidationException;
 import com.tik.zbb.config.schema.ResourceLocationId;
+import net.minecraft.world.entity.MobCategory;
+
+import java.util.Locale;
 
 public final class ResourceLocationPatternListCodec extends StringListValueCodec
 {
@@ -25,6 +28,20 @@ public final class ResourceLocationPatternListCodec extends StringListValueCodec
         if (body.isBlank() || body.contains("!"))
         {
             throw new ConfigValidationException("Expected resource location pattern");
+        }
+
+        if (body.startsWith("@"))
+        {
+            try
+            {
+                String category = MobCategory.valueOf(body.substring(1).toUpperCase(Locale.ROOT))
+                        .name().toLowerCase(Locale.ROOT);
+                return (exclude ? "!" : "") + "@" + category;
+            }
+            catch (IllegalArgumentException e)
+            {
+                throw new ConfigValidationException("Expected mob category");
+            }
         }
 
         if (!body.contains("*"))
