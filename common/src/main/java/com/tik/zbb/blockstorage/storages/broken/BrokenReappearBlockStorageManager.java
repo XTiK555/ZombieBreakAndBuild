@@ -138,7 +138,7 @@ public class BrokenReappearBlockStorageManager
     private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
     {
         if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
-        if (isZombieBlock(level, pos)) return false;
+        if (isTrackedZombieBlock(configSnapshot.game(), level, pos)) return false;
 
         return true;
     }
@@ -153,13 +153,11 @@ public class BrokenReappearBlockStorageManager
         {
             return placeStoredBlock(level, pos, entry);
         }
-        if (isZombieBlock(level, pos))
+        if (isTrackedZombieBlock(config, level, pos))
         {
             BlockStorages.BUILD_DISAPPEAR_MANAGER.discard(level, pos);
-            BlockStorages.ZOMBIE_PLACED_MANAGER.remove(level, pos);
 
-            boolean dropZombieBlock = !config.blockRestoration().builtBlocksDisappearing();
-            level.destroyBlock(pos, dropZombieBlock);
+            level.destroyBlock(pos, false);
 
             return placeStoredBlock(level, pos, entry);
         }
@@ -320,10 +318,10 @@ public class BrokenReappearBlockStorageManager
         return stack;
     }
 
-    private boolean isZombieBlock(ServerLevel level, BlockPos blockPos)
+    private boolean isTrackedZombieBlock(ConfigGame config, ServerLevel level, BlockPos blockPos)
     {
-        return BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, blockPos)
-                || BlockStorages.ZOMBIE_PLACED_MANAGER.contains(level, blockPos);
+        return config.blockRestoration().builtBlocksDisappearing()
+                && BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, blockPos);
     }
 
     //endregion
