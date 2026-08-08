@@ -15,15 +15,15 @@ import net.minecraft.world.phys.Vec3;
 
 public class BreakAndBuildState extends BaseMobState
 {
-    private final int STUCK_TICKS_TO_BREAKANDBUILD = 40;
+    private static final int STUCK_TICKS_TO_BREAK_AND_BUILD = 40;
+    private static final double STUCK_RADIUS = 1D;
 
     private final IMobTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
     private final IMobTactic bridgeToTargetTactic = new BridgeToTargetTactic();
     private final IMobTactic clearObstaclesToTargetTactic = new ClearObstaclesToTargetTactic();
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
-    private int customStuckTicks;
-    private Vec3 lastStuckCheckPos;
+    private final HardStuckDetector hardStuckDetector = new HardStuckDetector(STUCK_RADIUS, STUCK_TICKS_TO_BREAK_AND_BUILD);
 
     public BreakAndBuildState()
     {
@@ -92,8 +92,7 @@ public class BreakAndBuildState extends BaseMobState
     {
         super.resetTransientState();
 
-        customStuckTicks = 0;
-        lastStuckCheckPos = null;
+        hardStuckDetector.reset();
     }
 
     private boolean isCustomStuck(MobStateContext context)
@@ -104,32 +103,42 @@ public class BreakAndBuildState extends BaseMobState
 
         if (mob.getTarget() == null || path == null || path.isDone())
         {
-            customStuckTicks = 0;
-            lastStuckCheckPos = null;
+            hardStuckDetector.reset();
             return false;
         }
 
-        Vec3 currentPos = mob.position();
+        return hardStuckDetector.update(mob.position(), mob.level().getGameTime());
+    }
 
-        if (lastStuckCheckPos == null)
+    private static final class HardStuckDetector
+    {
+        private final double radiusSquared;
+        private final long stuckTicks;
+
+        private Vec3 anchor;
+        private long anchoredAtTick;
+
+        HardStuckDetector(double radius, long stuckTicks)
         {
-            lastStuckCheckPos = currentPos;
-            customStuckTicks = 0;
-            return false;
+            this.radiusSquared = radius * radius;
+            this.stuckTicks = stuckTicks;
         }
 
-        double movedSq = currentPos.distanceToSqr(lastStuckCheckPos);
-        lastStuckCheckPos = currentPos;
-
-        if (movedSq < 0.0009D)
+        boolean update(Vec3 position, long gameTime)
         {
-            customStuckTicks++;
-        }
-        else
-        {
-            customStuckTicks = 0;
+            if (anchor == null || gameTime < anchoredAtTick || position.distanceToSqr(anchor) > radiusSquared)
+            {
+                anchor = position;
+                anchoredAtTick = gameTime;
+                return false;
+            }
+
+            return gameTime - anchoredAtTick >= stuckTicks;
         }
 
-        return customStuckTicks >= STUCK_TICKS_TO_BREAKANDBUILD;
+        void reset()
+        {
+            anchor = null;
+        }
     }
 }
