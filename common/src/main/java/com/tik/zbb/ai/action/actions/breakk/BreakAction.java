@@ -37,7 +37,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
         boolean unbreakable = getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
-        boolean canMobBreak = !context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher().matches(context.mobId().toString());
+        boolean canMobBreak = !context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher()
+                .matches(context.mobId(), context.mob().getType().getCategory());
 
         return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
     }
