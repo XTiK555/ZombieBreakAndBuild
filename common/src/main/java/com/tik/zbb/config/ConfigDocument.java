@@ -19,7 +19,7 @@ public class ConfigDocument
     {
         @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.DIMENSION, value = ResourceLocationRegistry.BLOCK)
-        @Comment("Dimension-specific blocks used when mobs build")
+        @Comment("Build block by dimension: dimension ID = block ID")
         public Map<String, String> dimensionPlaceBlockIdList = linkedMap(List.of(
                 Map.entry("minecraft:overworld", "minecraft:dirt"),
                 Map.entry("minecraft:the_nether", "minecraft:netherrack"),
@@ -28,17 +28,17 @@ public class ConfigDocument
 
         @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.ENTITY, value = ResourceLocationRegistry.BLOCK)
-        @Comment("Mob-specific build block overrides. These have priority over dimensionPlaceBlockIdList.")
+        @Comment("Build block by mob: entity ID = block ID. Overrides dimension and fallback settings")
         public Map<String, String> mobPlaceBlockIdOverrideList = new LinkedHashMap<>();
 
         @ResourceLocationString
         @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
-        @Comment("Block used when no mob-specific or dimension-specific build block is configured")
+        @Comment("Build block used when no mob or dimension-specific block is configured")
         public String fallbackPlaceBlockId = "minecraft:stone";
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.BLOCK)
-        @Comment("Blocks that zombies will consider dangerous and attempt to cover or break")
+        @Comment("Blocks that zombies will consider dangerous and attempt to cover or break. Supports wildcards and ! exclusions")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
                 "minecraft:fire",
                 "minecraft:soul_fire",
@@ -68,31 +68,31 @@ public class ConfigDocument
     {
         public Tactics tactics = new Tactics();
 
-        @Comment("Zombies can see the nearest player no matter what.")
+        @Comment("Affected mobs can see the nearest player no matter what.")
         public boolean alwaysSeeNearestPlayer = false;
 
-        @Comment("Zombies can find a new target through blocks")
+        @Comment("Affected mobs can find a new target through blocks")
         public boolean canNoticeTargetsThroughBlocks = true;
 
         @Range(min = 0, max = 1000000)
-        @Comment("(only if canNoticeTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when noticing through walls (0 - infinity)")
+        @Comment("(only if canNoticeTargetsThroughBlocks is true) Maximum solid blocks between a mob and a new target; 0 = unlimited")
         public int noticeTargetsThroughBlocksLimit = 3;
 
         @Comment("Zombies can keep chasing an already found target through blocks")
         public boolean canContinueSeeingTargetsThroughBlocks = true;
 
         @Range(min = 0, max = 1000000)
-        @Comment("(only if canContinueSeeingTargetsThroughBlocks is true) How many solid blocks can be between zombie and target when continuing to see through walls (0 - infinity)")
+        @Comment("(only if canContinueSeeingTargetsThroughBlocks is true) Maximum solid blocks between a mob and its current target; 0 = unlimited")
         public int continueSeeingTargetsThroughBlocksLimit = 6;
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns or @categories that will be given Zombie Break & Build behavior (only Pathfinder mobs)")
+        @Comment("Mob IDs that get ZBB behavior. Supports wildcards, ! exclusions and @categories. (only Pathfinder mobs)")
         public List<String> affectedEntityIdList = new ArrayList<>(List.of("*:*"));
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns or @categories that will NOT be given the ability to place blocks")
+        @Comment("Affected mob types that cannot place blocks. Supports wildcards, ! exclusions and @categories")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:ghast",
@@ -107,21 +107,21 @@ public class ConfigDocument
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns or @categories that will NOT be given the ability to break blocks")
+        @Comment("Affected mob types that cannot break blocks. Supports wildcards, ! exclusions and @categories")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>();
 
         public static class Tactics
         {
-            @Comment("Whether mobs can adjust their height to reach a target")
+            @Comment("Allow mobs to climb toward higher targets by placing blocks beneath themselves")
             public boolean adjustHeightToTarget = true;
 
-            @Comment("Whether mobs can build bridges toward a target")
+            @Comment("Allow mobs to build across gaps while moving toward a target")
             public boolean bridgeToTarget = true;
 
-            @Comment("Whether mobs can clear obstacles between themselves and a target")
+            @Comment("Allow mobs to break obstacles directly blocking their movement toward a target")
             public boolean clearObstaclesToTarget = true;
 
-            @Comment("Whether mobs can cover or break dangerous blocks")
+            @Comment("Allow mobs to cover or break dangerous blocks")
             public boolean mitigateDangerousBlocks = true;
         }
     }
@@ -129,15 +129,15 @@ public class ConfigDocument
     public static class Balance
     {
         @Range(min = 0, max = 1000000)
-        @Comment("Time during which zombies cannot break blocks they just placed (seconds)")
+        @Comment("How long newly placed blocks are protected from being broken by ZBB mobs (seconds")
         public double builtBlocksProtectionTime = 0.75D;
 
         @Range(min = 0, max = 16)
-        @Comment("The radius within which zombies will detect dangerous blocks")
+        @Comment("How far around a mob to search for dangerous blocks (blocks)")
         public int dangerousBlocksSearchRadius = 1;
 
         @Range(min = 1, max = 1000000)
-        @Comment("How close a mob must get to the end of its path before it tries to break or place blocks")
+        @Comment("Distance from an unreachable path end at which break/build tactics become high priority (blocks)")
         public int pathEndBreakBuildDistance = 6;
 
         @Range(min = 1, max = 1000000)
@@ -151,47 +151,47 @@ public class ConfigDocument
         public static class BlockDamage
         {
             @Range(min = 0, max = 1000000)
-            @Comment("Maximum vanilla block hardness mobs can break (0 - infinity)")
+            @Comment("Maximum breakable vanilla block hardness; 0 = no limit.")
             public float maximumBreakableBlockHardness = 0.0f;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Damage dealt to blocks")
+            @Comment("Base block damage, before tool and mob-size multipliers")
             public int damageToBlocks = 1;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Exponent applied to vanilla block hardness. 1 = no contrast change.")
+            @Comment("Hardness exponent for block health: 1 = linear, <1 reduces differences, >1 increases them")
             public float blockHardnessContrast = 0.85f;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Multiplier applied to the calculated block health after hardness contrast is applied.")
+            @Comment("Multiplier applied to block health after the hardness exponent.")
             public float blockHardnessMultiplier = 2.0f;
 
             @ResourceLocationIntPairMap
             @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
-            @Comment("Manual block health overrides")
+            @Comment("Per-block health overrides: block ID = health. Overrides the hardness-based calculation")
             public Map<String, Integer> blockHealthOverrideList = new LinkedHashMap<>();
 
             @Range(min = 0, max = 1000000)
-            @Comment("How strongly the tool-in-hand damage multiplier affects block damage (0 - tools do not affect damage)")
+            @Comment("Strength of held-tool damage scaling: 0 = ignore tools, 1 = full destroy-speed multiplier")
             public float itemDamageMultiplierStrength = 0.5f;
 
             @Range(min = 0, max = 1000000)
-            @Comment("How strongly the hitbox size multiplier affects block damage (0 - hitbox size does not affect damage)")
+            @Comment("Strength of mob-size damage scaling relative to a zombie: 0 = ignore size, 1 = full volume ratio")
             public double hitboxSizeMultiplierStrength = 0.5;
         }
 
         public static class Cooldowns
         {
             @Range(min = 0, max = 1000000)
-            @Comment("Cooldown between block breaking attempts (seconds)")
+            @Comment("Delay between block-breaking actions (seconds)")
             public double breakCooldown = 1.0D;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Cooldown between block placing attempts (seconds)")
+            @Comment("Delay between block-placing actions (seconds)")
             public double buildCooldown = 1.0D;
 
             @Range(min = 0, max = 1000000)
-            @Comment("Cooldown between searches for dangerous blocks (seconds)")
+            @Comment("Delay between searches for dangerous blocks (seconds)")
             public double searchDangerousBlocksCooldown = 1.0D;
         }
     }
@@ -202,44 +202,44 @@ public class ConfigDocument
         public boolean builtBlocksDisappearing = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time before blocks placed by zombies disappear (only if builtBlocksDisappearing is true)")
+        @Comment("(only if builtBlocksDisappearing is true) Time before blocks placed by zombies disappear (seconds)")
         public double builtBlocksDisappearTime = 30.0D;
 
         @Comment("Enable restoration of blocks broken by zombies")
         public boolean brokenBlocksRestoring = false;
 
         @Range(min = 0, max = 1000000)
-        @Comment("Time before blocks broken by zombies are restored (only if brokenBlocksRestoring is true)")
+        @Comment("(only if brokenBlocksRestoring is true) Time before blocks broken by zombies are restored (seconds)")
         public double brokenBlocksRestoreTime = 30.0D;
     }
 
     public static class VisualEffects
     {
-        @Comment("[Break] Whether the zombie will swing when breaking a block")
+        @Comment("[Break] Play the mob's swing animation when damaging or breaking a block")
         public boolean breakMobSwing = true;
 
-        @Comment("[Build] Whether a placed block will play a sound")
+        @Comment("[Build] Play the block's placement sound when a mob places it")
         public boolean buildBlockSound = true;
 
-        @Comment("[BrokenReappear] Whether a reappearing broken block will spawn particles")
+        @Comment("[BrokenReappear]Show assembling block particles shortly before restoration")
         public boolean brokenReappearParticles = true;
 
-        @Comment("[BrokenReappear] Whether to show a marker particle at the future reappearance position")
+        @Comment("[BrokenReappear]Show a periodic marker where a broken block is waiting to be restored")
         public boolean brokenReappearMarkerParticle = true;
 
-        @Comment("[BrokenReappear] Whether a reappearing broken block will play a charge sound")
+        @Comment("[BrokenReappear] Play a charge-up sound shortly before restoration")
         public boolean brokenReappearChargeSound = true;
 
-        @Comment("[BrokenReappear] Whether a reappearing broken block will play a sound")
+        @Comment("[BrokenReappear] Play a sound when the broken block is restored")
         public boolean brokenReappearSound = true;
 
-        @Comment("[BuiltDisappear] Whether a disappearing built block will spawn a block display")
+        @Comment("[BuiltDisappear] Show a shrinking block animation when a mob-placed block disappears")
         public boolean builtDisappearBlockDisplay = true;
 
-        @Comment("[BuiltDisappear] Whether a disappearing built block will play a shrink sound")
+        @Comment("[BuiltDisappear] Play the shrink sound when a mob-placed block starts disappearing")
         public boolean builtDisappearShrinkSound = true;
 
-        @Comment("[BuiltDisappear] Whether a disappearing built block will play a sound")
+        @Comment("[BuiltDisappear] Play the final sound after a mob-placed block disappears")
         public boolean builtDisappearSound = true;
     }
 }
