@@ -21,18 +21,21 @@ public abstract class BaseBlockStorage<TData, TStored>
     @Nullable
     public TData get(ServerLevel level, BlockPos pos)
     {
+        beforeAccess(level);
         TStored stored = getStored(level, pos.asLong());
         return stored != null ? toData(stored) : null;
     }
 
     public boolean contains(ServerLevel level, BlockPos pos)
     {
+        beforeAccess(level);
         var entries = entriesByLevel.get(level);
         return entries != null && entries.containsKey(pos.asLong());
     }
 
     public void put(ServerLevel level, BlockPos pos, TData data)
     {
+        beforeAccess(level);
         long posKey = pos.asLong();
         TStored stored = toStored(level, data);
         TStored previous = getStored(level, posKey);
@@ -59,12 +62,14 @@ public abstract class BaseBlockStorage<TData, TStored>
 
     public void remove(ServerLevel level, long posKey)
     {
+        beforeAccess(level);
         removeStored(level, posKey, null, true);
     }
 
     @Nullable
     public TData discard(ServerLevel level, BlockPos pos)
     {
+        beforeAccess(level);
         TStored removed = removeStored(level, pos.asLong(), null, false);
         return removed != null ? toData(removed) : null;
     }
@@ -80,6 +85,14 @@ public abstract class BaseBlockStorage<TData, TStored>
     {
         return removeStored(level, posKey, expected, true) != null;
     }
+
+    protected final void restoreStored(ServerLevel level, long posKey, TStored stored)
+    {
+        entries(level).put(posKey, stored);
+        onStored(level, posKey, null, stored);
+    }
+
+    protected void beforeAccess(ServerLevel level) {}
 
     protected abstract TStored toStored(ServerLevel level, TData data);
 

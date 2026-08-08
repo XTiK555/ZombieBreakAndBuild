@@ -13,6 +13,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
 
     public final void cleanup(ServerLevel level, long ttlTicks)
     {
+        beforeAccess(level);
         ExpirationIndex expirationIndex = expirationIndexesByLevel.get(level);
         if (expirationIndex == null || expirationIndex.isEmpty()) return;
 
@@ -73,6 +74,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
         expirationIndex(level).add(stored.storedAtTick(), posKey);
 
         onEntryStored(level, posKey);
+        onEntryChanged(level, posKey, stored);
     }
 
     @Override
@@ -80,6 +82,12 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
     {
         removeFromIndex(level, posKey, stored.storedAtTick());
         onEntryDiscarded(level, posKey);
+        onEntryChanged(level, posKey, null);
+    }
+
+    protected final void restoreEntry(ServerLevel level, long posKey, TData data, long storedAtTick)
+    {
+        restoreStored(level, posKey, new StoredEntry<>(data, storedAtTick));
     }
 
     protected long earlyProcessingTicks()
@@ -92,6 +100,8 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
     protected void onEntryStored(ServerLevel level, long posKey) {}
 
     protected void onEntryDiscarded(ServerLevel level, long posKey) {}
+
+    protected void onEntryChanged(ServerLevel level, long posKey, @Nullable StoredEntry<TData> stored) {}
 
     private ExpirationIndex expirationIndex(ServerLevel level)
     {
