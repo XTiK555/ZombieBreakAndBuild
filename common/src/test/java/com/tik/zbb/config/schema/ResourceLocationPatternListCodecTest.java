@@ -18,6 +18,8 @@ class ResourceLocationPatternListCodecTest
         assertEquals("!minecraft:*", ResourceLocationPatternListCodec.normalizePattern("!minecraft:*"));
         assertEquals("!*:zombie", ResourceLocationPatternListCodec.normalizePattern("!*:zombie"));
         assertEquals("!*:*", ResourceLocationPatternListCodec.normalizePattern("!*:*"));
+        assertEquals("@monster", ResourceLocationPatternListCodec.normalizePattern("@MONSTER"));
+        assertEquals("!@creature", ResourceLocationPatternListCodec.normalizePattern("!@creature"));
     }
 
     @Test
@@ -28,5 +30,7 @@ class ResourceLocationPatternListCodecTest
         assertThrows(ConfigValidationException.class, () -> ResourceLocationPatternListCodec.normalizePattern("minecraft:zombie*"));
         assertThrows(ConfigValidationException.class, () -> ResourceLocationPatternListCodec.normalizePattern("mine craft:zombie"));
         assertThrows(ConfigValidationException.class, () -> ResourceLocationPatternListCodec.normalizePattern("minecraft:"));
+        assertThrows(ConfigValidationException.class, () -> ResourceLocationPatternListCodec.normalizePattern("@unknown"));
+        assertThrows(ConfigValidationException.class, () -> ResourceLocationPatternListCodec.normalizePattern("@"));
     }
 }

@@ -71,7 +71,8 @@ public final class ShouldApplyToMobUtility
         Identifier entityId = registry.getKey(mob.getType());
         if (entityId == null) return false;
 
-        return configSnapshot.game().ai().affectedEntityIdMatcher().matches(entityId.toString());
+        return configSnapshot.game().ai().affectedEntityIdMatcher()
+                .matches(entityId, mob.getType().getCategory());
     }
 
     private record FilterCache(long configVersion, ConcurrentMap<EntityType<?>, Boolean> matchesByType) {}

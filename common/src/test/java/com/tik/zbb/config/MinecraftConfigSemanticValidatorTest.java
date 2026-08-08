@@ -5,15 +5,33 @@ import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.config.schema.ConfigRepairReport;
 import com.tik.zbb.config.schema.ConfigSchema;
+import com.tik.zbb.config.schema.ConfigValidationException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MinecraftConfigSemanticValidatorTest
 {
+    @Test
+    void categoriesAreAcceptedOnlyForEntityPatternLists()
+    {
+        MinecraftConfigSemanticValidator validator = new MinecraftConfigSemanticValidator(null);
+        ConfigFieldDescriptor entities = ConfigSchema.find(
+                new ConfigPath("ai.affectedEntityIdList")
+        ).orElseThrow();
+        ConfigFieldDescriptor blocks = ConfigSchema.find(
+                new ConfigPath("blocks.dangerousBlockIdList")
+        ).orElseThrow();
+
+        assertDoesNotThrow(() -> validator.validate(entities, List.of("@monster", "!@creature")));
+        assertThrows(ConfigValidationException.class, () -> validator.validate(blocks, List.of("@monster")));
+    }
+
     @Test
     void repairPreservesSyntacticallyValidIdsFromUnavailableMods()
     {
