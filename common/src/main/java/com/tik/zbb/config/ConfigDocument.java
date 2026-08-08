@@ -87,12 +87,12 @@ public class ConfigDocument
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns that will be given Zombie Break & Build behavior (only Pathfinder mobs)")
+        @Comment("Entity ID patterns or @categories that will be given Zombie Break & Build behavior (only Pathfinder mobs)")
         public List<String> affectedEntityIdList = new ArrayList<>(List.of("*:*"));
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns that will NOT be given the ability to place blocks")
+        @Comment("Entity ID patterns or @categories that will NOT be given the ability to place blocks")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
                 "minecraft:ender_dragon",
                 "minecraft:ghast",
@@ -107,7 +107,7 @@ public class ConfigDocument
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
-        @Comment("Entity ID patterns that will NOT be given the ability to break blocks")
+        @Comment("Entity ID patterns or @categories that will NOT be given the ability to break blocks")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>();
 
         public static class Tactics

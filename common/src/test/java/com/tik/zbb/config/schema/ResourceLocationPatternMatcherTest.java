@@ -1,5 +1,7 @@
 package com.tik.zbb.config.schema;
 
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.MobCategory;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -86,6 +88,25 @@ class ResourceLocationPatternMatcherTest
         assertFalse(matches(matcher, "minecraft:zombie"));
         assertTrue(matcher.includeAll());
         assertTrue(matcher.excludeAll());
+    }
+
+    @Test
+    void matcherSupportsIncludedAndExcludedMobCategories()
+    {
+        ResourceLocationPatternMatcher included = ResourceLocationPatternMatcher.compile(List.of(
+                "@monster",
+                "!minecraft:zombie"
+        ));
+        ResourceLocationPatternMatcher excluded = ResourceLocationPatternMatcher.compile(List.of(
+                "*:*",
+                "!@monster"
+        ));
+
+        assertTrue(included.matches(Identifier.tryParse("minecraft:skeleton"), MobCategory.MONSTER));
+        assertFalse(included.matches(Identifier.tryParse("minecraft:zombie"), MobCategory.MONSTER));
+        assertFalse(included.matches(Identifier.tryParse("minecraft:cow"), MobCategory.CREATURE));
+        assertFalse(excluded.matches(Identifier.tryParse("minecraft:skeleton"), MobCategory.MONSTER));
+        assertTrue(excluded.matches(Identifier.tryParse("minecraft:cow"), MobCategory.CREATURE));
     }
 
     private static boolean matches(ResourceLocationPatternMatcher matcher, String id) throws Exception

@@ -2,9 +2,11 @@ package com.tik.zbb.config.schema;
 
 import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.MobCategory;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public record ResourceLocationPatternMatcher(
@@ -15,7 +17,9 @@ public record ResourceLocationPatternMatcher(
         Set<String> includedNamespaces,
         Set<String> excludedNamespaces,
         Set<String> includedPaths,
-        Set<String> excludedPaths
+        Set<String> excludedPaths,
+        Set<MobCategory> includedCategories,
+        Set<MobCategory> excludedCategories
 )
 {
     public static ResourceLocationPatternMatcher compile(List<String> list)
@@ -28,6 +32,8 @@ public record ResourceLocationPatternMatcher(
         Set<String> excludedNamespaces = new HashSet<>();
         Set<String> includedPaths = new HashSet<>();
         Set<String> excludedPaths = new HashSet<>();
+        Set<MobCategory> includedCategories = new HashSet<>();
+        Set<MobCategory> excludedCategories = new HashSet<>();
 
         for (String rawValue : list)
         {
@@ -43,6 +49,15 @@ public record ResourceLocationPatternMatcher(
 
             boolean exclude = normalized.startsWith("!");
             String body = exclude ? normalized.substring(1) : normalized;
+
+            if (body.startsWith("@"))
+            {
+                MobCategory category = MobCategory.valueOf(body.substring(1).toUpperCase(Locale.ROOT));
+                if (exclude) excludedCategories.add(category);
+                else includedCategories.add(category);
+                continue;
+            }
+
             String[] parts = body.split(":", 2);
             String namespace = parts[0];
             String path = parts[1];
@@ -84,7 +99,9 @@ public record ResourceLocationPatternMatcher(
                 Set.copyOf(includedNamespaces),
                 Set.copyOf(excludedNamespaces),
                 Set.copyOf(includedPaths),
-                Set.copyOf(excludedPaths)
+                Set.copyOf(excludedPaths),
+                Set.copyOf(includedCategories),
+                Set.copyOf(excludedCategories)
         );
     }
 
@@ -107,7 +124,17 @@ public record ResourceLocationPatternMatcher(
             return false;
         }
 
-        return matches(id.getNamespace(), id.getPath());
+        return matches(id.getNamespace(), id.getPath(), null);
+    }
+
+    public boolean matches(Identifier id, MobCategory category)
+    {
+        if (id == null)
+        {
+            return false;
+        }
+
+        return matches(id.getNamespace(), id.getPath(), category);
     }
 
     public boolean matches(ResourceLocationId id)
@@ -117,15 +144,16 @@ public record ResourceLocationPatternMatcher(
             return false;
         }
 
-        return matches(id.namespace(), id.path());
+        return matches(id.namespace(), id.path(), null);
     }
 
-    private boolean matches(String namespace, String path)
+    private boolean matches(String namespace, String path, MobCategory category)
     {
         if (excludeAll
                 || excludedIds.contains(new ResourceLocationId(namespace, path))
                 || excludedNamespaces.contains(namespace)
-                || excludedPaths.contains(path))
+                || excludedPaths.contains(path)
+                || category != null && excludedCategories.contains(category))
         {
             return false;
         }
@@ -133,6 +161,7 @@ public record ResourceLocationPatternMatcher(
         return includeAll
                 || includedIds.contains(new ResourceLocationId(namespace, path))
                 || includedNamespaces.contains(namespace)
-                || includedPaths.contains(path);
+                || includedPaths.contains(path)
+                || category != null && includedCategories.contains(category);
     }
 }
