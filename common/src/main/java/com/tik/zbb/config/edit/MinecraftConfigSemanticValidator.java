@@ -5,6 +5,7 @@ import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigRepairReport;
 import com.tik.zbb.config.schema.ConfigValidationException;
+import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -157,7 +158,7 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         {
             try
             {
-                requireValidPattern(rawPattern);
+                requireValidPattern(rawPattern, registry);
                 repairedPatterns.add(rawPattern);
             }
             catch (ConfigValidationException e)
@@ -179,16 +180,35 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
     {
         String pattern = String.valueOf(rawPattern);
         if (pattern.startsWith("!")) pattern = pattern.substring(1);
+        if (pattern.startsWith("@"))
+        {
+            requireValidCategory(pattern, registry);
+            return;
+        }
         if (pattern.contains("*")) return;
         requireExists(pattern, registry);
     }
 
-    private void requireValidPattern(Object rawPattern) throws ConfigValidationException
+    private void requireValidPattern(Object rawPattern, ResourceLocationRegistry registry) throws ConfigValidationException
     {
         String pattern = String.valueOf(rawPattern);
         if (pattern.startsWith("!")) pattern = pattern.substring(1);
+        if (pattern.startsWith("@"))
+        {
+            requireValidCategory(pattern, registry);
+            return;
+        }
         if (pattern.contains("*")) return;
         requireValidId(pattern);
+    }
+
+    private void requireValidCategory(String pattern, ResourceLocationRegistry registry) throws ConfigValidationException
+    {
+        if (registry != ResourceLocationRegistry.ENTITY)
+        {
+            throw new ConfigValidationException("Mob categories are only valid for entity lists");
+        }
+        ResourceLocationPatternListCodec.normalizePattern(pattern);
     }
 
     private void requireValidId(String rawId) throws ConfigValidationException
