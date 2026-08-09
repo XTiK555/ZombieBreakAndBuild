@@ -17,6 +17,7 @@ public class BreakAndBuildState extends BaseMobState
 {
     private static final int STUCK_TICKS_TO_BREAK_AND_BUILD = 40;
     private static final double STUCK_RADIUS = 1D;
+    private static final int MAX_NO_PATH_TICKS = 10;
 
     private final IMobTactic adjustHeightToTargetTactic = new AdjustHeightToTargetTactic();
     private final IMobTactic bridgeToTargetTactic = new BridgeToTargetTactic();
@@ -24,6 +25,8 @@ public class BreakAndBuildState extends BaseMobState
     private final IMobTactic mitigateDangerousBlocksTactic = new MitigateDangerousBlocksTactic();
 
     private final HardStuckDetector hardStuckDetector = new HardStuckDetector(STUCK_RADIUS, STUCK_TICKS_TO_BREAK_AND_BUILD);
+
+    private int noPathTicks;
 
     public BreakAndBuildState()
     {
@@ -55,7 +58,8 @@ public class BreakAndBuildState extends BaseMobState
 
         if (adjustHeightToTargetTactic.isRunning()) return Priority.High;
         if (navigation.isStuck() || isCustomStuck(context)) return Priority.High;
-        if (path == null) return Priority.High;
+        if (isPathNullForLong(path)) return Priority.High;
+        if (path == null) return Priority.Low;
 
         boolean hasActivePath = !path.isDone() && path.getNodeCount() > 0;
         boolean pathCanReachTarget = path.canReach();
@@ -93,6 +97,27 @@ public class BreakAndBuildState extends BaseMobState
         super.resetTransientState();
 
         hardStuckDetector.reset();
+    }
+
+    private boolean isPathNullForLong(Path path)
+    {
+        if (path == null)
+        {
+            if (noPathTicks >= MAX_NO_PATH_TICKS)
+            {
+                return true;
+            }
+            else
+            {
+                noPathTicks++;
+            }
+        }
+        else
+        {
+            noPathTicks = 0;
+        }
+
+        return false;
     }
 
     private boolean isCustomStuck(MobStateContext context)
