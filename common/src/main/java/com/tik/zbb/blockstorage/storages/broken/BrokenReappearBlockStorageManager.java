@@ -3,8 +3,6 @@ package com.tik.zbb.blockstorage.storages.broken;
 import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.actions.breakk.BreakAction;
 import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.config.ConfigGame;
-import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.ConfigSnapshot;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
@@ -90,7 +88,7 @@ public class BrokenReappearBlockStorageManager
     {
         boolean normalReappear = true;
 
-        if (!restoreBlock(event.level(), event.pos(), event.entry(), ConfigManager.getConfigSnapshot().game()))
+        if (!restoreBlock(event.level(), event.pos(), event.entry()))
         {
             normalReappear = false;
 
@@ -138,14 +136,14 @@ public class BrokenReappearBlockStorageManager
     private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
     {
         if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
-        if (isTrackedZombieBlock(configSnapshot.game(), level, pos)) return false;
+        if (isTrackedZombieBlock(level, pos)) return false;
 
         return true;
     }
 
     //region Restoring
 
-    private boolean restoreBlock(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry, ConfigGame config)
+    private boolean restoreBlock(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
     {
         BlockState currentState = level.getBlockState(pos);
 
@@ -153,7 +151,7 @@ public class BrokenReappearBlockStorageManager
         {
             return placeStoredBlock(level, pos, entry);
         }
-        if (isTrackedZombieBlock(config, level, pos))
+        if (isTrackedZombieBlock(level, pos))
         {
             BlockStorages.BUILD_DISAPPEAR_MANAGER.discard(level, pos);
 
@@ -318,10 +316,9 @@ public class BrokenReappearBlockStorageManager
         return stack;
     }
 
-    private boolean isTrackedZombieBlock(ConfigGame config, ServerLevel level, BlockPos blockPos)
+    private boolean isTrackedZombieBlock(ServerLevel level, BlockPos blockPos)
     {
-        return config.blockRestoration().builtBlocksDisappearing()
-                && BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, blockPos);
+        return BlockStorages.BUILD_DISAPPEAR_MANAGER.contains(level, blockPos);
     }
 
     //endregion
