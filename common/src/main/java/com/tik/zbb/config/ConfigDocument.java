@@ -129,7 +129,7 @@ public class ConfigDocument
     public static class Balance
     {
         @Range(min = 0, max = 1000000)
-        @Comment("How long newly placed blocks are protected from being broken by ZBB mobs (seconds")
+        @Comment("How long newly placed blocks are protected from being broken by ZBB mobs (seconds)")
         public double builtBlocksProtectionTime = 0.75D;
 
         @Range(min = 0, max = 16)
