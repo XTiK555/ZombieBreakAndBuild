@@ -2,7 +2,9 @@ package com.tik.zbb.config;
 
 import com.tik.zbb.config.schema.ResourceLocationPatternMatcher;
 import net.minecraft.SharedConstants;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.entity.MobCategory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -44,8 +46,10 @@ class ConfigGameTest
     {
         ConfigGame game = ConfigGame.create(new ConfigDocument());
 
-        assertTrue(matches(game.ai().affectedEntityIdMatcher(), "minecraft:cow"));
-        assertTrue(matches(game.ai().affectedEntityIdMatcher(), "example:custom_mob"));
+        assertTrue(game.ai().affectedEntityIdMatcher().matches(
+                Identifier.tryParse("example:custom_mob"), MobCategory.MONSTER));
+        assertFalse(game.ai().affectedEntityIdMatcher().matches(
+                Identifier.tryParse("minecraft:cow"), MobCategory.CREATURE));
         assertTrue(matches(game.ai().ignoreBuildEntityIdMatcher(), "minecraft:ghast"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:vex"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:zombie"));
