@@ -8,7 +8,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +32,7 @@ public abstract class PersistentExpiringBlockStorage<TData> extends ExpiringBloc
                 () -> new StorageSavedData<>(List.of(), savedDataCodec),
                 (tag, registries) -> new StorageSavedData<>(savedDataCodec.parse(
                         registries.createSerializationContext(NbtOps.INSTANCE), tag).getOrThrow(), savedDataCodec),
-                DataFixTypes.SAVED_DATA_COMMAND_STORAGE
+                null
         );
         savedDataName = Constants.MOD_ID + "_blockstorage_" + name;
     }
