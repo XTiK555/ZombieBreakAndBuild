@@ -1,5 +1,7 @@
 package com.tik.zbb.config;
 
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.MobCategory;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,8 +35,10 @@ class ConfigGameTest
     {
         ConfigGame game = ConfigGame.create(new ConfigDocument());
 
-        assertTrue(matches(game.ai().affectedEntityIdMatcher(), "minecraft:cow"));
-        assertTrue(matches(game.ai().affectedEntityIdMatcher(), "example:custom_mob"));
+        assertTrue(game.ai().affectedEntityIdMatcher().matches(
+                ResourceLocation.tryParse("example:custom_mob"), MobCategory.MONSTER));
+        assertFalse(game.ai().affectedEntityIdMatcher().matches(
+                ResourceLocation.tryParse("minecraft:cow"), MobCategory.CREATURE));
         assertTrue(matches(game.ai().ignoreBuildEntityIdMatcher(), "minecraft:ghast"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:vex"));
         assertFalse(matches(game.ai().ignoreBreakEntityIdMatcher(), "minecraft:zombie"));
