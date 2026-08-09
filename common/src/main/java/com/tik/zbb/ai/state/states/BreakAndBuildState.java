@@ -15,7 +15,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class BreakAndBuildState extends BaseMobState
 {
-    private static final int STUCK_TICKS_TO_BREAK_AND_BUILD = 40;
+    private static final int STUCK_TICKS_TO_BREAK_AND_BUILD = 30;
     private static final double STUCK_RADIUS = 1D;
     private static final int MAX_NO_PATH_TICKS = 10;
 
