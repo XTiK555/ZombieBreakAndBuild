@@ -5,7 +5,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.tik.zbb.Constants;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +30,7 @@ public abstract class PersistentExpiringBlockStorage<TData> extends ExpiringBloc
                 Constants.MOD_ID + "_blockstorage_" + name,
                 () -> new StorageSavedData<>(List.of()),
                 savedDataCodec,
-                DataFixTypes.SAVED_DATA_COMMAND_STORAGE
+                null
         );
     }
 
