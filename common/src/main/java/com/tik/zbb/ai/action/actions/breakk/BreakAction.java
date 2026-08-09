@@ -33,6 +33,8 @@ public class BreakAction implements IMobAction<BreakRequest>
     @Override
     public boolean canExecute(MobActionContext context, BreakRequest request)
     {
+        if (!context.level().isLoaded(request.pos())) return false;
+
         boolean isAir = context.level().getBlockState(request.pos()).isAir();
         boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
         boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
