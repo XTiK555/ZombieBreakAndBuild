@@ -20,17 +20,10 @@ public final class TargetVisibilityThroughBlocksUtility
 
     public static boolean canSeeThroughSolidBlocks(Mob mob, LivingEntity target, int maxSolidBlocks)
     {
-        if (maxSolidBlocks == 0)
-        {
-            return true;
-        }
-
         Level level = mob.level();
 
-        if (level != target.level())
-        {
-            return false;
-        }
+        if (level != target.level()) return false;
+        if (maxSolidBlocks == 0) return true;
 
         double fromX = mob.getX();
         double fromY = mob.getEyeY();
@@ -48,10 +41,7 @@ public final class TargetVisibilityThroughBlocksUtility
         int endY = Mth.floor(toY);
         int endZ = Mth.floor(toZ);
 
-        if (x == endX && y == endY && z == endZ)
-        {
-            return true;
-        }
+        if (x == endX && y == endY && z == endZ) return true;
 
         double deltaX = toX - fromX;
         double deltaY = toY - fromY;
