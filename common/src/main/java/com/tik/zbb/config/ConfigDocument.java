@@ -88,7 +88,7 @@ public class ConfigDocument
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Mob IDs that get ZBB behavior. Supports wildcards, ! exclusions and @categories. (only Pathfinder mobs)")
-        public List<String> affectedEntityIdList = new ArrayList<>(List.of("*:*"));
+        public List<String> affectedEntityIdList = new ArrayList<>(List.of("@monster"));
 
         @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
