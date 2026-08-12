@@ -10,7 +10,9 @@
     "LevelChunkMixin",
     "NATGoalMixin",
     "TargetGoalMixin",
-    "accessor.TargetingConditionsAccessor"
+    "accessor.TargetingConditionsAccessor",
+    "accessor.display.BlockDisplayAccessor",
+    "accessor.display.DisplayAccessor"
   ],
   "client": [
   ],
