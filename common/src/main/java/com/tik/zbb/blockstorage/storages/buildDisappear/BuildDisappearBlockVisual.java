@@ -5,16 +5,13 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.MainCommon;
 import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.NbtUtils;
+import com.tik.zbb.mixin.accessor.display.BlockDisplayAccessor;
+import com.tik.zbb.mixin.accessor.display.DisplayAccessor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.level.storage.TagValueInput;
 import org.greenrobot.eventbus.Subscribe;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -22,8 +19,9 @@ import org.joml.Vector3f;
 public class BuildDisappearBlockVisual
 {
     private static final String DISPLAY_TAG = "zbb_build_disappear";
-    private static final int SHRINK_BLOCK_DISPLAY_STEPS = 8;
-    private static final int SHRINK_BLOCK_DISPLAY_STEP_DELAY = 1;
+    private static final int SHRINK_BLOCK_START_DELAY = 2;
+    private static final int SHRINK_BLOCK_INTERPOLATION_DURATION = 8;
+    private static final int SHRINK_BLOCK_DISPLAY_LIFETIME = SHRINK_BLOCK_START_DELAY + SHRINK_BLOCK_INTERPOLATION_DURATION;
     private static final float SHRINK_BLOCK_DISPLAY_START_SCALE = 1.0f;
     private static final float SHRINK_BLOCK_DISPLAY_END_SCALE = 0.05f;
     private static final float SHRINK_BLOCK_DISPLAY_CURVE_POWER = 1.6f;
@@ -42,7 +40,7 @@ public class BuildDisappearBlockVisual
         if (visualEffects.builtDisappearBlockDisplay()) playShrinkBlockDisplayEffect(event);
         if (visualEffects.builtDisappearShrinkSound()) playShrinkSound(event);
         if (visualEffects.builtDisappearSound())
-            Constants.SCHEDULER.schedule(() -> playDisappearSound(event), (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+            Constants.SCHEDULER.schedule(() -> playDisappearSound(event), SHRINK_BLOCK_START_DELAY + SHRINK_BLOCK_INTERPOLATION_DURATION);
     }
 
     @Subscribe
@@ -93,80 +91,58 @@ public class BuildDisappearBlockVisual
         double y = event.pos().getY() + 0.5;
         double z = event.pos().getZ() + 0.5;
 
-        Display.BlockDisplay blockDisplay = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, event.level())
-        {
-            @Override
-            public boolean shouldBeSaved()
-            {
-                return false;
-            }
-        };
+        Display.BlockDisplay blockDisplay =
+                new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, event.level())
+                {
+                    @Override
+                    public boolean shouldBeSaved()
+                    {
+                        return false;
+                    }
 
-        updateBlockDisplay(blockDisplay, event, x, y, z, SHRINK_BLOCK_DISPLAY_START_SCALE, 1);
-        if (!event.level().addFreshEntity(blockDisplay)) return;
+                    @Override
+                    public void tick()
+                    {
+                        super.tick();
 
-        for (int step = 1; step <= SHRINK_BLOCK_DISPLAY_STEPS; step++)
-        {
-            final int currentStep = step;
+                        if (tickCount > SHRINK_BLOCK_START_DELAY && tickCount <= SHRINK_BLOCK_DISPLAY_LIFETIME)
+                        {
+                            float progress = (tickCount - SHRINK_BLOCK_START_DELAY) / (float) SHRINK_BLOCK_INTERPOLATION_DURATION;
+                            float easedProgress = (float) Math.pow(progress, SHRINK_BLOCK_DISPLAY_CURVE_POWER);
+                            float scale = SHRINK_BLOCK_DISPLAY_START_SCALE + (SHRINK_BLOCK_DISPLAY_END_SCALE - SHRINK_BLOCK_DISPLAY_START_SCALE) * easedProgress;
 
-            Constants.SCHEDULER.schedule(() ->
-            {
-                if (blockDisplay.isRemoved()) return;
+                            DisplayAccessor accessor = (DisplayAccessor) (Object) this;
+                            accessor.zbb$setTransformationInterpolationDuration(1);
+                            accessor.zbb$setTransformation(createTransformation(scale));
+                            accessor.zbb$setTransformationInterpolationDelay(0);
+                        }
 
-                float progress = currentStep / (float) SHRINK_BLOCK_DISPLAY_STEPS;
-                float easedProgress = easeIn(progress, SHRINK_BLOCK_DISPLAY_CURVE_POWER);
+                        if (tickCount > SHRINK_BLOCK_DISPLAY_LIFETIME + 2)
+                        {
+                            discard();
+                        }
+                    }
+                };
 
-                float scale = lerp(
-                        SHRINK_BLOCK_DISPLAY_START_SCALE,
-                        SHRINK_BLOCK_DISPLAY_END_SCALE,
-                        easedProgress
-                );
+        DisplayAccessor displayAccessor = (DisplayAccessor) blockDisplay;
+        BlockDisplayAccessor blockDisplayAccessor = (BlockDisplayAccessor) blockDisplay;
 
-                updateBlockDisplay(blockDisplay, event, x, y, z, scale, SHRINK_BLOCK_DISPLAY_STEP_DELAY);
+        blockDisplayAccessor.zbb$setBlockState(event.placedState());
 
-            }, currentStep * SHRINK_BLOCK_DISPLAY_STEP_DELAY);
-        }
+        displayAccessor.zbb$setTransformation(createTransformation(SHRINK_BLOCK_DISPLAY_START_SCALE));
+        displayAccessor.zbb$setTransformationInterpolationDuration(0);
+        displayAccessor.zbb$setTransformationInterpolationDelay(0);
 
-        Constants.SCHEDULER.schedule(blockDisplay::discard,
-                (SHRINK_BLOCK_DISPLAY_STEPS * SHRINK_BLOCK_DISPLAY_STEP_DELAY) + SHRINK_BLOCK_DISPLAY_STEP_DELAY);
-    }
-
-    private void updateBlockDisplay(Display.BlockDisplay blockDisplay,
-                                    BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event,
-                                    double x, double y, double z, float scale, int interpolationDuration)
-    {
-        float translation = -0.5f * scale;
-        Transformation transformation = new Transformation(
-                new Vector3f(translation),
-                new Quaternionf(),
-                new Vector3f(scale),
-                new Quaternionf()
-        );
-
-        CompoundTag displayData = new CompoundTag();
-        displayData.put(Display.BlockDisplay.TAG_BLOCK_STATE, NbtUtils.writeBlockState(event.placedState()));
-        displayData.put(Display.TAG_TRANSFORMATION,
-                Transformation.CODEC.encodeStart(NbtOps.INSTANCE, transformation).getOrThrow());
-        displayData.putInt(Display.TAG_TRANSFORMATION_START_INTERPOLATION, 0);
-        displayData.putInt(Display.TAG_TRANSFORMATION_INTERPOLATION_DURATION, interpolationDuration);
-
-        blockDisplay.load(TagValueInput.create(
-                ProblemReporter.DISCARDING,
-                event.level().registryAccess(),
-                displayData
-        ));
         blockDisplay.setPos(x, y, z);
         blockDisplay.addTag(DISPLAY_TAG);
+
+        if (!event.level().addFreshEntity(blockDisplay)) return;
     }
 
-    private static float easeIn(float t, float power)
+    private Transformation createTransformation(float scale)
     {
-        return (float) Math.pow(t, power);
-    }
+        float translation = -0.5f * scale;
 
-    private static float lerp(float start, float end, float progress)
-    {
-        return start + (end - start) * progress;
+        return new Transformation(new Vector3f(translation), new Quaternionf(), new Vector3f(scale), new Quaternionf());
     }
-
 }
