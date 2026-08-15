@@ -107,6 +107,22 @@ class ZbbConfigCommandTest
     }
 
     @Test
+    void collectionCommandsExposeSchemaPathsLikeSet()
+    {
+        assertNull(configCommand("add").getChild("path"));
+        assertNull(configCommand("remove").getChild("path"));
+        assertNotNull(configCommand("add").getChild("ai.affectedEntityIdList"));
+        assertNotNull(configCommand("remove").getChild("blocks.dimensionPlaceBlockIdList"));
+        assertNull(configCommand("add").getChild("ai.alwaysSeeNearestPlayer"));
+    }
+
+    @Test
+    void mapAddKeepsKeyValueSyntax()
+    {
+        assertParses("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
+    }
+
+    @Test
     void commandsWithoutValuesAcceptModesWithoutModeLiteral()
     {
         assertParses("zbb config clear ai.affectedEntityIdList runtime_only");
@@ -145,8 +161,7 @@ class ZbbConfigCommandTest
 
     private void assertNoModeLiteralUnderValueCommand(String command)
     {
-        CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild(
-                command.equals("set") ? "ai.alwaysSeeNearestPlayer" : "path");
+        CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild("ai.affectedEntityIdList");
 
         assertNotNull(pathNode);
         assertTrue(pathNode.getChildren().stream().noneMatch(child -> child.getName().equals("mode")));
