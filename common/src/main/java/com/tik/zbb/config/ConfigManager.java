@@ -5,6 +5,7 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.config.edit.ConfigEditRequest;
 import com.tik.zbb.config.edit.ConfigEditResult;
 import com.tik.zbb.config.edit.ConfigEditService;
+import com.tik.zbb.config.edit.ConfigWriteMode;
 import com.tik.zbb.config.edit.MinecraftConfigSemanticValidator;
 import com.tik.zbb.config.io.ConfigDocumentNormalizer;
 import com.tik.zbb.config.io.ConfigFileStore;
@@ -53,6 +54,11 @@ public final class ConfigManager
     public static Object getEffectiveValue(ConfigFieldDescriptor descriptor)
     {
         return service().effectiveValue(descriptor);
+    }
+
+    public static Object getValueForMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        return service().valueForMode(descriptor, writeMode);
     }
 
     public static Map<ConfigPath, Object> getRuntimeOverrides()

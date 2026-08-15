@@ -44,6 +44,11 @@ public final class ConfigRepository
         return descriptor.copyValue(descriptor.getValue(effectiveData));
     }
 
+    public synchronized Object persistedValue(ConfigFieldDescriptor descriptor)
+    {
+        return descriptor.copyValue(descriptor.getValue(persistedData));
+    }
+
     public synchronized ConfigDocument persistedDocument()
     {
         return ConfigDocumentCopier.copy(persistedData);

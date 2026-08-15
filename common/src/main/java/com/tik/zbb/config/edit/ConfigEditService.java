@@ -42,6 +42,13 @@ public final class ConfigEditService
         return repository.effectiveValue(descriptor);
     }
 
+    public Object valueForMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        return writeMode == ConfigWriteMode.PERSISTENT
+                ? repository.persistedValue(descriptor)
+                : repository.effectiveValue(descriptor);
+    }
+
     public Map<ConfigPath, Object> runtimeOverrides()
     {
         return repository.runtimeOverrides();

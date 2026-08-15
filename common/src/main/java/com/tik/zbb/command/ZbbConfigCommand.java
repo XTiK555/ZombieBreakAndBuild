@@ -1,12 +1,13 @@
 package com.tik.zbb.command;
 
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationRegistry;
@@ -32,89 +33,227 @@ import static net.minecraft.commands.Commands.literal;
 
 public final class ZbbConfigCommand
 {
-    private static final String PATH_ARGUMENT = "path";
     private static final String VALUE_ARGUMENT = "value";
     private static final String ENTRY_ARGUMENT = "entry";
     private static final String KEY_ARGUMENT = "key";
-    private static final SuggestionProvider<CommandSourceStack> LEAF_PATH_SUGGESTIONS = (context, builder) ->
-            SharedSuggestionProvider.suggest(ConfigSchema.descriptors().stream()
-                    .map(descriptor -> descriptor.path().value()), builder);
-
-    private static final SuggestionProvider<CommandSourceStack> PATH_OR_SECTION_SUGGESTIONS = (context, builder) ->
-            SharedSuggestionProvider.suggest(pathAndSectionSuggestions(), builder);
+    private static final SimpleCommandExceptionType EXPECTED_VALUE =
+            new SimpleCommandExceptionType(Component.literal("Expected value"));
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         dispatcher.register(literal("zbb")
                 .then(literal("config")
                         .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                        .then(literal("list")
-                                .executes(context -> list(context, null))
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(PATH_OR_SECTION_SUGGESTIONS)
-                                        .executes(context -> list(context, readPath(context)))))
-                        .then(literal("get")
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .executes(ZbbConfigCommand::get)))
-                        .then(literal("runtime_overrides")
-                                .executes(ZbbConfigCommand::runtimeOverrides))
-                        .then(setCommand())
-                        .then(literal("add")
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(modeValue(ConfigWriteMode.PERSISTENT, ENTRY_ARGUMENT, context -> add(context, ConfigWriteMode.PERSISTENT)))
-                                        .then(modeValue(ConfigWriteMode.RUNTIME_ONLY, ENTRY_ARGUMENT, context -> add(context, ConfigWriteMode.RUNTIME_ONLY)))))
-                        .then(literal("remove")
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .then(modeValue(ConfigWriteMode.PERSISTENT, ENTRY_ARGUMENT, context -> remove(context, ConfigWriteMode.PERSISTENT)))
-                                        .then(modeValue(ConfigWriteMode.RUNTIME_ONLY, ENTRY_ARGUMENT, context -> remove(context, ConfigWriteMode.RUNTIME_ONLY)))))
-                        .then(literal("clear")
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT)))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.PERSISTENT))))
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.clear(readPath(context), ConfigWriteMode.RUNTIME_ONLY))))))
-                        .then(literal("reset")
-                                .then(literal("all")
-                                        .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT)))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT))))
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY)))))
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(LEAF_PATH_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT)))
-                                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.PERSISTENT))))
-                                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                                .executes(context -> edit(context, ConfigEditRequest.reset(readPath(context), ConfigWriteMode.RUNTIME_ONLY))))))
-                        .then(literal("discard_runtime_overrides")
-                                .executes(context -> edit(context, ConfigEditRequest.discardAll()))
-                                .then(literal("all")
-                                        .executes(context -> edit(context, ConfigEditRequest.discardAll())))
-                                .then(argument(PATH_ARGUMENT, StringArgumentType.word())
-                                        .suggests(PATH_OR_SECTION_SUGGESTIONS)
-                                        .executes(context -> edit(context, ConfigEditRequest.discard(readPath(context))))))
+                        .then(listCommand())
+                        .then(getCommand())
+                        .then(runtimeOverridesCommand())
+                        .then(editCommand(ConfigEditOperation.SET))
+                        .then(editCommand(ConfigEditOperation.ADD))
+                        .then(editCommand(ConfigEditOperation.REMOVE))
+                        .then(clearCommand())
+                        .then(resetCommand())
                         .then(literal("reload")
                                 .executes(ZbbConfigCommand::reload))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> setCommand()
+    private static LiteralArgumentBuilder<CommandSourceStack> listCommand()
     {
-        LiteralArgumentBuilder<CommandSourceStack> command = literal("set");
+        LiteralArgumentBuilder<CommandSourceStack> command = literal("list")
+                .executes(context -> list(context, null));
+
+        for (String path : pathAndSectionSuggestions())
+        {
+            ConfigPath configPath = new ConfigPath(path);
+            command.then(literal(path)
+                    .executes(context -> list(context, configPath)));
+        }
+
+        return command;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> getCommand()
+    {
+        LiteralArgumentBuilder<CommandSourceStack> command = literal("get");
+
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
-            command.then(literal(descriptor.path().value())
-                    .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                            .then(setValueArgument(descriptor, ConfigWriteMode.PERSISTENT)))
-                    .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                            .then(setValueArgument(descriptor, ConfigWriteMode.RUNTIME_ONLY))));
+            ConfigPath path = descriptor.path();
+            command.then(literal(path.value())
+                    .executes(context -> get(context, path)));
         }
+
         return command;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> runtimeOverridesCommand()
+    {
+        LiteralArgumentBuilder<CommandSourceStack> discard = literal("discard")
+                .executes(context -> edit(context, ConfigEditRequest.discardAll()));
+
+        for (String path : pathAndSectionSuggestions())
+        {
+            ConfigPath configPath = new ConfigPath(path);
+            discard.then(literal(path)
+                    .executes(context -> edit(context, ConfigEditRequest.discard(configPath))));
+        }
+
+        return literal("runtime_overrides")
+                .then(literal("get")
+                        .executes(ZbbConfigCommand::getRuntimeOverrides))
+                .then(discard);
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> clearCommand()
+    {
+        LiteralArgumentBuilder<CommandSourceStack> command = literal("clear");
+
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+        {
+            ConfigPath path = descriptor.path();
+            command.then(literal(path.value())
+                    .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                            .executes(context -> edit(context, ConfigEditRequest.clear(path, ConfigWriteMode.PERSISTENT))))
+                    .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                            .executes(context -> edit(context, ConfigEditRequest.clear(path, ConfigWriteMode.RUNTIME_ONLY)))));
+        }
+
+        return command;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> resetCommand()
+    {
+        LiteralArgumentBuilder<CommandSourceStack> command = literal("reset")
+                .then(literal("all")
+                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT))))
+                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY)))));
+
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+        {
+            ConfigPath path = descriptor.path();
+            command.then(literal(path.value())
+                    .then(literal(ConfigWriteMode.PERSISTENT.commandName())
+                            .executes(context -> edit(context, ConfigEditRequest.reset(path, ConfigWriteMode.PERSISTENT))))
+                    .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
+                            .executes(context -> edit(context, ConfigEditRequest.reset(path, ConfigWriteMode.RUNTIME_ONLY)))));
+        }
+
+        return command;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> editCommand(ConfigEditOperation operation)
+    {
+        LiteralArgumentBuilder<CommandSourceStack> command = literal(operationName(operation));
+
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+        {
+            if (operation != ConfigEditOperation.SET && !isCollection(descriptor.kind())) continue;
+
+            command.then(literal(descriptor.path().value())
+                    .then(editMode(descriptor, ConfigWriteMode.PERSISTENT, operation))
+                    .then(editMode(descriptor, ConfigWriteMode.RUNTIME_ONLY, operation)));
+        }
+
+        return command;
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> editMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode, ConfigEditOperation operation)
+    {
+        var mode = literal(writeMode.commandName());
+
+        return switch (operation)
+        {
+            case SET -> mode.then(setValueArgument(descriptor, writeMode));
+            case ADD -> mode.then(addEntryArgument(descriptor, writeMode));
+            case REMOVE -> mode.then(removeEntryArgument(descriptor, writeMode));
+            default -> throw new IllegalArgumentException("Unsupported operation: " + operation);
+        };
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, String> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        RequiredArgumentBuilder<CommandSourceStack, String> entry = argument(ENTRY_ARGUMENT, StringArgumentType.greedyString());
+
+        entry.suggests((context, builder) ->
+                SharedSuggestionProvider.suggest(
+                        collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
+                        builder));
+
+        return entry.executes(context -> remove(context, descriptor.path(), writeMode));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> addEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        if (isMap(descriptor.kind()))
+        {
+            return mapAddEntryArgument(descriptor, writeMode);
+        }
+        if (descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST)
+        {
+            return patternAddEntryArgument(descriptor, writeMode);
+        }
+
+        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
+        if (semantics != null && semantics.element() != ResourceLocationRegistry.NONE)
+        {
+            return argument(ENTRY_ARGUMENT, identifierArgument(semantics.element()))
+                    .executes(context -> add(
+                            context,
+                            descriptor.path(),
+                            readArgument(context, ENTRY_ARGUMENT),
+                            writeMode));
+        }
+
+        return argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                .executes(context -> add(
+                        context,
+                        descriptor.path(),
+                        readRawValue(context, ENTRY_ARGUMENT),
+                        writeMode));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, String> patternAddEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
+        ArgumentType<?> elementType = identifierArgument(semantics == null
+                ? ResourceLocationRegistry.NONE
+                : semantics.element());
+
+        return argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
+                .suggests((context, builder) ->
+                {
+                    int offset = patternValueOffset(builder.getRemaining(), 0);
+                    String remaining = builder.getRemaining().substring(offset);
+                    if (remaining.indexOf('*') >= 0 || remaining.indexOf(',') >= 0)
+                    {
+                        return builder.buildFuture();
+                    }
+
+                    return elementType.listSuggestions(
+                            context,
+                            builder.createOffset(builder.getStart() + offset));
+                })
+                .executes(context -> add(
+                        context,
+                        descriptor.path(),
+                        readSinglePattern(context, ENTRY_ARGUMENT, elementType),
+                        writeMode));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapAddEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        String valueName = mapValueArgumentTypeName(descriptor.kind());
+
+        return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
+                .then(argument(valueName, mapValueArgumentType(descriptor))
+                        .executes(context -> add(
+                                context,
+                                descriptor.path(),
+                                readArgument(context, KEY_ARGUMENT)
+                                        + "="
+                                        + readArgument(context, valueName),
+                                writeMode)));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, ?> setValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
@@ -134,9 +273,8 @@ public final class ZbbConfigCommand
                     : FloatArgumentType.floatArg((float) range.min(), (float) range.max()), descriptor, writeMode);
             case RESOURCE_LOCATION -> scalarSetValueArgument("id", identifierArgument(valueRegistry(descriptor)), descriptor, writeMode);
             case STRING -> scalarSetValueArgument(VALUE_ARGUMENT, StringArgumentType.greedyString(), descriptor, writeMode);
-            case STRING_LIST -> scalarSetValueArgument("comma_separated_values", StringArgumentType.greedyString(), descriptor, writeMode);
-            case RESOURCE_LOCATION_PATTERN_LIST ->
-                    scalarSetValueArgument("comma_separated_patterns", StringArgumentType.greedyString(), descriptor, writeMode);
+            case STRING_LIST -> listSetValueArgument(descriptor, writeMode);
+            case RESOURCE_LOCATION_PATTERN_LIST -> patternListSetValueArgument(descriptor, writeMode);
             case RESOURCE_LOCATION_PAIR_MAP, RESOURCE_LOCATION_INT_PAIR_MAP -> mapSetValueArgument(descriptor, writeMode);
         };
     }
@@ -147,21 +285,111 @@ public final class ZbbConfigCommand
         return argument(name, type).executes(context -> set(context, descriptor.path(), readArgument(context, name), writeMode));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> listSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
     {
         ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
-        ResourceLocationRegistry keyRegistry = semantics == null ? ResourceLocationRegistry.NONE : semantics.key();
-        String valueName = descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP ? "integer" : "id";
-        ArgumentType<?> valueType = descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP
-                ? IntegerArgumentType.integer(0)
-                : identifierArgument(semantics == null ? ResourceLocationRegistry.NONE : semantics.value());
+        if (semantics != null && semantics.element() != ResourceLocationRegistry.NONE)
+        {
+            return argument(VALUE_ARGUMENT, identifierArgument(semantics.element()))
+                    .executes(context -> set(
+                            context,
+                            descriptor.path(),
+                            readArgument(context, VALUE_ARGUMENT),
+                            writeMode));
+        }
 
-        return argument(KEY_ARGUMENT, identifierArgument(keyRegistry))
-                .then(argument(valueName, valueType).executes(context -> set(
+        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
+                .executes(context -> set(
                         context,
                         descriptor.path(),
-                        readArgument(context, KEY_ARGUMENT) + "=" + readArgument(context, valueName),
-                        writeMode)));
+                        readRawValue(context, VALUE_ARGUMENT),
+                        writeMode));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, String> patternListSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
+        ArgumentType<?> elementType = identifierArgument(semantics == null
+                ? ResourceLocationRegistry.NONE
+                : semantics.element());
+
+        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
+                .suggests((context, builder) ->
+                {
+                    int offset = patternValueOffset(builder.getRemaining(), 0);
+                    String remaining = builder.getRemaining().substring(offset);
+                    if (remaining.indexOf('*') >= 0 || remaining.indexOf(',') >= 0)
+                    {
+                        return builder.buildFuture();
+                    }
+
+                    return elementType.listSuggestions(
+                            context,
+                            builder.createOffset(builder.getStart() + offset));
+                })
+                .executes(context -> set(
+                        context,
+                        descriptor.path(),
+                        readSinglePattern(context, VALUE_ARGUMENT, elementType),
+                        writeMode));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    {
+        String valueName = mapValueArgumentTypeName(descriptor.kind());
+
+        return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
+                .then(argument(valueName, mapValueArgumentType(descriptor))
+                        .executes(context -> set(
+                                context,
+                                descriptor.path(),
+                                readArgument(context, KEY_ARGUMENT)
+                                        + "="
+                                        + readArgument(context, valueName),
+                                writeMode)));
+    }
+
+    private static String readSinglePattern(CommandContext<CommandSourceStack> context, String argument, ArgumentType<?> elementType) throws CommandSyntaxException
+    {
+        String value = readRawValue(context, argument);
+        validatePattern(value, elementType);
+        return value;
+    }
+
+    private static void validatePattern(String value, ArgumentType<?> elementType) throws CommandSyntaxException
+    {
+        int prefixLength = 0;
+        while (prefixLength < value.length() && isPatternModifier(value.charAt(prefixLength)))
+        {
+            prefixLength++;
+        }
+
+        if (prefixLength == value.length())
+        {
+            throw EXPECTED_VALUE.create();
+        }
+
+        String prefix = value.substring(0, prefixLength)
+                .replace("@", "")
+                .replace("!", "")
+                .replace("*", "x");
+
+        String pattern = value.substring(prefixLength)
+                .replace('*', 'x');
+
+        StringReader validationReader = new StringReader(prefix + pattern);
+        readArgument(validationReader, elementType);
+
+        if (validationReader.canRead())
+        {
+            throw EXPECTED_VALUE.createWithContext(validationReader);
+        }
+    }
+
+    private static String readArgument(StringReader reader, ArgumentType<?> type) throws CommandSyntaxException
+    {
+        Object value = type.parse(reader);
+        return value instanceof ResourceKey<?> key ? key.identifier().toString() : String.valueOf(value).trim();
     }
 
     private static ArgumentType<?> identifierArgument(ResourceLocationRegistry registry)
@@ -175,15 +403,16 @@ public final class ZbbConfigCommand
         };
     }
 
+    private static ResourceLocationRegistry keyRegistry(ConfigFieldDescriptor descriptor)
+    {
+        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
+        return semantics == null ? ResourceLocationRegistry.NONE : semantics.key();
+    }
+
     private static ResourceLocationRegistry valueRegistry(ConfigFieldDescriptor descriptor)
     {
         ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
         return semantics == null ? ResourceLocationRegistry.NONE : semantics.value();
-    }
-
-    private static LiteralArgumentBuilder<CommandSourceStack> modeValue(ConfigWriteMode mode, String valueArgument, Command<CommandSourceStack> command)
-    {
-        return literal(mode.commandName()).then(argument(valueArgument, StringArgumentType.greedyString()).executes(command));
     }
 
     private static int list(CommandContext<CommandSourceStack> context, ConfigPath path)
@@ -202,9 +431,8 @@ public final class ZbbConfigCommand
         return descriptors.size();
     }
 
-    private static int get(CommandContext<CommandSourceStack> context)
+    private static int get(CommandContext<CommandSourceStack> context, ConfigPath path)
     {
-        ConfigPath path = readPath(context);
         ConfigFieldDescriptor descriptor = ConfigSchema.find(path).orElse(null);
         if (descriptor == null)
         {
@@ -215,7 +443,7 @@ public final class ZbbConfigCommand
         return 1;
     }
 
-    private static int runtimeOverrides(CommandContext<CommandSourceStack> context)
+    private static int getRuntimeOverrides(CommandContext<CommandSourceStack> context)
     {
         Map<ConfigPath, Object> overrides = ConfigManager.getRuntimeOverrides();
         success(context, "runtime overrides (" + overrides.size() + ")");
@@ -231,19 +459,15 @@ public final class ZbbConfigCommand
         return editRaw(context, ConfigEditRequest.set(path, rawValue, writeMode));
     }
 
-    private static int add(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
+    private static int add(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
     {
-        return editRaw(context, ConfigEditRequest.add(
-                readPath(context),
-                readRawValue(context, ENTRY_ARGUMENT),
-                writeMode
-        ));
+        return editRaw(context, ConfigEditRequest.add(path, entry, writeMode));
     }
 
-    private static int remove(CommandContext<CommandSourceStack> context, ConfigWriteMode writeMode)
+    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, ConfigWriteMode writeMode) throws CommandSyntaxException
     {
         return editRaw(context, ConfigEditRequest.remove(
-                readPath(context),
+                path,
                 readRawValue(context, ENTRY_ARGUMENT),
                 writeMode
         ));
@@ -251,27 +475,40 @@ public final class ZbbConfigCommand
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
     {
-        ConfigEditResult result = ConfigManager.edit(request);
-        if (!result.success())
-        {
-            return fail(context, result.message());
-        }
-
-        String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
-        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", changed=" + result.affectedCount() + ", mode=" + result.writeMode().commandName());
-        return Math.max(1, result.affectedCount());
+        return handleEditResult(context, ConfigManager.edit(request));
     }
 
     private static int editRaw(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
     {
-        ConfigEditResult result = ConfigManager.editRaw(request);
+        return handleEditResult(context, ConfigManager.editRaw(request));
+    }
+
+    private static int handleEditResult(CommandContext<CommandSourceStack> context, ConfigEditResult result)
+    {
         if (!result.success())
         {
             return fail(context, result.message());
         }
 
-        String valueSuffix = result.effectiveValue() == null ? "" : " = " + formatResultValue(result);
-        success(context, operationName(result.operation()) + " " + (result.path() == null ? "all" : result.path()) + valueSuffix + ", changed=" + result.affectedCount() + ", mode=" + result.writeMode().commandName());
+        String valueSuffix = result.effectiveValue() == null
+                ? ""
+                : " = " + formatResultValue(result);
+
+        String modeSuffix = result.writeMode() == null
+                ? ""
+                : ", mode=" + result.writeMode().commandName();
+
+        String pathSuffix = result.path() == null
+                ? result.operation() == ConfigEditOperation.DISCARD_ALL_OVERRIDES ? "" : " all"
+                : " " + result.path();
+
+        success(context,
+                operationName(result.operation())
+                        + pathSuffix
+                        + valueSuffix
+                        + ", changed=" + result.affectedCount()
+                        + modeSuffix);
+
         return Math.max(1, result.affectedCount());
     }
 
@@ -279,10 +516,8 @@ public final class ZbbConfigCommand
     {
         return switch (operation)
         {
-            case RESET_TO_DEFAULT -> "reset_to_default";
-            case RESET_ALL_TO_DEFAULTS -> "reset_all_to_defaults";
-            case REVERT_TO_PERSISTED -> "revert_to_persisted";
-            case DISCARD_ALL_OVERRIDES -> "discard_all_overrides";
+            case RESET_TO_DEFAULT, RESET_ALL_TO_DEFAULTS -> "reset";
+            case REVERT_TO_PERSISTED, DISCARD_ALL_OVERRIDES -> "runtime_overrides discard";
             default -> operation.name().toLowerCase();
         };
     }
@@ -329,11 +564,6 @@ public final class ZbbConfigCommand
         return 1;
     }
 
-    private static ConfigPath readPath(CommandContext<CommandSourceStack> context)
-    {
-        return new ConfigPath(StringArgumentType.getString(context, PATH_ARGUMENT));
-    }
-
     private static String readRawValue(CommandContext<CommandSourceStack> context, String argument)
     {
         return StringArgumentType.getString(context, argument).trim();
@@ -372,5 +602,55 @@ public final class ZbbConfigCommand
             }
         }
         return paths;
+    }
+
+    private static int patternValueOffset(String value, int offset)
+    {
+        while (offset < value.length() && Character.isWhitespace(value.charAt(offset)))
+        {
+            offset++;
+        }
+        while (offset < value.length() && isPatternModifier(value.charAt(offset)))
+        {
+            offset++;
+        }
+        return offset;
+    }
+
+    private static boolean isPatternModifier(char value)
+    {
+        return value == '@' || value == '!' || value == '*';
+    }
+
+    private static ArgumentType<?> mapValueArgumentType(ConfigFieldDescriptor descriptor)
+    {
+        return descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP
+                ? IntegerArgumentType.integer(0)
+                : identifierArgument(valueRegistry(descriptor));
+    }
+
+    private static String mapValueArgumentTypeName(ConfigValueKind kind)
+    {
+        return kind == ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP ? "integer" : "id";
+    }
+
+    private static Collection<String> collectionEntries(Object value)
+    {
+        if (value instanceof List<?> list) return list.stream().map(String::valueOf).toList();
+        if (value instanceof java.util.Map<?, ?> map) return map.keySet().stream().map(String::valueOf).toList();
+        return List.of();
+    }
+
+    private static boolean isCollection(ConfigValueKind kind)
+    {
+        return kind == ConfigValueKind.STRING_LIST
+                || kind == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST
+                || isMap(kind);
+    }
+
+    private static boolean isMap(ConfigValueKind kind)
+    {
+        return kind == ConfigValueKind.RESOURCE_LOCATION_PAIR_MAP
+                || kind == ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP;
     }
 }
