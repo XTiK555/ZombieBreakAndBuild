@@ -6,7 +6,6 @@ import com.tik.zbb.utilities.ShouldApplyToMobUtility;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySelector;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -14,7 +13,6 @@ import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.EnumSet;
-import java.util.List;
 
 public class AlwaysSeeNearestPlayerGoal extends Goal
 {
@@ -38,7 +36,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         if (!ShouldApplyToMobUtility.matchesFullZbbMobFilter(mob, configSnapshot)) return false;
         if (mob.getTarget() != null) return false;
 
-        target = findNearestValidPlayer(((ServerLevel) mob.level()).players());
+        target = findNearestValidPlayer();
         return target != null;
     }
 
@@ -63,14 +61,16 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         target = null;
     }
 
-    private Player findNearestValidPlayer(List<ServerPlayer> players)
+    private Player findNearestValidPlayer()
     {
-        Player best = null;
+        if (!(mob.level() instanceof ServerLevel level)) return null;
+
+        ServerPlayer best = null;
         double bestDistanceSq = Double.POSITIVE_INFINITY;
 
-        for (ServerPlayer player : players)
+        for (ServerPlayer player : level.players())
         {
-            if (!passesVanillaChecks(mob, player)) continue;
+            if (!isValidPlayer(mob, player)) continue;
 
             double distanceSq = player.distanceToSqr(mob);
 
@@ -84,14 +84,14 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         return best;
     }
 
-    private boolean passesVanillaChecks(Mob mob, LivingEntity candidate)
+    private boolean isValidPlayer(Mob mob, ServerPlayer player)
     {
-        if (candidate == null || !candidate.isAlive()) return false;
+        if (player == null || !player.isAlive()) return false;
         if (!(mob.level() instanceof ServerLevel level)) return false;
-        if (candidate instanceof Player p && !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(p)) return false;
-        if (!mob.canAttack(candidate)) return false;
-        if (mob instanceof NeutralMob neutral && !neutral.isAngryAt(candidate, level)) return false;
+        if (!EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(player)) return false;
+        if (!mob.canAttack(player)) return false;
+        if (mob instanceof NeutralMob neutral && !neutral.isAngryAt(player, level)) return false;
 
-        return targetingConditions.test(level, mob, candidate);
+        return targetingConditions.test(level, mob, player);
     }
 }
