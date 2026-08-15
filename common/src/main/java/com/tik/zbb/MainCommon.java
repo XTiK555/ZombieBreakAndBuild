@@ -76,7 +76,7 @@ public class MainCommon
         }
         if (!hasGoal(targetSelector, AlwaysSeeNearestPlayerGoal.class))
         {
-            targetSelector.addGoal(Integer.MAX_VALUE, new AlwaysSeeNearestPlayerGoal(pFMob));
+            targetSelector.addGoal(Integer.MAX_VALUE - 1, new AlwaysSeeNearestPlayerGoal(pFMob));
         }
     }
 
