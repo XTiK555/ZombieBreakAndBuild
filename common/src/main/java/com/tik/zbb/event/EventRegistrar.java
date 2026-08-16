@@ -6,6 +6,7 @@ import com.tik.zbb.ai.action.actions.build.BuildVisual;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.blockstorage.storages.broken.BrokenReappearBlockVisual;
 import com.tik.zbb.blockstorage.storages.buildDisappear.BuildDisappearBlockVisual;
+import com.tik.zbb.blockstorage.storages.buildDisappear.FallingBuildDisappearBlockTracker;
 import com.tik.zbb.blockstorage.storages.damage.DamageBlockVisual;
 
 public final class EventRegistrar
@@ -17,6 +18,9 @@ public final class EventRegistrar
         Constants.EVENT_BUS.register(BlockStorages.BUILD_PROTECTION_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.BUILD_DISAPPEAR_MANAGER);
         Constants.EVENT_BUS.register(BlockStorages.BROKEN_MANAGER);
+
+        // optional storage adapters
+        Constants.EVENT_BUS.register(new FallingBuildDisappearBlockTracker());
 
         // storage visuals
         Constants.EVENT_BUS.register(new BrokenReappearBlockVisual());

@@ -8,4 +8,9 @@ public final class MixinEvents
 {
     public record OnLevelChunkBlockChangedEvent(ServerLevel level, BlockPos pos, BlockState oldState,
                                                 BlockState newState) {}
+
+    public record OnFallingBlockStartedEvent(ServerLevel level, BlockPos startPos, BlockState blockState) {}
+
+    public record OnFallingBlockFinishedEvent(ServerLevel level, BlockPos startPos, BlockPos finalPos,
+                                               BlockState blockState) {}
 }
