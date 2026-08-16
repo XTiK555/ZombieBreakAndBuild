@@ -45,7 +45,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     }
 
     @Override
-    public void execute(MobActionContext context, BreakRequest request)
+    public boolean execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
         int blockHealth = getBlockHealth(request.pos(), context.level(), context.configSnapshot());
@@ -55,6 +55,7 @@ public class BreakAction implements IMobAction<BreakRequest>
                 newDamage
         );
 
+        boolean succeeded = true;
         if (totalDamage >= blockHealth)
         {
             boolean dropLoot = !context.configSnapshot().game().blockRestoration().brokenBlocksRestoring();
@@ -76,6 +77,7 @@ public class BreakAction implements IMobAction<BreakRequest>
                         ? new OnAnyBlockBrokenEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob())
                         : new OnAnyBlockFailedToBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
             }
+            succeeded = destroyed;
         }
         else
         {
@@ -88,6 +90,7 @@ public class BreakAction implements IMobAction<BreakRequest>
 
 
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().breakCooldown(), 1));
+        return succeeded;
     }
 
     private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)

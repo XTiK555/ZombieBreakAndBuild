@@ -32,18 +32,20 @@ public class BuildAction implements IMobAction<BuildRequest>
     }
 
     @Override
-    public void execute(MobActionContext context, BuildRequest request)
+    public boolean execute(MobActionContext context, BuildRequest request)
     {
         BlockState oldState = context.level().getBlockState(request.pos());
         BlockState placedState = request.bridgeBlock().defaultBlockState();
         BlockEntity oldBlockEntity = context.level().getBlockEntity(request.pos());
         CompoundTag oldNbt = oldBlockEntity != null ? oldBlockEntity.saveWithFullMetadata(context.level().registryAccess()) : null;
 
-        if (context.level().setBlockAndUpdate(request.pos(), placedState))
+        boolean placed = context.level().setBlockAndUpdate(request.pos(), placedState);
+        if (placed)
         {
             Constants.EVENT_BUS.post(new OnAnyBlockPlacedEvent(context.level(), request.pos(), context.configSnapshot(), placedState, oldState, oldNbt));
         }
 
         context.aiTimers().setBuildCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().buildCooldown(), 1));
+        return placed;
     }
 }
