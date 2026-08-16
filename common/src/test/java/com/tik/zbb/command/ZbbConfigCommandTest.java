@@ -117,9 +117,10 @@ class ZbbConfigCommandTest
     }
 
     @Test
-    void mapAddKeepsKeyValueSyntax()
+    void mapAddTakesSuggestedRegistryKeyThenTypedValue()
     {
-        assertParses("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
+        assertParses("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:stone");
+        assertDoesNotParse("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
     }
 
     @Test
