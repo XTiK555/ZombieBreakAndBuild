@@ -45,6 +45,7 @@ dependencies {
 test {
     useJUnitPlatform()
     workingDir = layout.buildDirectory.dir('test-run')
+    doFirst { workingDir.mkdirs() }
 }
 
 configurations {
