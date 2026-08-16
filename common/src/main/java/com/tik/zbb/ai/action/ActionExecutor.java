@@ -83,8 +83,7 @@ public final class ActionExecutor
     {
         if (!action.canExecute(mobActionContext, request)) return false;
 
-        action.execute(mobActionContext, request);
-        return true;
+        return action.execute(mobActionContext, request);
     }
 
     private <R> boolean canExecuteAction(IMobAction<R> action, R request)
