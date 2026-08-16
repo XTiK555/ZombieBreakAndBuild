@@ -13,7 +13,7 @@ public class FreezeAction implements IMobAction<FreezeRequest>
     }
 
     @Override
-    public void execute(MobActionContext context, FreezeRequest request)
+    public boolean execute(MobActionContext context, FreezeRequest request)
     {
         int blockX = context.mob().blockPosition().getX();
         int blockZ = context.mob().blockPosition().getZ();
@@ -25,5 +25,6 @@ public class FreezeAction implements IMobAction<FreezeRequest>
 
         context.mob().getMoveControl().setWantedPosition(centerX, currentY, centerZ, 0);
         context.mob().setDeltaMovement(0.0, currentVelY, 0.0);
+        return true;
     }
 }
