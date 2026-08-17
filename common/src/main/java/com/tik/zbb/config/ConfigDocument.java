@@ -133,7 +133,7 @@ public class ConfigDocument
         public double builtBlocksProtectionTime = 0.75D;
 
         @Range(min = 0, max = 16)
-        @Comment("How far around a mob to search for dangerous blocks (blocks)")
+        @Comment("How far around a mob to search for dangerous blocks (blocks). Higher values may significantly impact performance.")
         public int dangerousBlocksSearchRadius = 1;
 
         @Range(min = 1, max = 1000000)
