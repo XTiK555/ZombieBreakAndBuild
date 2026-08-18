@@ -1,28 +1,12 @@
 package com.tik.zbb.blockstorage.storages.buildDisappear;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.tik.zbb.Constants;
 import com.tik.zbb.blockstorage.PersistentExpiringBlockStorage;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.Optional;
 
 public class BuildDisappearBlockStorage extends PersistentExpiringBlockStorage<BuildDisappearBlockStorageEntry>
 {
-    private static final Codec<BuildDisappearBlockStorageEntry> ENTRY_CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BlockState.CODEC.fieldOf("placed_state").forGetter(BuildDisappearBlockStorageEntry::placedState),
-            BlockState.CODEC.fieldOf("old_state").forGetter(BuildDisappearBlockStorageEntry::oldState),
-            CompoundTag.CODEC.optionalFieldOf("old_nbt").forGetter(entry -> Optional.ofNullable(entry.oldNbt()))
-    ).apply(instance, (placedState, oldState, oldNbt) -> new BuildDisappearBlockStorageEntry(
-            placedState,
-            oldState,
-            oldNbt.orElse(null)
-    )));
-
     public static final class OnRemovedEvent
     {
         private final ServerLevel level;
@@ -37,15 +21,18 @@ public class BuildDisappearBlockStorage extends PersistentExpiringBlockStorage<B
             this.entry = entry;
         }
 
-        public ServerLevel level() { return level; }
-        public BlockPos pos() { return pos; }
-        public BuildDisappearBlockStorageEntry entry() { return entry; }
-        public void cancelAndReassign() { result = RemovalResult.CANCEL_AND_REASSIGN; }
+        public ServerLevel level() {return level;}
+
+        public BlockPos pos() {return pos;}
+
+        public BuildDisappearBlockStorageEntry entry() {return entry;}
+
+        public void cancelAndReassign() {result = RemovalResult.CANCEL_AND_REASSIGN;}
     }
 
     public BuildDisappearBlockStorage()
     {
-        super("build_disappear", ENTRY_CODEC);
+        super("build_disappear", BuildDisappearBlockStorageEntry.CODEC);
     }
 
     @Override
