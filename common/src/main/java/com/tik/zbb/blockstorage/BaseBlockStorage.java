@@ -55,15 +55,16 @@ public abstract class BaseBlockStorage<TData, TStored>
         }
     }
 
-    public void remove(ServerLevel level, BlockPos pos)
+    public TData remove(ServerLevel level, BlockPos pos)
     {
-        remove(level, pos.asLong());
+        return remove(level, pos.asLong());
     }
 
-    public void remove(ServerLevel level, long posKey)
+    public TData remove(ServerLevel level, long posKey)
     {
         beforeAccess(level);
-        removeStored(level, posKey, null, true);
+        TStored removed = removeStored(level, posKey, null, true);
+        return removed != null ? toData(removed) : null;
     }
 
     @Nullable
