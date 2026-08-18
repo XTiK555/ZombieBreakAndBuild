@@ -16,7 +16,9 @@ import java.util.List;
 public class MobStateHandler
 {
     private final List<BaseMobState> mobStateList = new ArrayList<>();
-    private MobStateContext mobStateContext;
+    private final MobStateContext mobStateContext;
+
+    private LivingEntity lastTarget;
 
     public MobStateHandler(ActionExecutor actionExecutor, PathfinderMob mob, AiTimers aiTimers)
     {
@@ -37,6 +39,8 @@ public class MobStateHandler
 
     public void tick(LivingEntity target)
     {
+        if (lastTarget != null && lastTarget != target) resetTransientState();
+
         keepDataUpToDate();
         mobStateContext.setTarget(target);
 
@@ -45,17 +49,19 @@ public class MobStateHandler
 
         for (BaseMobState state : mobStateList)
         {
-            Priority p = state.calculatePriority(mobStateContext);
-            if (p == null) continue;
+            Priority priority = state.calculatePriority(mobStateContext);
+            if (priority == null) continue;
 
-            if (bestPriority == null || p.weight() > bestPriority.weight())
+            if (bestPriority == null || priority.weight() > bestPriority.weight())
             {
-                bestPriority = p;
+                bestPriority = priority;
                 bestState = state;
             }
         }
 
         if (bestState != null) bestState.tick(mobStateContext);
+
+        lastTarget = target;
     }
 
     public void resetTransientState()
