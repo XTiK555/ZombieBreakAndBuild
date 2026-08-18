@@ -1,34 +1,16 @@
 package com.tik.zbb.blockstorage.storages.broken;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.tik.zbb.Constants;
 import com.tik.zbb.blockstorage.PersistentExpiringBlockStorage;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.WeakHashMap;
 
 public class BrokenReappearBlockStorage extends PersistentExpiringBlockStorage<BrokenReappearBlockStorageEntry>
 {
-    private static final Codec<BrokenReappearBlockStorageEntry> ENTRY_CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            BlockState.CODEC.fieldOf("old_state").forGetter(BrokenReappearBlockStorageEntry::oldState),
-            CompoundTag.CODEC.optionalFieldOf("block_entity_nbt").forGetter(entry -> Optional.ofNullable(entry.nbt())),
-            BuiltInRegistries.BLOCK_ENTITY_TYPE.byNameCodec().optionalFieldOf("block_entity_type")
-                    .forGetter(entry -> Optional.ofNullable(entry.blockEntityType()))
-    ).apply(instance, (state, nbt, type) -> new BrokenReappearBlockStorageEntry(
-            state,
-            nbt.orElse(null),
-            type.orElse(null)
-    )));
-
     public record OnWillRemoveEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
 
     public static final class OnRemovedEvent
@@ -45,10 +27,13 @@ public class BrokenReappearBlockStorage extends PersistentExpiringBlockStorage<B
             this.entry = entry;
         }
 
-        public ServerLevel level() { return level; }
-        public BlockPos pos() { return pos; }
-        public BrokenReappearBlockStorageEntry entry() { return entry; }
-        public void cancelAndReassign() { result = RemovalResult.CANCEL_AND_REASSIGN; }
+        public ServerLevel level() {return level;}
+
+        public BlockPos pos() {return pos;}
+
+        public BrokenReappearBlockStorageEntry entry() {return entry;}
+
+        public void cancelAndReassign() {result = RemovalResult.CANCEL_AND_REASSIGN;}
     }
 
     private final Map<ServerLevel, LongOpenHashSet> warnedByLevel = new WeakHashMap<>();
@@ -56,7 +41,7 @@ public class BrokenReappearBlockStorage extends PersistentExpiringBlockStorage<B
 
     public BrokenReappearBlockStorage()
     {
-        super("broken_reappear", ENTRY_CODEC);
+        super("broken_reappear", BrokenReappearBlockStorageEntry.CODEC);
     }
 
     @Override
