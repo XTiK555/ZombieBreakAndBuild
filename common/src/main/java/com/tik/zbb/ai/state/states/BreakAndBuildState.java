@@ -96,6 +96,7 @@ public class BreakAndBuildState extends BaseMobState
     {
         super.resetTransientState();
 
+        noPathTicks = 0;
         hardStuckDetector.reset();
     }
 
