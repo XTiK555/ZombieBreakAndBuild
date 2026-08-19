@@ -19,16 +19,12 @@ public class BuildAction implements IMobAction<BuildRequest>
     @Override
     public boolean canExecute(MobActionContext context, BuildRequest request)
     {
+        if (!context.aiTimers().buildCooldownPassed(context.level().getGameTime())) return false;
         if (!context.level().isLoaded(request.pos())) return false;
+        if (context.configSnapshot().game().ai().ignoreBuildEntityIdMatcher()
+                .matches(context.mobId(), context.mob().getType().getCategory())) return false;
 
-        BlockState blockState = context.level().getBlockState(request.pos());
-
-        boolean canReplaced = blockState.canBeReplaced();
-        boolean cooldownPassed = context.aiTimers().buildCooldownPassed(context.level().getGameTime());
-        boolean canMobBuild = !context.configSnapshot().game().ai().ignoreBuildEntityIdMatcher()
-                .matches(context.mobId(), context.mob().getType().getCategory());
-
-        return cooldownPassed && canReplaced && canMobBuild;
+        return context.level().getBlockState(request.pos()).canBeReplaced();
     }
 
     @Override

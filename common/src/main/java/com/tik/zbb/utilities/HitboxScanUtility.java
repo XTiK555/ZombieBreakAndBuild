@@ -45,12 +45,19 @@ public final class HitboxScanUtility
                 return false;
             }
 
-            if (!collisionShape.bounds().move(pos.getX(), pos.getY(), pos.getZ()).intersects(hitbox))
+            AABB bounds = collisionShape.bounds();
+            int posX = pos.getX();
+            int posY = pos.getY();
+            int posZ = pos.getZ();
+
+            if (hitbox.minX >= bounds.maxX + posX || hitbox.maxX <= bounds.minX + posX
+                    || hitbox.minY >= bounds.maxY + posY || hitbox.maxY <= bounds.minY + posY
+                    || hitbox.minZ >= bounds.maxZ + posZ || hitbox.maxZ <= bounds.minZ + posZ)
             {
                 return false;
             }
 
-            return Shapes.joinIsNotEmpty(collisionShape.move(pos.getX(), pos.getY(), pos.getZ()), hitboxShape, BooleanOp.AND);
+            return Shapes.joinIsNotEmpty(collisionShape.move(posX, posY, posZ), hitboxShape, BooleanOp.AND);
         });
     }
 
@@ -75,15 +82,25 @@ public final class HitboxScanUtility
         for (int x = minX; x <= maxX; x++)
         {
             double dx = (x + 0.5D) - originX;
+            double dxSq = dx * dx;
+            if (dxSq >= bestDist)
+            {
+                continue;
+            }
 
             for (int y = minY; y <= maxY; y++)
             {
                 double dy = (y + 0.5D) - originY;
+                double dxySq = dxSq + dy * dy;
+                if (dxySq >= bestDist)
+                {
+                    continue;
+                }
 
                 for (int z = minZ; z <= maxZ; z++)
                 {
                     double dz = (z + 0.5D) - originZ;
-                    double dist = dx * dx + dy * dy + dz * dz;
+                    double dist = dxySq + dz * dz;
                     if (dist >= bestDist)
                     {
                         continue;

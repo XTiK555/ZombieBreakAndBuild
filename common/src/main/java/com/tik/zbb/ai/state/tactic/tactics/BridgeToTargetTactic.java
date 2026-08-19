@@ -21,6 +21,7 @@ public class BridgeToTargetTactic implements IMobTactic
     private static final double MIN_HORIZONTAL_DIRECTION_SQ = 1.0E-12D;
     private static final double AXIS_EPSILON = 1.0E-12D;
     private static final double CROSSING_TIME_EPSILON = 1.0E-9D;
+    private static final Comparator<BridgeCandidate> CANDIDATE_COMPARATOR = Comparator.comparingDouble(BridgeCandidate::centerDistanceSq);
 
     private final BlockPos.MutableBlockPos belowMobPos = new BlockPos.MutableBlockPos();
     private final List<BridgeCandidate> bridgeCandidates = new ArrayList<>();
@@ -53,8 +54,9 @@ public class BridgeToTargetTactic implements IMobTactic
 
         collectNextBridgeCandidates(mob, context.getTarget());
 
-        for (BridgeCandidate candidate : bridgeCandidates)
+        for (int i = 0, size = bridgeCandidates.size(); i < size; i++)
         {
+            BridgeCandidate candidate = bridgeCandidates.get(i);
             BlockPos belowFrontPos = candidate.supportPos();
             BlockPos frontBlockPos = belowFrontPos.above();
             BlockPos twoBelowFrontPos = belowFrontPos.below();
@@ -134,7 +136,7 @@ public class BridgeToTargetTactic implements IMobTactic
             }
         }
 
-        bridgeCandidates.sort(Comparator.comparingDouble(BridgeCandidate::centerDistanceSq));
+        bridgeCandidates.sort(CANDIDATE_COMPARATOR);
     }
 
     private AxisCrossing getNextXCrossing(AABB box, double dx)
@@ -183,16 +185,16 @@ public class BridgeToTargetTactic implements IMobTactic
 
     private void addCandidate(int x, int y, int z, double crossingCenterX, double crossingCenterZ)
     {
-        BlockPos pos = new BlockPos(x, y, z);
-
-        for (BridgeCandidate existing : bridgeCandidates)
+        for (int i = 0, size = bridgeCandidates.size(); i < size; i++)
         {
-            if (existing.supportPos().equals(pos))
+            BlockPos existingPos = bridgeCandidates.get(i).supportPos();
+            if (existingPos.getX() == x && existingPos.getY() == y && existingPos.getZ() == z)
             {
                 return;
             }
         }
 
+        BlockPos pos = new BlockPos(x, y, z);
         double blockCenterX = x + 0.5D;
         double blockCenterZ = z + 0.5D;
         double ddx = blockCenterX - crossingCenterX;
