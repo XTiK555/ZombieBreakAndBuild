@@ -102,15 +102,16 @@ public class AdjustHeightToTargetTactic implements IMobTactic
 
         BlockPos blockAboveUs = HitboxScanUtility.getNearestCollidingBlockWithHitbox(context.getLevel(), context.getMob(), UP_SCAN_VEC);
         BlockPos posUnderBottomCenter = getBlockUnderBottomCenter(context);
+        BlockPos aboveBottomCenter = posUnderBottomCenter.above();
 
         if (blockAboveUs != null && !isFreePass(blockAboveUs, context.getLevel()))
         {
             context.getActionExecutor().tryExecuteBreakAction(blockAboveUs);
             return false;
         }
-        if (!context.getActionExecutor().canExecuteBuildAction(posUnderBottomCenter.above()))
+        if (!context.getActionExecutor().canExecuteBuildAction(aboveBottomCenter))
         {
-            context.getActionExecutor().tryExecuteBreakAction(posUnderBottomCenter.above());
+            context.getActionExecutor().tryExecuteBreakAction(aboveBottomCenter);
             return false;
         }
 
