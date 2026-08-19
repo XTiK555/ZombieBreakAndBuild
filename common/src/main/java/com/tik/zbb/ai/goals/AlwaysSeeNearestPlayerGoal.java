@@ -13,6 +13,7 @@ import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.EnumSet;
+import java.util.List;
 
 public class AlwaysSeeNearestPlayerGoal extends Goal
 {
@@ -65,29 +66,29 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     {
         if (!(mob.level() instanceof ServerLevel level)) return null;
 
+        List<ServerPlayer> players = level.players();
         ServerPlayer best = null;
         double bestDistanceSq = Double.POSITIVE_INFINITY;
 
-        for (ServerPlayer player : level.players())
+        for (int i = 0, size = players.size(); i < size; i++)
         {
-            if (!isValidPlayer(mob, player)) continue;
+            ServerPlayer player = players.get(i);
+            if (player == null || !player.isAlive()) continue;
 
             double distanceSq = player.distanceToSqr(mob);
+            if (distanceSq >= bestDistanceSq) continue;
 
-            if (distanceSq < bestDistanceSq)
-            {
-                bestDistanceSq = distanceSq;
-                best = player;
-            }
+            if (!isValidPlayer(mob, level, player)) continue;
+
+            bestDistanceSq = distanceSq;
+            best = player;
         }
 
         return best;
     }
 
-    private boolean isValidPlayer(Mob mob, ServerPlayer player)
+    private boolean isValidPlayer(Mob mob, ServerLevel level, ServerPlayer player)
     {
-        if (player == null || !player.isAlive()) return false;
-        if (!(mob.level() instanceof ServerLevel level)) return false;
         if (!EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(player)) return false;
         if (!mob.canAttack(player)) return false;
         if (mob instanceof NeutralMob neutral && !neutral.isAngryAt(player, level)) return false;
