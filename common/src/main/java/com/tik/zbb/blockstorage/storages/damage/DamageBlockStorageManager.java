@@ -1,6 +1,7 @@
 package com.tik.zbb.blockstorage.storages.damage;
 
 import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.blockstorage.ExpiringBlockStorage;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -38,9 +39,23 @@ public class DamageBlockStorageManager
         return entry == null ? 0 : entry.totalDamage();
     }
 
-    public void addDamageRecord(ServerLevel level, BlockPos pos, int damage, int blockId)
+    public ExpiringBlockStorage.TimedEntry<Integer> getTimedTotalDamage(ServerLevel level, BlockPos pos)
     {
-        damageBlockStorage.put(level, pos, new DamageBlockStorageEntry(damage, blockId));
+        ExpiringBlockStorage.TimedEntry<DamageBlockStorageEntry> entry = damageBlockStorage.getTimed(level, pos);
+        return entry == null ? null : new ExpiringBlockStorage.TimedEntry<>(
+                entry.data().totalDamage(),
+                entry.storedAtTick()
+        );
+    }
+
+    public void putTimedTotalDamage(ServerLevel level, BlockPos pos,
+                                    ExpiringBlockStorage.TimedEntry<Integer> entry)
+    {
+        int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
+        damageBlockStorage.putTimed(level, pos, new ExpiringBlockStorage.TimedEntry<>(
+                new DamageBlockStorageEntry(entry.data(), blockId),
+                entry.storedAtTick()
+        ));
     }
 
     public void removeRecord(ServerLevel level, BlockPos pos)
