@@ -36,8 +36,18 @@ public abstract class BaseBlockStorage<TData, TStored>
     public void put(ServerLevel level, BlockPos pos, TData data)
     {
         beforeAccess(level);
+        replaceStored(level, pos, toStored(level, data));
+    }
+
+    protected final void putStored(ServerLevel level, BlockPos pos, TStored stored)
+    {
+        beforeAccess(level);
+        replaceStored(level, pos, stored);
+    }
+
+    private void replaceStored(ServerLevel level, BlockPos pos, TStored stored)
+    {
         long posKey = pos.asLong();
-        TStored stored = toStored(level, data);
         TStored previous = getStored(level, posKey);
 
         if (previous != null)
@@ -51,7 +61,7 @@ public abstract class BaseBlockStorage<TData, TStored>
 
         if (previous != null)
         {
-            onReplaced(level, posKey, toData(previous), data);
+            onReplaced(level, posKey, toData(previous), toData(stored));
         }
     }
 
