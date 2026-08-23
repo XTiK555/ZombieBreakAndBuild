@@ -1,6 +1,7 @@
 package com.tik.zbb.blockstorage;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,7 +10,22 @@ import java.util.WeakHashMap;
 
 public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData, ExpiringBlockStorage.StoredEntry<TData>>
 {
+    public record TimedEntry<TData>(TData data, long storedAtTick) {}
+
     private final Map<ServerLevel, ExpirationIndex> expirationIndexesByLevel = new WeakHashMap<>();
+
+    @Nullable
+    public final TimedEntry<TData> getTimed(ServerLevel level, BlockPos pos)
+    {
+        beforeAccess(level);
+        StoredEntry<TData> stored = getStored(level, pos.asLong());
+        return stored == null ? null : new TimedEntry<>(stored.data(), stored.storedAtTick());
+    }
+
+    public final void putTimed(ServerLevel level, BlockPos pos, TimedEntry<TData> entry)
+    {
+        putStored(level, pos, new StoredEntry<>(entry.data(), entry.storedAtTick()));
+    }
 
     public final void cleanup(ServerLevel level, long ttlTicks)
     {

@@ -2,6 +2,7 @@ package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.actions.build.BuildAction;
+import com.tik.zbb.blockstorage.ExpiringBlockStorage;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -89,9 +90,20 @@ public class BuildDisappearBlockStorageManager
         buildDisappearBlockStorage.put(level, pos, entry);
     }
 
+    public void putTimed(ServerLevel level, BlockPos pos,
+                         ExpiringBlockStorage.TimedEntry<BuildDisappearBlockStorageEntry> entry)
+    {
+        buildDisappearBlockStorage.putTimed(level, pos, entry);
+    }
+
     public BuildDisappearBlockStorageEntry get(ServerLevel level, BlockPos pos)
     {
         return buildDisappearBlockStorage.get(level, pos);
+    }
+
+    public ExpiringBlockStorage.TimedEntry<BuildDisappearBlockStorageEntry> getTimed(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.getTimed(level, pos);
     }
 
     public boolean contains(ServerLevel level, BlockPos pos)
