@@ -22,10 +22,20 @@ public class DamageBlockStorageManager
         BlockStorages.ID_MANAGER.release(event.level(), event.pos(), event.entry().blockPosId());
     }
 
+    public DamageBlockStorageEntry addDamageRecord(ServerLevel level, BlockPos pos, int damage)
+    {
+        int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
+        DamageBlockStorageEntry newEntry = new DamageBlockStorageEntry(damage, blockId);
+
+        damageBlockStorage.put(level, pos, newEntry);
+
+        return newEntry;
+    }
+
     public int getTotalBlockDamage(ServerLevel level, BlockPos pos)
     {
         DamageBlockStorageEntry entry = damageBlockStorage.get(level, pos);
-        return entry == null ? 0 : entry.damage();
+        return entry == null ? 0 : entry.totalDamage();
     }
 
     public void addDamageRecord(ServerLevel level, BlockPos pos, int damage, int blockId)

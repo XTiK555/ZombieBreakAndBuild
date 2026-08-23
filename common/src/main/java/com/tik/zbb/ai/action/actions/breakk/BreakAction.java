@@ -4,6 +4,7 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
+import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorageEntry;
 import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigSnapshot;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
@@ -25,9 +26,8 @@ public class BreakAction implements IMobAction<BreakRequest>
     public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
                                                ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
-    public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
-                                ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
-                                int newDamage, int blockId) {}
+    public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state, ConfigSnapshot configSnapshot, PathfinderMob mob, int blockHealth,
+                                int newDamage, DamageBlockStorageEntry storageEntry) {}
 
 
     @Override
@@ -82,11 +82,9 @@ public class BreakAction implements IMobAction<BreakRequest>
         }
         else
         {
-            int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
+            DamageBlockStorageEntry addedDamageStorageEntry = BlockStorages.DAMAGE_MANAGER.addDamageRecord(context.level(), request.pos(), totalDamage);
 
-            BlockStorages.DAMAGE_MANAGER.addDamageRecord(context.level(), request.pos(), totalDamage, blockId);
-
-            Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
+            Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockHealth, newDamage, addedDamageStorageEntry));
         }
 
 
