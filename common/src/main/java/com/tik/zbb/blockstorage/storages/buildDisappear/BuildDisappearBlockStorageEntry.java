@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public record BuildDisappearBlockStorageEntry(BlockState placedState, BlockState oldState, CompoundTag oldNbt)
 {
-    static final Codec<BuildDisappearBlockStorageEntry> CODEC =
+    public static final Codec<BuildDisappearBlockStorageEntry> CODEC =
             RecordCodecBuilder.create(instance -> instance.group(
                     BlockState.CODEC
                             .fieldOf("placed_state")
