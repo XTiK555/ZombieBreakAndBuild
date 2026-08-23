@@ -21,9 +21,9 @@ public class BreakVisual
     public void onAnyBlockHit(BreakAction.OnAnyBlockHit event)
     {
         ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
-        int stage = (int) Math.min(9L, ((long) event.totalDamage() * 10L) / event.blockHealth());
+        int stage = (int) Math.min(9L, ((long) event.storageEntry().totalDamage() * 10L) / event.blockHealth());
 
-        event.level().destroyBlockProgress(event.blockId(), event.pos(), stage);
+        event.level().destroyBlockProgress(event.storageEntry().blockPosId(), event.pos(), stage);
         event.level().levelEvent(2001, event.pos(), Block.getId(event.state())); // particles and sound
 
         if (visualEffects.breakMobSwing()) mobSwing(event.mob());
