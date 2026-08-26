@@ -131,6 +131,29 @@ class ZbbConfigCommandTest
     }
 
     @Test
+    void mapRemoveAcceptsOnlyTypedKey()
+    {
+        assertParses("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:stone");
+
+        Object type = argumentType(configCommand("remove"), "blocks.dimensionPlaceBlockIdList", "key");
+        assertInstanceOf(ResourceKeyArgument.class, type);
+    }
+    @Test
+    void mapEntrySetPreservesOtherKeysAndReplacesOnlyTargetValue()
+    {
+        java.util.Map<String, Object> updated = ZbbConfigCommand.mapWithEntry(
+                java.util.Map.of("minecraft:overworld", "minecraft:stone", "minecraft:the_nether", "minecraft:netherrack"),
+                "minecraft:overworld",
+                "minecraft:dirt");
+
+        assertEquals(java.util.Map.of(
+                "minecraft:overworld", "minecraft:dirt",
+                "minecraft:the_nether", "minecraft:netherrack"), updated);
+    }
+
+    @Test
     void commandsWithoutValuesAcceptModesWithoutModeLiteral()
     {
         assertParses("zbb config clear ai.affectedEntityIdList runtime_only");
