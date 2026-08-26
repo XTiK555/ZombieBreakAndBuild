@@ -119,7 +119,8 @@ public class StringListValueCodec implements ConfigValueCodec
         {
             throw new ConfigValidationException("Expected string list entry");
         }
-        values.add(normalizeEntry(s));
+        String normalizedEntry = normalizeEntry(s);
+        if (!values.contains(normalizedEntry)) values.add(normalizedEntry);
         return values;
     }
 
