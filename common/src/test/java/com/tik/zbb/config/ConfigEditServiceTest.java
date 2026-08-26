@@ -357,6 +357,11 @@ class ConfigEditServiceTest
                 new ConfigPath("balance.blockDamage.blockHealthOverrideList"),
                 ConfigWriteMode.PERSISTENT
         ));
+        ConfigEditResult addDuplicate = service.edit(ConfigEditRequest.add(
+                new ConfigPath("ai.affectedEntityIdList"),
+                "@MONSTER",
+                ConfigWriteMode.RUNTIME_ONLY
+        ));
 
         assertAll(
                 () -> assertTrue(persistentSet.success()),
@@ -368,6 +373,8 @@ class ConfigEditServiceTest
                 () -> assertEquals(0, removeMissing.affectedCount()),
                 () -> assertTrue(clearEmpty.success()),
                 () -> assertEquals(0, clearEmpty.affectedCount()),
+                () -> assertTrue(addDuplicate.success()),
+                () -> assertEquals(0, addDuplicate.affectedCount()),
                 () -> assertEquals(0, storage.saveCount),
                 () -> assertTrue(service.runtimeOverrides().isEmpty())
         );
