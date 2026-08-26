@@ -140,6 +140,27 @@ class ZbbConfigCommandTest
         Object type = argumentType(configCommand("remove"), "blocks.dimensionPlaceBlockIdList", "key");
         assertInstanceOf(ResourceKeyArgument.class, type);
     }
+
+    @Test
+    void patternListsAcceptCodecCategoriesAndSuggestMobCategories()
+    {
+        assertParses("zbb config add ai.ignoreBreakEntityIdList persistent @MONSTER");
+        assertParses("zbb config remove ai.ignoreBreakEntityIdList persistent !@CREATURE");
+
+        List<String> suggestions = dispatcher.getCompletionSuggestions(
+                        dispatcher.parse("zbb config add ai.ignoreBreakEntityIdList persistent @m", null))
+                .join().getList().stream().map(suggestion -> suggestion.getText()).toList();
+        assertTrue(suggestions.contains("@monster"));
+    }
+
+    @Test
+    void wildcardIsPartOfPatternInsteadOfSuggestionModifier()
+    {
+        assertEquals(0, ZbbConfigCommand.patternValueOffset("*:zombie", 0));
+        assertEquals(1, ZbbConfigCommand.patternValueOffset("!*:zombie", 0));
+        assertEquals(0, ZbbConfigCommand.patternValueOffset("@monster", 0));
+    }
+
     @Test
     void mapEntrySetPreservesOtherKeysAndReplacesOnlyTargetValue()
     {
