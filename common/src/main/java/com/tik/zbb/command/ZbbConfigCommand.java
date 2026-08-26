@@ -174,8 +174,21 @@ public final class ZbbConfigCommand
         };
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, String> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
     {
+        if (isMap(descriptor.kind()))
+        {
+            return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
+                    .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                            collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
+                            builder))
+                    .executes(context -> remove(
+                            context,
+                            descriptor.path(),
+                            readArgument(context, KEY_ARGUMENT),
+                            writeMode));
+        }
+
         RequiredArgumentBuilder<CommandSourceStack, String> entry = argument(ENTRY_ARGUMENT, StringArgumentType.greedyString());
 
         entry.suggests((context, builder) ->
@@ -294,12 +307,11 @@ public final class ZbbConfigCommand
 
         return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
                 .then(argument(valueName, mapValueArgumentType(descriptor))
-                        .executes(context -> set(
+                        .executes(context -> setMapEntry(
                                 context,
-                                descriptor.path(),
-                                readArgument(context, KEY_ARGUMENT)
-                                        + "="
-                                        + readArgument(context, valueName),
+                                descriptor,
+                                readArgument(context, KEY_ARGUMENT),
+                                readMapValue(context, valueName),
                                 writeMode)));
     }
 
@@ -413,18 +425,35 @@ public final class ZbbConfigCommand
         return editRaw(context, ConfigEditRequest.set(path, rawValue, writeMode));
     }
 
-    private static int add(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
+    private static int setMapEntry(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String key, Object value,
+                                   ConfigWriteMode writeMode)
     {
-        return editRaw(context, ConfigEditRequest.add(path, entry, writeMode));
+        Object currentValue = ConfigManager.getValueForMode(descriptor, writeMode);
+        if (!(currentValue instanceof java.util.Map<?, ?> currentMap))
+        {
+            return fail(context, descriptor.path() + " is not a map");
+        }
+
+        return edit(context, ConfigEditRequest.set(
+                descriptor.path(),
+                mapWithEntry(currentMap, key, value),
+                writeMode));
     }
 
-    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, ConfigWriteMode writeMode) throws CommandSyntaxException
+    static java.util.Map<String, Object> mapWithEntry(java.util.Map<?, ?> currentMap, String key, Object value)
+    {
+        java.util.Map<String, Object> updated = new LinkedHashMap<>();
+        currentMap.forEach((currentKey, currentValue) -> updated.put(String.valueOf(currentKey), currentValue));
+        updated.put(key, value);
+        return updated;
+    }
     {
         return editRaw(context, ConfigEditRequest.remove(
                 path,
                 readRawValue(context, ENTRY_ARGUMENT),
-                writeMode
-        ));
+    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
+    {
+        return editRaw(context, ConfigEditRequest.remove(path, entry, writeMode));
     }
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -527,6 +556,12 @@ public final class ZbbConfigCommand
     {
         Object value = context.getArgument(argument, Object.class);
         return value instanceof ResourceKey<?> key ? key.identifier().toString() : String.valueOf(value).trim();
+    }
+
+    private static Object readMapValue(CommandContext<CommandSourceStack> context, String argument)
+    {
+        Object value = context.getArgument(argument, Object.class);
+        return value instanceof ResourceKey<?> key ? key.identifier().toString() : value;
     }
 
     private static int fail(CommandContext<CommandSourceStack> context, String message)
