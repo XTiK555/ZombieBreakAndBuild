@@ -58,6 +58,7 @@ public class BuildDisappearBlockStorageManager
 
     private boolean restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
     {
+        if (event.level().getBlockState(event.pos()).equals(event.entry().oldState())) return true;
         if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return false;
 
         CompoundTag savedNbt = event.entry().oldNbt();
