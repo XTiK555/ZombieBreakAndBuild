@@ -90,26 +90,32 @@ public class BrokenReappearBlockStorageManager
 
         if (!restoreBlock(event.level(), event.pos(), event.entry()))
         {
+            Constants.LOG.warn("Failed to normal restore stored block at {}", event.pos());
+
             normalReappear = false;
 
             boolean recovered = dropStoredBlock(event.level(), event.pos(), event.entry());
             if (!recovered)
             {
+                Constants.LOG.warn("Failed to restore stored block as item at {}", event.pos());
+
                 recovered = giveToNearestPlayer(event.level(), event.pos(), event.entry());
                 if (!recovered)
                 {
+                    Constants.LOG.warn("Failed to restore stored block as item from {} to nearest player", event.pos());
+
                     recovered = placeStoredBlockNearby(event.level(), event.pos(), event.entry(), 2);
                 }
             }
-            if (!recovered) event.cancelAndReassign();
+            if (!recovered)
+            {
+                Constants.LOG.warn("Failed to restore stored block at {} by any of the methods, reassigning it...", event.pos());
+                event.cancelAndReassign();
+            }
         }
 
         if (normalReappear)
             Constants.EVENT_BUS.post(new OnBrokenBlockReappearEvent(event.level(), event.pos(), event.entry().oldState()));
-        else
-        {
-            Constants.LOG.warn("Failed to restore stored block at {}", event.pos());
-        }
     }
 
     @Subscribe
