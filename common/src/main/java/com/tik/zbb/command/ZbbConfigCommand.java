@@ -109,6 +109,8 @@ public final class ZbbConfigCommand
 
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
+            if (!isCollection(descriptor.kind())) continue;
+
             ConfigPath path = descriptor.path();
             command.then(literal(path.value())
                     .then(literal(ConfigWriteMode.PERSISTENT.commandName())
@@ -149,6 +151,7 @@ public final class ZbbConfigCommand
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
             if (operation != ConfigEditOperation.SET && !isCollection(descriptor.kind())) continue;
+            if (operation == ConfigEditOperation.SET && isCollection(descriptor.kind()) && !isMap(descriptor.kind())) continue;
 
             command.then(literal(descriptor.path().value())
                     .then(editMode(descriptor, ConfigWriteMode.PERSISTENT, operation))
@@ -273,8 +276,8 @@ public final class ZbbConfigCommand
                     : FloatArgumentType.floatArg((float) range.min(), (float) range.max()), descriptor, writeMode);
             case RESOURCE_LOCATION -> scalarSetValueArgument("id", identifierArgument(valueRegistry(descriptor)), descriptor, writeMode);
             case STRING -> scalarSetValueArgument(VALUE_ARGUMENT, StringArgumentType.greedyString(), descriptor, writeMode);
-            case STRING_LIST -> listSetValueArgument(descriptor, writeMode);
-            case RESOURCE_LOCATION_PATTERN_LIST -> patternListSetValueArgument(descriptor, writeMode);
+            case STRING_LIST, RESOURCE_LOCATION_PATTERN_LIST ->
+                    throw new IllegalArgumentException("SET is not supported for list fields");
             case RESOURCE_LOCATION_PAIR_MAP, RESOURCE_LOCATION_INT_PAIR_MAP -> mapSetValueArgument(descriptor, writeMode);
         };
     }
@@ -283,55 +286,6 @@ public final class ZbbConfigCommand
             (String name, ArgumentType<T> type, ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
     {
         return argument(name, type).executes(context -> set(context, descriptor.path(), readArgument(context, name), writeMode));
-    }
-
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> listSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
-        if (semantics != null && semantics.element() != ResourceLocationRegistry.NONE)
-        {
-            return argument(VALUE_ARGUMENT, identifierArgument(semantics.element()))
-                    .executes(context -> set(
-                            context,
-                            descriptor.path(),
-                            readArgument(context, VALUE_ARGUMENT),
-                            writeMode));
-        }
-
-        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                .executes(context -> set(
-                        context,
-                        descriptor.path(),
-                        readRawValue(context, VALUE_ARGUMENT),
-                        writeMode));
-    }
-
-    private static RequiredArgumentBuilder<CommandSourceStack, String> patternListSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
-        ArgumentType<?> elementType = identifierArgument(semantics == null
-                ? ResourceLocationRegistry.NONE
-                : semantics.element());
-
-        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                .suggests((context, builder) ->
-                {
-                    int offset = patternValueOffset(builder.getRemaining(), 0);
-                    String remaining = builder.getRemaining().substring(offset);
-                    if (remaining.indexOf('*') >= 0 || remaining.indexOf(',') >= 0)
-                    {
-                        return builder.buildFuture();
-                    }
-
-                    return elementType.listSuggestions(
-                            context,
-                            builder.createOffset(builder.getStart() + offset));
-                })
-                .executes(context -> set(
-                        context,
-                        descriptor.path(),
-                        readSinglePattern(context, VALUE_ARGUMENT, elementType),
-                        writeMode));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
@@ -509,7 +463,7 @@ public final class ZbbConfigCommand
                         + ", changed=" + result.affectedCount()
                         + modeSuffix);
 
-        return Math.max(1, result.affectedCount());
+        return result.affectedCount();
     }
 
     private static String operationName(ConfigEditOperation operation)

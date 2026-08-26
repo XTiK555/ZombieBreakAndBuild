@@ -107,6 +107,13 @@ class ZbbConfigCommandTest
     }
 
     @Test
+    void setIsNotExposedForLists()
+    {
+        assertNull(configCommand("set").getChild("ai.affectedEntityIdList"));
+        assertNull(configCommand("set").getChild("ai.ignoreBuildEntityIdList"));
+    }
+
+    @Test
     void collectionCommandsExposeSchemaPathsLikeSet()
     {
         assertNull(configCommand("add").getChild("path"));
@@ -129,6 +136,7 @@ class ZbbConfigCommandTest
         assertParses("zbb config clear ai.affectedEntityIdList runtime_only");
         assertParses("zbb config reset all persistent");
         assertParses("zbb config reset ai.alwaysSeeNearestPlayer runtime_only");
+        assertNull(configCommand("clear").getChild("ai.alwaysSeeNearestPlayer"));
     }
 
     @Test
@@ -162,7 +170,8 @@ class ZbbConfigCommandTest
 
     private void assertNoModeLiteralUnderValueCommand(String command)
     {
-        CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild("ai.affectedEntityIdList");
+        String path = command.equals("set") ? "ai.alwaysSeeNearestPlayer" : "ai.affectedEntityIdList";
+        CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild(path);
 
         assertNotNull(pathNode);
         assertTrue(pathNode.getChildren().stream().noneMatch(child -> child.getName().equals("mode")));
