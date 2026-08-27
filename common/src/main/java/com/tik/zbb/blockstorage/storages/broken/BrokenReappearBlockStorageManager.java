@@ -79,8 +79,7 @@ public class BrokenReappearBlockStorageManager
         BrokenReappearBlockStorageEntry pendingEntry = takePending(event.level(), event.pos());
         if (pendingEntry == null) return;
 
-        brokenReappearBlockStorage.put(event.level(), event.pos(), pendingEntry);
-        Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(event.level(), event.pos(), pendingEntry));
+        putEntry(event.level(), event.pos(), pendingEntry);
     }
 
     @Subscribe
@@ -137,14 +136,6 @@ public class BrokenReappearBlockStorageManager
     public void cleanup(ServerLevel level, long ttlTicks)
     {
         brokenReappearBlockStorage.cleanup(level, ttlTicks);
-    }
-
-    private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
-    {
-        if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
-        if (isTrackedZombieBlock(level, pos)) return false;
-
-        return true;
     }
 
     //region Restoring
@@ -280,6 +271,20 @@ public class BrokenReappearBlockStorageManager
     //endregion
 
     //region Local
+
+    private void putEntry(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
+    {
+        brokenReappearBlockStorage.put(level, pos, entry);
+        Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(level, pos, entry));
+    }
+
+    private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
+    {
+        if (!configSnapshot.game().blockRestoration().brokenBlocksRestoring()) return false;
+        if (isTrackedZombieBlock(level, pos)) return false;
+
+        return true;
+    }
 
     private BrokenReappearBlockStorageEntry takePending(ServerLevel level, BlockPos pos)
     {
