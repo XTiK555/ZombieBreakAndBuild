@@ -1,14 +1,20 @@
 package com.tik.zbb.blockstorage.storages.damage;
 
+import com.tik.zbb.Constants;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.blockstorage.ExpiringBlockStorage;
+import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.event.MixinEvents;
+import com.tik.zbb.utilities.BlockHealthCalculator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
 import org.greenrobot.eventbus.Subscribe;
 
 public class DamageBlockStorageManager
 {
+    public record OnEntryAdded(ServerLevel level, BlockPos pos, BlockState state, int blockHealth, DamageBlockStorageEntry entry) {}
+
     private final DamageBlockStorage damageBlockStorage = new DamageBlockStorage();
 
     @Subscribe
@@ -29,8 +35,18 @@ public class DamageBlockStorageManager
         DamageBlockStorageEntry newEntry = new DamageBlockStorageEntry(damage, blockId);
 
         damageBlockStorage.put(level, pos, newEntry);
+        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, level.getBlockState(pos), BlockHealthCalculator.getBlockHealth(pos, level, ConfigManager.getConfigSnapshot()), newEntry));
 
         return newEntry;
+    }
+
+    public void putTimedTotalDamage(ServerLevel level, BlockPos pos, ExpiringBlockStorage.TimedEntry<Integer> damageTimedIntegerEntry)
+    {
+        int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
+        var timedStorageEntry = new ExpiringBlockStorage.TimedEntry<>(new DamageBlockStorageEntry(damageTimedIntegerEntry.data(), blockId), damageTimedIntegerEntry.storedAtTick());
+
+        damageBlockStorage.putTimed(level, pos, timedStorageEntry);
+        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, level.getBlockState(pos), BlockHealthCalculator.getBlockHealth(pos, level, ConfigManager.getConfigSnapshot()), timedStorageEntry.data()));
     }
 
     public int getTotalBlockDamage(ServerLevel level, BlockPos pos)
@@ -46,16 +62,6 @@ public class DamageBlockStorageManager
                 entry.data().totalDamage(),
                 entry.storedAtTick()
         );
-    }
-
-    public void putTimedTotalDamage(ServerLevel level, BlockPos pos,
-                                    ExpiringBlockStorage.TimedEntry<Integer> entry)
-    {
-        int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
-        damageBlockStorage.putTimed(level, pos, new ExpiringBlockStorage.TimedEntry<>(
-                new DamageBlockStorageEntry(entry.data(), blockId),
-                entry.storedAtTick()
-        ));
     }
 
     public void removeRecord(ServerLevel level, BlockPos pos)
