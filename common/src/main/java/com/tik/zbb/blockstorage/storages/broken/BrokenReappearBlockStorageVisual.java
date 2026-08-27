@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.greenrobot.eventbus.Subscribe;
 
-public class BrokenReappearBlockVisual
+public class BrokenReappearBlockStorageVisual
 {
     // position marker visual
     private static final int POSITION_MARKER_PARTICLE_INTERVAL = 20;
