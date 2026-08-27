@@ -2,7 +2,7 @@ package com.tik.zbb.blockstorage.storages.damage;
 
 import org.greenrobot.eventbus.Subscribe;
 
-public class DamageBlockVisual
+public class DamageBlockStorageVisual
 {
     @Subscribe
     public void onDamageEntryAdded(DamageBlockStorageManager.OnEntryAdded event)
