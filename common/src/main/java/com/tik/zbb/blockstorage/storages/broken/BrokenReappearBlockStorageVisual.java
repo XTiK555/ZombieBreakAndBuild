@@ -14,7 +14,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.state.BlockState;
 import org.greenrobot.eventbus.Subscribe;
 
-public class BrokenReappearBlockVisual
+public class BrokenReappearBlockStorageVisual
 {
     // position marker visual
     private static final int POSITION_MARKER_PARTICLE_INTERVAL = 20;
