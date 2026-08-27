@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(FallingBlockEntity.class)
 public abstract class FallingBlockEntityMixin
@@ -27,13 +28,12 @@ public abstract class FallingBlockEntityMixin
     @Unique
     private CompoundTag zbb$landingOldNbt;
 
-    @Inject(method = "fall", at = @At("HEAD"))
-    private static void zbb$onFallStarted(Level level, BlockPos pos, BlockState state,
-                                          CallbackInfoReturnable<FallingBlockEntity> cir)
+    @Inject(method = "fall", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"), locals = LocalCapture.CAPTURE_FAILHARD)
+    private static void zbb$onFallStarted(Level level, BlockPos pos, BlockState state, CallbackInfoReturnable<FallingBlockEntity> cir, FallingBlockEntity entity)
     {
         if (level instanceof ServerLevel serverLevel)
         {
-            Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockStartedEvent(serverLevel, pos.immutable(), state));
+            Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockStartedEvent(serverLevel, entity));
         }
     }
 
@@ -45,9 +45,7 @@ public abstract class FallingBlockEntityMixin
 
         Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockFinishedEvent(
                 serverLevel,
-                entity.getStartPos().immutable(),
-                entity.blockPosition().immutable(),
-                entity.getBlockState(),
+                entity,
                 zbb$landingOldState,
                 zbb$landingOldNbt
         ));
