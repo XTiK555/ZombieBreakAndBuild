@@ -16,7 +16,7 @@ public class BlockHealthCalculator
         float hardness = blockState.getDestroySpeed(level, blockPos);
         double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
 
-        if (blockHealthOverride != null) return blockHealthOverride;
+        if (blockHealthOverride != null) return Math.max(1, blockHealthOverride);
         if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;
         if (hardness < 0) return Integer.MAX_VALUE;
         if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
