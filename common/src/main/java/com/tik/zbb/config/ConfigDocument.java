@@ -168,7 +168,7 @@ public class ConfigDocument
 
             @ResourceLocationIntPairMap
             @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
-            @Comment("Per-block health overrides: block ID = health. Overrides the hardness-based calculation")
+            @Comment("Per-block health overrides: block ID = health. Overrides the hardness-based calculation (min 1)")
             public Map<String, Integer> blockHealthOverrideList = new LinkedHashMap<>();
 
             @Range(min = 0, max = 1000000)
