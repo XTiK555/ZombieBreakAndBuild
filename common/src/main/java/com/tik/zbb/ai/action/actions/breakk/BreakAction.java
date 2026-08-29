@@ -65,6 +65,9 @@ public class BreakAction implements IMobAction<BreakRequest>
             try
             {
                 Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
+
+                state = context.level().getBlockState(request.pos());
+
                 destroyed = context.level().destroyBlock(request.pos(), dropLoot);
 
                 if (destroyed)
