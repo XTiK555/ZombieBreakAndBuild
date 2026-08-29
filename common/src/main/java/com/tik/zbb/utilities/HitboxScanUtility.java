@@ -91,6 +91,11 @@ public final class HitboxScanUtility
 
                     pos.set(x, y, z);
 
+                    if (!level.hasChunkAt(pos))
+                    {
+                        continue;
+                    }
+
                     BlockState state = level.getBlockState(pos);
                     if (matcher.matches(level, pos, state))
                     {
