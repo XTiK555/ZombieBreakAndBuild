@@ -52,33 +52,9 @@ public class BuildDisappearBlockStorageManager
         }
         else if (currentState.is(Blocks.AIR))
         {
-            if (!restoreOldBlock(event)) event.cancelAndReassign();
+            if (!restoreOldBlock(event))
+                event.cancelAndReassign();
         }
-    }
-
-    private boolean restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
-    {
-        if (event.level().getBlockState(event.pos()).equals(event.entry().oldState())) return true;
-        if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return false;
-
-        CompoundTag savedNbt = event.entry().oldNbt();
-        BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
-        if (savedNbt == null || blockEntity == null) return true;
-
-        CompoundTag nbt = savedNbt.copy();
-        nbt.putInt("x", event.pos().getX());
-        nbt.putInt("y", event.pos().getY());
-        nbt.putInt("z", event.pos().getZ());
-        blockEntity.loadWithComponents(TagValueInput.create(
-                ProblemReporter.DISCARDING,
-                event.level().registryAccess(),
-                nbt
-        ));
-        blockEntity.setChanged();
-
-        BlockState state = event.level().getBlockState(event.pos());
-        event.level().sendBlockUpdated(event.pos(), state, state, 3);
-        return true;
     }
 
     public BuildDisappearBlockStorageEntry discard(ServerLevel level, BlockPos pos)
@@ -115,5 +91,43 @@ public class BuildDisappearBlockStorageManager
     public void cleanup(ServerLevel level, long ttlTicks)
     {
         buildDisappearBlockStorage.cleanup(level, ttlTicks);
+    }
+
+    private boolean restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
+    {
+        if (event.level().getBlockState(event.pos()).equals(event.entry().oldState()))
+        {
+            if (restoreNbt(event)) return true;
+        }
+        else if (event.level().setBlockAndUpdate(event.pos(), event.entry().oldState()))
+        {
+            if (restoreNbt(event)) return true;
+        }
+
+        return false;
+    }
+
+    private boolean restoreNbt(BuildDisappearBlockStorage.OnRemovedEvent event)
+    {
+        CompoundTag savedNbt = event.entry().oldNbt();
+        BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
+
+        if (savedNbt == null) return true;
+        if (blockEntity == null) return false;
+
+        CompoundTag nbt = savedNbt.copy();
+        nbt.putInt("x", event.pos().getX());
+        nbt.putInt("y", event.pos().getY());
+        nbt.putInt("z", event.pos().getZ());
+        blockEntity.loadWithComponents(TagValueInput.create(
+                ProblemReporter.DISCARDING,
+                event.level().registryAccess(),
+                nbt
+        ));
+        blockEntity.setChanged();
+
+        BlockState state = event.level().getBlockState(event.pos());
+        event.level().sendBlockUpdated(event.pos(), state, state, 3);
+        return true;
     }
 }
