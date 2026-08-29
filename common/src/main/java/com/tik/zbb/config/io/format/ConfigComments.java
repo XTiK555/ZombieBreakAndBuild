@@ -1,6 +1,7 @@
 package com.tik.zbb.config.io.format;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.tik.zbb.Constants;
 import com.tik.zbb.config.annotations.Comment;
 import com.tik.zbb.utilities.ConfigUtilities;
 
@@ -34,8 +35,9 @@ public final class ConfigComments
                 Object nested = field.get(obj);
                 ConfigUtilities.forEachNestedConfigValue(nested, value -> apply(config, value, fullPath));
             }
-            catch (IllegalAccessException ignored)
+            catch (IllegalAccessException exception)
             {
+                Constants.LOG.warn("Failed to apply config comment for field '{}'", fullPath, exception);
             }
         }
     }
