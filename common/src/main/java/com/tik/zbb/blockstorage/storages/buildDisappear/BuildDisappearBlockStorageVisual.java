@@ -117,7 +117,7 @@ public class BuildDisappearBlockStorageVisual
                             accessor.zbb$setTransformationInterpolationDelay(0);
                         }
 
-                        if (tickCount > SHRINK_BLOCK_DISPLAY_LIFETIME + 2)
+                        if (tickCount > SHRINK_BLOCK_DISPLAY_LIFETIME + 1)
                         {
                             discard();
                         }
@@ -137,6 +137,12 @@ public class BuildDisappearBlockStorageVisual
         blockDisplay.addTag(DISPLAY_TAG);
 
         if (!event.level().addFreshEntity(blockDisplay)) return;
+
+        Constants.SCHEDULER.schedule(() ->
+        {
+            if (blockDisplay != null)
+                blockDisplay.discard();
+        }, SHRINK_BLOCK_DISPLAY_LIFETIME + 2);
     }
 
     private Transformation createTransformation(float scale)
