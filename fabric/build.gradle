@@ -2,6 +2,8 @@ plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
 }
+sourceSets { gametest }
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered {
@@ -22,12 +24,20 @@ dependencies {
     include "org.greenrobot:eventbus-java:3.3.1"
 }
 
+apply from: rootProject.file('common/mixin-compatibility.gradle')
+configureMixinCompatibilitySourceSet(sourceSets.gametest)
+
 loom {
     if (project(":common").file("src/main/resources/${mod_id}.accesswidener").exists()) {
         accessWidenerPath.set(project(":common").file("src/main/resources/${mod_id}.accesswidener"))
     }
     mixin {
         defaultRefmapName.set("${mod_id}.refmap.json")
+    }
+    mods {
+        zbb_compatibility_test {
+            sourceSet sourceSets.gametest
+        }
     }
     runs {
         client {
@@ -41,6 +51,38 @@ loom {
             setConfigName("Fabric Server")
             ideConfigGenerated(true)
             runDir("run")
+        }
+        gameTest {
+            server()
+            setConfigName("Fabric Game Test")
+            ideConfigGenerated(true)
+            source sourceSets.gametest
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${layout.buildDirectory.file('fabric-gametest.xml').get().asFile.absolutePath}"
+            runDir("build/run/gameTest")
+        }
+    }
+}
+
+cleanMixinCompatibilityRun('runGameTest', layout.buildDirectory.dir('run/gameTest'))
+registerMixinCompatibilityVerification('runGameTest', sourceSets.gametest,
+        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
         }
     }
 }

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "zbb_compatibility_test",
+  "version": "1",
+  "name": "ZBB Mixin Compatibility Tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "com.tik.zbb.gametest.FabricMixinCompatibilityGameTests"
+    ]
+  },
+  "depends": {
+    "zbb": "*"
+  }
+}
