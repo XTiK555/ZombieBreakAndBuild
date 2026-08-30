@@ -4,3 +4,9 @@ plugins {
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
 }
+
+tasks.register('mixinCompatibilityTest') {
+    group = 'verification'
+    description = 'Runs the behavioral mixin compatibility GameTests on Fabric, Forge, and NeoForge.'
+    dependsOn ':fabric:verifyMixinCompatibilityGameTest', ':forge:verifyMixinCompatibilityGameTest', ':neoforge:verifyMixinCompatibilityGameTest'
+}
