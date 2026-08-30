@@ -3,6 +3,10 @@ plugins {
     id 'net.minecraftforge.gradle' version '6.0.46'
     id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
 }
+sourceSets { gametest }
+
+apply from: rootProject.file('common/mixin-compatibility.gradle')
+configureMixinCompatibilitySourceSet(sourceSets.gametest)
 base {
     archivesName = "${mod_id}-forge-${minecraft_version}"
 }
@@ -58,6 +62,23 @@ minecraft {
             }
         }
 
+        gameTestServer {
+            workingDirectory layout.buildDirectory.dir('mixin-compatibility-run').get().asFile
+            args "--mixin.config=${mod_id}.mixins.json"
+            args "--mixin.config=${mod_id}.forge.mixins.json"
+            property 'forge.enabledGameTestNamespaces', mod_id
+
+            mods {
+                modGameTestRun {
+                    source sourceSets.main
+                    source project(':common').sourceSets.main
+                }
+                compatibilityTestRun {
+                    source sourceSets.gametest
+                }
+            }
+        }
+
         data {
             workingDirectory file('runs/data')
             ideaModule "${rootProject.name}.${project.name}.main"
@@ -70,6 +91,24 @@ minecraft {
             }
         }
     }
+}
+cleanMixinCompatibilityRun('runGametestGameTestServer', layout.buildDirectory.dir('mixin-compatibility-run'))
+registerMixinCompatibilityVerification('runGametestGameTestServer', sourceSets.gametest,
+        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
+
+def generatedGameTestResources = layout.buildDirectory.dir('generated/mixinCompatibilityTestResources')
+def generateMixinCompatibilityTestInstances = tasks.register('generateMixinCompatibilityTestInstances', JavaExec) {
+    dependsOn tasks.named('compileGametestJava')
+    classpath = files(tasks.named('compileGametestJava', JavaCompile).flatMap { it.destinationDirectory },
+            sourceSets.gametest.compileClasspath)
+    mainClass = 'com.tik.zbb.gametest.MixinCompatibilityScenarios'
+    args 'generate-forge', generatedGameTestResources.get().dir('data/zbb/test_instance').asFile.absolutePath
+    outputs.dir generatedGameTestResources
+}
+
+tasks.named('processGametestResources') {
+    dependsOn generateMixinCompatibilityTestInstances
+    from generatedGameTestResources
 }
 
 sourceSets.main.resources.srcDir 'src/generated/resources'

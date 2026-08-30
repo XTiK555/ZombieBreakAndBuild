@@ -1,6 +1,12 @@
 plugins {
     // see https://fabricmc.net/develop/ for new versions
-    id 'fabric-loom' version '1.8-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.13-SNAPSHOT' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
-    id 'net.neoforged.moddev' version '2.0.49-beta' apply false
+    id 'net.neoforged.moddev' version '2.0.123' apply false
+}
+
+tasks.register('mixinCompatibilityTest') {
+    group = 'verification'
+    description = 'Runs the behavioral mixin compatibility GameTests on Fabric, Forge, and NeoForge.'
+    dependsOn ':fabric:verifyMixinCompatibilityGameTest', ':forge:verifyMixinCompatibilityGameTest', ':neoforge:verifyMixinCompatibilityGameTest'
 }

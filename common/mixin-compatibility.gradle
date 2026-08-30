@@ -1,0 +1,38 @@
+ext.configureMixinCompatibilitySourceSet = { compatibilitySourceSet ->
+    compatibilitySourceSet.java.srcDir project(':common').file('src/gametest/java')
+    compatibilitySourceSet.compileClasspath += sourceSets.main.output
+    compatibilitySourceSet.runtimeClasspath += sourceSets.main.output
+
+    configurations.named(compatibilitySourceSet.implementationConfigurationName) {
+        extendsFrom configurations.implementation
+    }
+    configurations.named(compatibilitySourceSet.runtimeOnlyConfigurationName) {
+        extendsFrom configurations.runtimeOnly
+    }
+}
+
+ext.cleanMixinCompatibilityRun = { String taskName, gameDirectory ->
+    tasks.matching { it.name == taskName }.configureEach {
+        doFirst {
+            delete gameDirectory
+            gameDirectory.get().asFile.mkdirs()
+        }
+    }
+}
+
+ext.registerMixinCompatibilityVerification = { String runTaskName, compatibilitySourceSet, reportFile ->
+    tasks.matching { it.name == runTaskName }.configureEach {
+        systemProperty 'zbb.mixinCompatibility.reportFile', reportFile.get().asFile.absolutePath
+        doFirst {
+            delete reportFile
+            reportFile.get().asFile.parentFile.mkdirs()
+        }
+    }
+
+    tasks.register('verifyMixinCompatibilityGameTest', JavaExec) {
+        dependsOn runTaskName
+        classpath = files(compatibilitySourceSet.output.classesDirs, compatibilitySourceSet.compileClasspath)
+        mainClass = 'com.tik.zbb.gametest.MixinCompatibilityScenarios'
+        args 'verify-junit', reportFile.get().asFile.absolutePath
+    }
+}
