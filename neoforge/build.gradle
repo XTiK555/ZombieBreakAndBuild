@@ -3,8 +3,14 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+sourceSets { gametest }
+
+apply from: rootProject.file('common/mixin-compatibility.gradle')
+configureMixinCompatibilitySourceSet(sourceSets.gametest)
+
 neoForge {
     version = neoforge_version
+    addModdingDependenciesTo sourceSets.gametest
 
     // Automatically enable neoforge AccessTransformers if the file exists
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -34,13 +40,26 @@ neoForge {
             this.file("runs/server").createParentDirectories()
             gameDirectory = this.mkdir(this.file("runs/server"))
         }
+
+        mixinCompatibilityGameTest {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-run').get().asFile
+        }
     }
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
         }
+        zbbCompatibilityTest {
+            sourceSet sourceSets.gametest
+        }
     }
 }
+
+cleanMixinCompatibilityRun('runMixinCompatibilityGameTest', layout.buildDirectory.dir('mixin-compatibility-run'))
+registerMixinCompatibilityVerification('runMixinCompatibilityGameTest', sourceSets.gametest,
+        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 

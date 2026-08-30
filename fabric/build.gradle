@@ -2,6 +2,7 @@ plugins {
     id 'multiloader-loader'
     id 'net.fabricmc.fabric-loom'
 }
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
@@ -15,6 +16,19 @@ dependencies {
     implementation "org.greenrobot:eventbus-java:3.3.1"
     include "org.greenrobot:eventbus-java:3.3.1"
 }
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'zbb_compatibility_test'
+        enableGameTests = true
+        enableClientGameTests = false
+        eula = true
+    }
+}
+
+apply from: rootProject.file('common/mixin-compatibility.gradle')
+configureMixinCompatibilitySourceSet(sourceSets.gametest)
 
 loom {
     def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
@@ -36,6 +50,10 @@ loom {
         }
     }
 }
+
+cleanMixinCompatibilityRun('runGameTest', layout.buildDirectory.dir('run/gameTest'))
+registerMixinCompatibilityVerification('runGameTest', sourceSets.gametest,
+        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
 
 // Implement mcgradleconventions loader attribute
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
