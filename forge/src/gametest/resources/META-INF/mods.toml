@@ -1,14 +1,14 @@
 modLoader = "javafml"
-loaderVersion = "[65,)"
+loaderVersion = "[64,)"
 license = "LGPL-3.0-only"
 
 [[mods]]
-modId = "zbb_compatibility_test"
-version = "1"
-displayName = "ZBB Mixin Compatibility Tests"
+modId = "${portability_test_mod_id}"
+version = "${version}"
+displayName = "ZBB Portability GameTests"
 
-[[dependencies.zbb_compatibility_test]]
-modId = "zbb"
+[[dependencies.${portability_test_mod_id}]]
+modId = "${mod_id}"
 mandatory = true
 versionRange = "[0,)"
 ordering = "AFTER"
