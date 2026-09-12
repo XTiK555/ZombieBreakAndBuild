@@ -5,8 +5,20 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.123' apply false
 }
 
-tasks.register('mixinCompatibilityTest') {
+tasks.register('portabilityCheck') {
     group = 'verification'
-    description = 'Runs the behavioral mixin compatibility GameTests on Fabric, Forge, and NeoForge.'
+    description = 'Runs unit tests and all portability GameTests on Fabric, Forge, and NeoForge.'
+    dependsOn ':common:test', ':fabric:verifyPortabilityGameTest', ':forge:verifyPortabilityGameTest', ':neoforge:verifyPortabilityGameTest'
+}
+
+tasks.register('functionalGameTest') {
+    group = 'verification'
+    description = 'Runs the quick functional regression check on all supported loaders.'
+    dependsOn ':common:test', ':fabric:verifyFunctionalGameTest', ':forge:verifyFunctionalGameTest', ':neoforge:verifyFunctionalGameTest'
+}
+
+tasks.register('mixinCompatibilityGameTest') {
+    group = 'verification'
+    description = 'Runs the focused mixin compatibility GameTests on every supported loader.'
     dependsOn ':fabric:verifyMixinCompatibilityGameTest', ':forge:verifyMixinCompatibilityGameTest', ':neoforge:verifyMixinCompatibilityGameTest'
 }
