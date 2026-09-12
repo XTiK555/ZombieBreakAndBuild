@@ -1,7 +1,12 @@
 plugins {
     id 'multiloader-loader'
+    id 'portability-gametest'
     id 'net.fabricmc.fabric-loom'
 }
+
+def functionalSuite = portabilityGameTestSuites.functional
+def mixinCompatibilitySuite = portabilityGameTestSuites.mixinCompatibility
+def portabilityTestModId = "${mod_id}_portability_test"
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
@@ -20,15 +25,12 @@ dependencies {
 fabricApi {
     configureTests {
         createSourceSet = true
-        modId = 'zbb_compatibility_test'
+        modId = portabilityTestModId
         enableGameTests = true
         enableClientGameTests = false
         eula = true
     }
 }
-
-apply from: rootProject.file('common/mixin-compatibility.gradle')
-configureMixinCompatibilitySourceSet(sourceSets.gametest)
 
 loom {
     def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
@@ -36,6 +38,16 @@ loom {
         accessWidenerPath.set(aw)
     }
     runs {
+        functionalGameTest {
+            inherit gameTest
+            setConfigName('Fabric Functional GameTests')
+            runDir('build/run/functionalGameTest')
+        }
+        mixinCompatibilityGameTest {
+            inherit gameTest
+            setConfigName('Fabric Mixin Compatibility GameTests')
+            runDir('build/run/mixinCompatibilityGameTest')
+        }
         client {
             client()
             setConfigName('Fabric Client')
@@ -51,9 +63,52 @@ loom {
     }
 }
 
-cleanMixinCompatibilityRun('runGameTest', layout.buildDirectory.dir('run/gameTest'))
-registerMixinCompatibilityVerification('runGameTest', sourceSets.gametest,
-        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
+def generatedAdapterSource = layout.buildDirectory.file('generated/portabilityFabricAdapter/com/tik/zbb/gametest/FabricPortabilityGameTests.java')
+def generatedTestEnvironments = layout.buildDirectory.dir('generated/portabilityGameTestEnvironments')
+def generatedAdapterClasses = layout.buildDirectory.dir('classes/java/portabilityFabricAdapter')
+def generateFabricPortabilityAdapter = tasks.register('generateFabricPortabilityAdapter', JavaExec) {
+    dependsOn tasks.named('compileGametestJava')
+    classpath = files(tasks.named('compileGametestJava', JavaCompile).flatMap { it.destinationDirectory },
+            project(':common').file('src/gametest/resources'),
+            sourceSets.gametest.compileClasspath)
+    mainClass = 'com.tik.zbb.gametest.fabric.FabricGameTestGenerator'
+    args generatedAdapterSource.get().asFile.absolutePath, generatedTestEnvironments.get().asFile.absolutePath
+    outputs.file generatedAdapterSource
+    outputs.dir generatedTestEnvironments
+}
+def compileFabricPortabilityAdapter = tasks.register('compileFabricPortabilityAdapter', JavaCompile) {
+    dependsOn generateFabricPortabilityAdapter
+    source generatedAdapterSource
+    classpath = files(tasks.named('compileGametestJava', JavaCompile).flatMap { it.destinationDirectory },
+            sourceSets.gametest.compileClasspath)
+    destinationDirectory = generatedAdapterClasses
+    javaCompiler = tasks.named('compileGametestJava', JavaCompile).flatMap { it.javaCompiler }
+    group = 'build setup'
+    description = 'Compiles the generated Fabric portability GameTest adapter.'
+}
+sourceSets.gametest.output.classesDirs.from(
+        compileFabricPortabilityAdapter.flatMap { it.destinationDirectory }
+)
+tasks.named(sourceSets.gametest.classesTaskName) { dependsOn compileFabricPortabilityAdapter }
+loom.mods.named(portabilityTestModId) {
+    getModFiles().from(
+            compileFabricPortabilityAdapter.flatMap { it.destinationDirectory }
+    )
+}
+sourceSets.gametest.resources.srcDir generatedTestEnvironments
+tasks.named(sourceSets.gametest.processResourcesTaskName) { dependsOn generateFabricPortabilityAdapter }
+
+generateFabricPortabilityAdapter.configure {
+    group = 'build setup'
+    description = 'Generates the Fabric adapter for the canonical portability scenarios.'
+}
+configurePortabilityGameTestSourceSet(sourceSets.gametest)
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runGameTest', JavaExec),
+        functionalSuite.id, null)
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runFunctionalGameTest', JavaExec),
+        functionalSuite.id, 'Functional')
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runMixinCompatibilityGameTest', JavaExec),
+        mixinCompatibilitySuite.id, 'MixinCompatibility')
 
 // Implement mcgradleconventions loader attribute
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)

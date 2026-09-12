@@ -1,15 +1,21 @@
 {
   "schemaVersion": 1,
-  "id": "zbb_compatibility_test",
-  "version": "1",
-  "name": "ZBB Mixin Compatibility Tests",
+  "id": "${portability_test_mod_id}",
+  "version": "${version}",
+  "name": "ZBB Portability GameTests",
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
-      "com.tik.zbb.gametest.FabricMixinCompatibilityGameTests"
+      {
+        "adapter": "portability-suite",
+        "value": "selected"
+      }
     ]
   },
+  "languageAdapters": {
+    "portability-suite": "com.tik.zbb.gametest.FabricPortabilityGameTests"
+  },
   "depends": {
-    "zbb": "*"
+    "${mod_id}": "*"
   }
 }
