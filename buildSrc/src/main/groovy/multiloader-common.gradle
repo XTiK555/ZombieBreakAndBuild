@@ -36,6 +36,7 @@ public final class BuildConstants
 }
 sourceSets.main.java.srcDir generatedBuildConstants
 tasks.named('compileJava') { dependsOn generateBuildConstants }
+tasks.named('sourcesJar') { dependsOn generateBuildConstants }
 
 repositories {
     mavenCentral()
@@ -146,7 +147,7 @@ processResources {
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifactId base.archivesName.get()
+            artifactId = base.archivesName.get()
             from components.java
         }
     }
