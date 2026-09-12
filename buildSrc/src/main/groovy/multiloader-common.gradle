@@ -13,6 +13,30 @@ java {
     withJavadocJar()
 }
 
+def generatedBuildConstants = layout.buildDirectory.dir('generated/sources/buildConstants/java')
+def generateBuildConstants = tasks.register('generateBuildConstants') {
+    group = 'build setup'
+    description = 'Generates Java constants from the canonical Gradle project properties.'
+    def output = generatedBuildConstants.map { it.file('com/tik/zbb/BuildConstants.java') }
+    inputs.property('mod_id', mod_id)
+    outputs.file(output)
+    doLast {
+        def source = output.get().asFile
+        source.parentFile.mkdirs()
+        source.text = """package com.tik.zbb;
+
+public final class BuildConstants
+{
+    public static final String MOD_ID = ${groovy.json.JsonOutput.toJson(mod_id)};
+
+    private BuildConstants() {}
+}
+"""
+    }
+}
+sourceSets.main.java.srcDir generatedBuildConstants
+tasks.named('compileJava') { dependsOn generateBuildConstants }
+
 repositories {
     mavenCentral()
     // https://docs.gradle.org/current/userguide/declaring_repositories.html#declaring_content_exclusively_found_in_one_repository
