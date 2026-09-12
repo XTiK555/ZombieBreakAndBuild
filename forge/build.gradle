@@ -1,13 +1,13 @@
 plugins {
     id 'multiloader-loader'
+    id 'portability-gametest'
     id 'net.minecraftforge.gradle' version '6.0.46'
     id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
     id 'idea'
 }
+def functionalSuite = portabilityGameTestSuites.functional
+def mixinCompatibilitySuite = portabilityGameTestSuites.mixinCompatibility
 sourceSets { gametest }
-
-apply from: rootProject.file('common/mixin-compatibility.gradle')
-configureMixinCompatibilitySourceSet(sourceSets.gametest)
 base {
     archivesName = "${mod_id}-forge-${minecraft_version}"
 }
@@ -64,20 +64,35 @@ minecraft {
         }
 
         gameTestServer {
-            workingDirectory layout.buildDirectory.dir('mixin-compatibility-run').get().asFile
+            workingDirectory layout.buildDirectory.dir('portability-gametest-run').get().asFile
             args "--mixin.config=${mod_id}.mixins.json"
             args "--mixin.config=${mod_id}.forge.mixins.json"
-            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
 
             mods {
                 modGameTestRun {
                     source sourceSets.main
-                    source project(':common').sourceSets.main
                 }
                 compatibilityTestRun {
                     source sourceSets.gametest
                 }
             }
+        }
+
+        functionalGameTestServer {
+            parent gameTestServer
+            main 'net.minecraftforge.bootstrap.ForgeBootstrap'
+            args '--launchTarget', 'forge_userdev_server_gametest'
+            args '--tests', "${portabilityGameTestNamespace(functionalSuite)}:*"
+            workingDirectory layout.buildDirectory.dir('functional-gametest-run').get().asFile
+            property 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
+        }
+
+        mixinCompatibilityGameTestServer {
+            parent gameTestServer
+            args '--tests', "${portabilityGameTestNamespace(mixinCompatibilitySuite)}:*"
+            workingDirectory layout.buildDirectory.dir('mixin-compatibility-gametest-run').get().asFile
+            property 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(mixinCompatibilitySuite)
         }
 
         data {
@@ -93,24 +108,32 @@ minecraft {
         }
     }
 }
-cleanMixinCompatibilityRun('runGametestGameTestServer', layout.buildDirectory.dir('mixin-compatibility-run'))
-registerMixinCompatibilityVerification('runGametestGameTestServer', sourceSets.gametest,
-        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
+def portabilityRunTaskName = 'runGameTestServer'
+configurePortabilityGameTestSourceSet(sourceSets.gametest)
+configurePortabilityGameTestRun(sourceSets.gametest, portabilityRunTaskName,
+        functionalSuite.id, null)
+def functionalRunTaskName = 'runFunctionalGameTestServer'
+configurePortabilityGameTestRun(sourceSets.gametest, functionalRunTaskName,
+        functionalSuite.id, 'Functional')
+def mixinCompatibilityRunTaskName = 'runMixinCompatibilityGameTestServer'
+configurePortabilityGameTestRun(sourceSets.gametest, mixinCompatibilityRunTaskName,
+        mixinCompatibilitySuite.id, 'MixinCompatibility')
 
-def generatedGameTestResources = layout.buildDirectory.dir('generated/mixinCompatibilityTestResources')
-def generateMixinCompatibilityTestInstances = tasks.register('generateMixinCompatibilityTestInstances', JavaExec) {
+def generatedGameTestResources = layout.buildDirectory.dir('generated/portabilityGameTestResources')
+def generatePortabilityGameTestInstances = tasks.register('generatePortabilityGameTestInstances', JavaExec) {
+    group = 'build setup'
+    description = 'Generates Forge test-instance JSON from the canonical portability scenarios.'
     dependsOn tasks.named('compileGametestJava')
     classpath = files(tasks.named('compileGametestJava', JavaCompile).flatMap { it.destinationDirectory },
+            project(':common').file('src/gametest/resources'),
             sourceSets.gametest.compileClasspath)
-    mainClass = 'com.tik.zbb.gametest.MixinCompatibilityScenarios'
-    args 'generate-forge', generatedGameTestResources.get().dir('data/zbb/test_instance').asFile.absolutePath
+    mainClass = 'com.tik.zbb.gametest.forge.ForgeGameTestGenerator'
+    args generatedGameTestResources.get().asFile.absolutePath
     outputs.dir generatedGameTestResources
 }
 
-tasks.named('processGametestResources') {
-    dependsOn generateMixinCompatibilityTestInstances
-    from generatedGameTestResources
-}
+sourceSets.gametest.resources.srcDir generatedGameTestResources
+tasks.named(sourceSets.gametest.processResourcesTaskName) { dependsOn generatePortabilityGameTestInstances }
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
 

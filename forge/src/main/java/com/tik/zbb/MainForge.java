@@ -5,6 +5,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -19,6 +20,7 @@ public class MainForge
         TickEvent.LevelTickEvent.Post.BUS.addListener(this::onLevelTickPost);
         TickEvent.ServerTickEvent.Pre.BUS.addListener(this::onServerTickPre);
         ServerStartingEvent.BUS.addListener(this::onServerStarting);
+        ServerStartedEvent.BUS.addListener(this::onServerStarted);
         ServerStoppingEvent.BUS.addListener(this::onServerStopping);
         EntityJoinLevelEvent.BUS.addListener(this::onJoin);
         RegisterCommandsEvent.BUS.addListener(this::onRegisterCommands);
@@ -43,7 +45,12 @@ public class MainForge
 
     private void onServerStarting(ServerStartingEvent event)
     {
-        MainCommon.onServerStarting(event.getServer());
+        MainCommon.ensureServerRuntimeStarted(event.getServer());
+    }
+
+    private void onServerStarted(ServerStartedEvent event)
+    {
+        MainCommon.ensureServerRuntimeStarted(event.getServer());
     }
 
     private void onJoin(EntityJoinLevelEvent event)

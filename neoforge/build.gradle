@@ -1,12 +1,13 @@
 plugins {
     id 'multiloader-loader'
+    id 'portability-gametest'
     id 'net.neoforged.moddev'
 }
 
-sourceSets { gametest }
+def functionalSuite = portabilityGameTestSuites.functional
+def mixinCompatibilitySuite = portabilityGameTestSuites.mixinCompatibility
 
-apply from: rootProject.file('common/mixin-compatibility.gradle')
-configureMixinCompatibilitySourceSet(sourceSets.gametest)
+sourceSets { gametest }
 
 neoForge {
     version = neoforge_version
@@ -21,44 +22,63 @@ neoForge {
         minecraftVersion = parchment_minecraft
         mappingsVersion = parchment_version
     }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+        portabilityGameTest {
+            sourceSet sourceSets.gametest
+        }
+    }
+
     runs {
         configureEach {
-            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
-            ideName = "NeoForge ${it.name.capitalize()} (${project.path})" // Unify the run config names with fabric
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
         }
+
         client {
             client()
+            loadedMods = [mods."${mod_id}"]
+            gameDirectory = this.mkdir(this.file("runs/client"))
         }
+
         data {
             clientData()
-
-            // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            loadedMods = [mods."${mod_id}"]
+            gameDirectory = this.mkdir(this.file("runs/data"))
             programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
+
         server {
             server()
+            loadedMods = [mods."${mod_id}"]
+            gameDirectory = this.mkdir(this.file("runs/server"))
+        }
+
+        functionalGameTest {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            loadedMods = [mods."${mod_id}", mods.portabilityGameTest]
+            systemProperty('neoforge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite))
+            gameDirectory = layout.buildDirectory.dir('functional-gametest-run').get().asFile
         }
 
         mixinCompatibilityGameTest {
             type = "gameTestServer"
             sourceSet = sourceSets.gametest
-            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-run').get().asFile
-        }
-    }
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-        zbbCompatibilityTest {
-            sourceSet sourceSets.gametest
+            loadedMods = [mods."${mod_id}", mods.portabilityGameTest]
+            systemProperty('neoforge.enabledGameTestNamespaces', portabilityGameTestNamespace(mixinCompatibilitySuite))
+            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-gametest-run').get().asFile
         }
     }
 }
 
-cleanMixinCompatibilityRun('runMixinCompatibilityGameTest', layout.buildDirectory.dir('mixin-compatibility-run'))
-registerMixinCompatibilityVerification('runMixinCompatibilityGameTest', sourceSets.gametest,
-        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
+configurePortabilityGameTestSourceSet(sourceSets.gametest)
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runFunctionalGameTest', JavaExec),
+        functionalSuite.id, 'Functional')
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runMixinCompatibilityGameTest', JavaExec),
+        mixinCompatibilitySuite.id, 'MixinCompatibility')
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 

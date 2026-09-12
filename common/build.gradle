@@ -11,9 +11,17 @@ repositories {
     }
 }
 
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 neoForge {
     neoFormVersion = neo_form_version
     addModdingDependenciesTo sourceSets.test
+    addModdingDependenciesTo sourceSets.gametest
 
     // Automatically enable AccessTransformers if the file exists
     def at = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -63,9 +71,16 @@ configurations {
     }
 }
 
+configurations.named(sourceSets.gametest.implementationConfigurationName) {
+    extendsFrom configurations.implementation
+}
+configurations.named(sourceSets.gametest.runtimeOnlyConfigurationName) {
+    extendsFrom configurations.runtimeOnly
+}
+
 artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+    commonJava file('src/main/java')
+    commonResources file('src/main/resources')
 }
 
 // Implement mcgradleconventions loader attribute
