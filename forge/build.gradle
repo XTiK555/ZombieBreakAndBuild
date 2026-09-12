@@ -1,11 +1,11 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev.legacyforge'
+    id 'portability-gametest'
 }
+def functionalSuite = portabilityGameTestSuites.functional
+def mixinCompatibilitySuite = portabilityGameTestSuites.mixinCompatibility
 sourceSets { gametest }
-
-apply from: rootProject.file('common/mixin-compatibility.gradle')
-configureMixinCompatibilitySourceSet(sourceSets.gametest)
 base {
     archivesName = "${mod_id}-forge-${minecraft_version}"
 }
@@ -44,10 +44,28 @@ legacyForge {
 
         gameTestServer {
             type = 'gameTestServer'
-            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-run').get().asFile
+            gameDirectory = layout.buildDirectory.dir('portability-gametest-run').get().asFile
             programArgument "--mixin.config=${mod_id}.mixins.json"
             programArgument "--mixin.config=${mod_id}.forge.mixins.json"
-            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
+            sourceSet = sourceSets.gametest
+        }
+
+        functionalGameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = layout.buildDirectory.dir('functional-gametest-run').get().asFile
+            programArgument "--mixin.config=${mod_id}.mixins.json"
+            programArgument "--mixin.config=${mod_id}.forge.mixins.json"
+            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
+            sourceSet = sourceSets.gametest
+        }
+
+        mixinCompatibilityGameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-gametest-run').get().asFile
+            programArgument "--mixin.config=${mod_id}.mixins.json"
+            programArgument "--mixin.config=${mod_id}.forge.mixins.json"
+            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(mixinCompatibilitySuite)
             sourceSet = sourceSets.gametest
         }
 
@@ -61,29 +79,21 @@ legacyForge {
         "${mod_id}" {
             sourceSet sourceSets.main
         }
-        zbb_compatibility_test {
+        "${mod_id}_portability_test" {
             sourceSet sourceSets.gametest
         }
     }
 }
-cleanMixinCompatibilityRun('runGametestGameTestServer', layout.buildDirectory.dir('mixin-compatibility-run'))
-registerMixinCompatibilityVerification('runGametestGameTestServer', sourceSets.gametest,
-        layout.buildDirectory.file('reports/mixin-compatibility-gametest.xml'))
-
-def generatedGameTestResources = layout.buildDirectory.dir('generated/mixinCompatibilityTestResources')
-def generateMixinCompatibilityTestInstances = tasks.register('generateMixinCompatibilityTestInstances', JavaExec) {
-    dependsOn tasks.named('compileGametestJava')
-    classpath = files(tasks.named('compileGametestJava', JavaCompile).flatMap { it.destinationDirectory },
-            sourceSets.gametest.compileClasspath)
-    mainClass = 'com.tik.zbb.gametest.MixinCompatibilityScenarios'
-    args 'generate-forge', generatedGameTestResources.get().dir('data/zbb/test_instance').asFile.absolutePath
-    outputs.dir generatedGameTestResources
-}
-
-tasks.named('processGametestResources') {
-    dependsOn generateMixinCompatibilityTestInstances
-    from generatedGameTestResources
-}
+def portabilityRunTaskName = 'runGameTestServer'
+configurePortabilityGameTestSourceSet(sourceSets.gametest)
+configurePortabilityGameTestRun(sourceSets.gametest, portabilityRunTaskName,
+        functionalSuite.id, null)
+def functionalRunTaskName = 'runFunctionalGameTestServer'
+configurePortabilityGameTestRun(sourceSets.gametest, functionalRunTaskName,
+        functionalSuite.id, 'Functional')
+def mixinCompatibilityRunTaskName = 'runMixinCompatibilityGameTestServer'
+configurePortabilityGameTestRun(sourceSets.gametest, mixinCompatibilityRunTaskName,
+        mixinCompatibilitySuite.id, 'MixinCompatibility')
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
 

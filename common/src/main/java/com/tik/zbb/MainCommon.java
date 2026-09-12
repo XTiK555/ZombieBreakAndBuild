@@ -25,6 +25,7 @@ import static com.tik.zbb.utilities.SecondsToTicksUtility.toTicks;
 public class MainCommon
 {
     private static boolean isInitialized = false;
+    private static boolean isServerStarted = false;
 
     public static void init()
     {
@@ -51,15 +52,24 @@ public class MainCommon
         Constants.SCHEDULER.tick();
     }
 
-    public static void onServerStarting(MinecraftServer server)
+    // old onServerStarting
+    public static void ensureServerRuntimeStarted(MinecraftServer server)
     {
+        if (isServerStarted) return;
+
         ConfigManager.startRuntime(server);
+
+        isServerStarted = true;
     }
 
     public static void onServerStopping(MinecraftServer server)
     {
+        if (!isServerStarted) return;
+
         Constants.SCHEDULER.clear();
         Constants.EVENT_BUS.post(new OnServerStoppingEvent(server));
+
+        isServerStarted = false;
     }
 
     public static void onJoin(Mob mob)

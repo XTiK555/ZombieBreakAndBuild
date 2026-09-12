@@ -1,0 +1,94 @@
+plugins {
+    id 'java'
+}
+
+def suiteIds = new Properties()
+rootProject.file('common/src/gametest/resources/portability-gametest-suites.properties').withInputStream {
+    suiteIds.load(it)
+}
+ext.portabilityGameTestSuites = suiteIds.collectEntries { name, value ->
+    def id = value.toString()
+    if (!(id ==~ /[a-z][a-z0-9]*(?:-[a-z0-9]+)*/))
+        throw new GradleException("Invalid GameTest suite id: ${id}")
+    [(name): [id: id, normalizedId: id.replace('-', '_')]]
+}
+ext.portabilityGameTestNamespace = { suite -> "${mod_id}_${suite.normalizedId}" }
+
+ext.configurePortabilityGameTestSourceSet = { SourceSet gameTestSourceSet ->
+    def mainModId = mod_id.toString()
+    def testModId = "${mainModId}_portability_test"
+
+    gameTestSourceSet.compileClasspath += sourceSets.main.output
+    gameTestSourceSet.compileClasspath += sourceSets.main.compileClasspath
+    gameTestSourceSet.runtimeClasspath += sourceSets.main.output
+    gameTestSourceSet.runtimeClasspath += sourceSets.main.runtimeClasspath
+
+    def commonGameTest = project(':common').sourceSets.gametest
+
+    gameTestSourceSet.java.srcDirs(commonGameTest.java.srcDirs)
+    gameTestSourceSet.resources.srcDirs(commonGameTest.resources.srcDirs)
+
+    tasks.named(gameTestSourceSet.processResourcesTaskName, ProcessResources) {
+        def metadata = [
+                mod_id                 : mainModId,
+                portability_test_mod_id: testModId,
+                version                : project.version.toString()
+        ]
+        filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+            expand metadata
+        }
+        inputs.properties metadata
+    }
+
+    configurations.named(gameTestSourceSet.implementationConfigurationName) {
+        extendsFrom configurations.implementation
+    }
+    configurations.named(gameTestSourceSet.runtimeOnlyConfigurationName) {
+        extendsFrom configurations.runtimeOnly
+    }
+    configurations.named(gameTestSourceSet.compileOnlyConfigurationName) {
+        extendsFrom configurations.compileOnly
+    }
+}
+
+ext.configurePortabilityGameTestRun = { SourceSet gameTestSourceSet, Object runTask,
+                                        String suite, String taskSuffix ->
+    def mainModId = mod_id.toString()
+    def reportFile = layout.buildDirectory.file("reports/${suite}-gametest.xml")
+    def configureRun = {
+        group = 'verification'
+        description = "Runs the ${suite} GameTests in Minecraft."
+        systemProperty "${mainModId}.portability.reportFile", reportFile.get().asFile.absolutePath
+        systemProperty "${mainModId}.portability.suite", suite
+        doFirst { task ->
+            task.workingDir.mkdirs()
+            delete reportFile
+            reportFile.get().asFile.parentFile.mkdirs()
+        }
+    }
+    if (runTask instanceof TaskProvider) {
+        runTask.configure configureRun
+    } else {
+        // ForgeGradle registers run tasks only after resolving its Minecraft dependency.
+        tasks.withType(JavaExec).configureEach {
+            if (name == runTask.toString()) configure configureRun
+        }
+    }
+
+    if (taskSuffix != null) {
+        tasks.register("verify${taskSuffix}GameTest", JavaExec) {
+            group = 'verification'
+            description = "Runs and verifies the ${suite} GameTest suite."
+            dependsOn runTask
+            classpath = gameTestSourceSet.runtimeClasspath
+            mainClass = 'com.tik.zbb.gametest.PortabilityGameTestReportCli'
+            args reportFile.get().asFile.absolutePath, suite
+        }
+    }
+}
+
+tasks.register('verifyPortabilityGameTest') {
+    group = 'verification'
+    description = 'Runs every portability GameTest suite in isolated Minecraft servers.'
+    dependsOn 'verifyFunctionalGameTest', 'verifyMixinCompatibilityGameTest'
+}

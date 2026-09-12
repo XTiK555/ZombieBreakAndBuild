@@ -1,7 +1,6 @@
 {
   "pack": {
-    "description": "ZBB Mixin Compatibility Tests",
-    "min_format": [88, 0],
-    "max_format": [107, 1]
+    "description": "ZBB Portability GameTests",
+    "pack_format": 15
   }
 }
