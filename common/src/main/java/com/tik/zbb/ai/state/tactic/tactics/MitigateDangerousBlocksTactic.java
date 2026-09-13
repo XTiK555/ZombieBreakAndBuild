@@ -93,7 +93,15 @@ public class MitigateDangerousBlocksTactic implements IMobTactic
             return calculateDangerous(state.getBlock(), context, snapshot);
         }
 
-        return cache.matchesByBlock().computeIfAbsent(state.getBlock(), block -> calculateDangerous(block, context, snapshot));
+        Boolean match = cache.matchesByBlock().get(state.getBlock());
+        if (match != null)
+        {
+            return match;
+        }
+
+        boolean result = calculateDangerous(state.getBlock(), context, snapshot);
+        cache.matchesByBlock().put(state.getBlock(), result);
+        return result;
     }
 
     private static boolean calculateDangerous(Block block, MobStateContext context, ConfigSnapshot snapshot)
