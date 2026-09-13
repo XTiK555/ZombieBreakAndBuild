@@ -2,6 +2,7 @@ package com.tik.zbb.blockstorage.storages.buildDisappear;
 
 import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.actions.build.BuildAction;
+import com.tik.zbb.blockstorage.ExpiringBlockStorage;
 import com.tik.zbb.event.MixinEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -51,17 +52,68 @@ public class BuildDisappearBlockStorageManager
         }
         else if (currentState.is(Blocks.AIR))
         {
-            if (!restoreOldBlock(event)) event.cancelAndReassign();
+            if (!restoreOldBlock(event))
+                event.cancelAndReassign();
         }
+    }
+
+    public BuildDisappearBlockStorageEntry discard(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.discard(level, pos);
+    }
+
+    public void put(ServerLevel level, BlockPos pos, BuildDisappearBlockStorageEntry entry)
+    {
+        buildDisappearBlockStorage.put(level, pos, entry);
+    }
+
+    public void putTimed(ServerLevel level, BlockPos pos,
+                         ExpiringBlockStorage.TimedEntry<BuildDisappearBlockStorageEntry> entry)
+    {
+        buildDisappearBlockStorage.putTimed(level, pos, entry);
+    }
+
+    public BuildDisappearBlockStorageEntry get(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.get(level, pos);
+    }
+
+    public ExpiringBlockStorage.TimedEntry<BuildDisappearBlockStorageEntry> getTimed(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.getTimed(level, pos);
+    }
+
+    public boolean contains(ServerLevel level, BlockPos pos)
+    {
+        return buildDisappearBlockStorage.contains(level, pos);
+    }
+
+    public void cleanup(ServerLevel level, long ttlTicks)
+    {
+        buildDisappearBlockStorage.cleanup(level, ttlTicks);
     }
 
     private boolean restoreOldBlock(BuildDisappearBlockStorage.OnRemovedEvent event)
     {
-        if (!event.level().setBlockAndUpdate(event.pos(), event.entry().oldState())) return false;
+        if (event.level().getBlockState(event.pos()).equals(event.entry().oldState()))
+        {
+            if (restoreNbt(event)) return true;
+        }
+        else if (event.level().setBlockAndUpdate(event.pos(), event.entry().oldState()))
+        {
+            if (restoreNbt(event)) return true;
+        }
 
+        return false;
+    }
+
+    private boolean restoreNbt(BuildDisappearBlockStorage.OnRemovedEvent event)
+    {
         CompoundTag savedNbt = event.entry().oldNbt();
         BlockEntity blockEntity = event.level().getBlockEntity(event.pos());
-        if (savedNbt == null || blockEntity == null) return true;
+
+        if (savedNbt == null) return true;
+        if (blockEntity == null) return false;
 
         CompoundTag nbt = savedNbt.copy();
         nbt.putInt("x", event.pos().getX());
@@ -77,30 +129,5 @@ public class BuildDisappearBlockStorageManager
         BlockState state = event.level().getBlockState(event.pos());
         event.level().sendBlockUpdated(event.pos(), state, state, 3);
         return true;
-    }
-
-    public BuildDisappearBlockStorageEntry discard(ServerLevel level, BlockPos pos)
-    {
-        return buildDisappearBlockStorage.discard(level, pos);
-    }
-
-    public void put(ServerLevel level, BlockPos pos, BuildDisappearBlockStorageEntry entry)
-    {
-        buildDisappearBlockStorage.put(level, pos, entry);
-    }
-
-    public BuildDisappearBlockStorageEntry get(ServerLevel level, BlockPos pos)
-    {
-        return buildDisappearBlockStorage.get(level, pos);
-    }
-
-    public boolean contains(ServerLevel level, BlockPos pos)
-    {
-        return buildDisappearBlockStorage.contains(level, pos);
-    }
-
-    public void cleanup(ServerLevel level, long ttlTicks)
-    {
-        buildDisappearBlockStorage.cleanup(level, ttlTicks);
     }
 }

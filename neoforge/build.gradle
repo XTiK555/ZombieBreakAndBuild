@@ -1,10 +1,17 @@
 plugins {
     id 'multiloader-loader'
+    id 'portability-gametest'
     id 'net.neoforged.moddev'
 }
 
+def functionalSuite = portabilityGameTestSuites.functional
+def mixinCompatibilitySuite = portabilityGameTestSuites.mixinCompatibility
+
+sourceSets { gametest }
+
 neoForge {
     version = neoforge_version
+    addModdingDependenciesTo sourceSets.gametest
 
     // Automatically enable neoforge AccessTransformers if the file exists
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -12,35 +19,63 @@ neoForge {
         accessTransformers.from(at.absolutePath)
     }
 
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+        portabilityGameTest {
+            sourceSet sourceSets.gametest
+        }
+    }
+
     runs {
         configureEach {
-            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
         }
 
         client {
             client()
+            loadedMods = [mods."${mod_id}"]
             gameDirectory = this.mkdir(this.file("runs/client"))
         }
 
         data {
             clientData()
+            loadedMods = [mods."${mod_id}"]
             gameDirectory = this.mkdir(this.file("runs/data"))
             programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
         server {
             server()
+            loadedMods = [mods."${mod_id}"]
             this.file("runs/server").createParentDirectories()
             gameDirectory = this.mkdir(this.file("runs/server"))
         }
-    }
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
+
+        functionalGameTest {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            loadedMods = [mods."${mod_id}", mods.portabilityGameTest]
+            systemProperty('neoforge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite))
+            gameDirectory = layout.buildDirectory.dir('functional-gametest-run').get().asFile
+        }
+
+        mixinCompatibilityGameTest {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            loadedMods = [mods."${mod_id}", mods.portabilityGameTest]
+            systemProperty('neoforge.enabledGameTestNamespaces', portabilityGameTestNamespace(mixinCompatibilitySuite))
+            gameDirectory = layout.buildDirectory.dir('mixin-compatibility-gametest-run').get().asFile
         }
     }
 }
+
+configurePortabilityGameTestSourceSet(sourceSets.gametest)
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runFunctionalGameTest', JavaExec),
+        functionalSuite.id, 'Functional')
+configurePortabilityGameTestRun(sourceSets.gametest, tasks.named('runMixinCompatibilityGameTest', JavaExec),
+        mixinCompatibilitySuite.id, 'MixinCompatibility')
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 

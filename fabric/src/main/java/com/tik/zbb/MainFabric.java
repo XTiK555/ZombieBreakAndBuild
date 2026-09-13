@@ -16,12 +16,12 @@ public class MainFabric implements ModInitializer
 
         ServerTickEvents.END_LEVEL_TICK.register(MainCommon::onLevelTickPost);
         ServerTickEvents.START_SERVER_TICK.register(MainCommon::onServerTickPre);
-        ServerLifecycleEvents.SERVER_STARTING.register(MainCommon::onServerStarting);
+        ServerLifecycleEvents.SERVER_STARTING.register(MainCommon::ensureServerRuntimeStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(MainCommon::onServerStopping);
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) ->
         {
             if (entity instanceof Mob mob) MainCommon.onJoin(mob);
         });
-        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> MainCommon.registerCommands(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> MainCommon.onRegisterCommands(dispatcher));
     }
 }

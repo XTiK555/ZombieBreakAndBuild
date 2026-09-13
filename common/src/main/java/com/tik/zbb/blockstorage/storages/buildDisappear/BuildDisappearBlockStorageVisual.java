@@ -16,7 +16,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-public class BuildDisappearBlockVisual
+public class BuildDisappearBlockStorageVisual
 {
     private static final String DISPLAY_TAG = "zbb_build_disappear";
     private static final int SHRINK_BLOCK_START_DELAY = 2;
@@ -117,7 +117,7 @@ public class BuildDisappearBlockVisual
                             accessor.zbb$setTransformationInterpolationDelay(0);
                         }
 
-                        if (tickCount > SHRINK_BLOCK_DISPLAY_LIFETIME + 2)
+                        if (tickCount > SHRINK_BLOCK_DISPLAY_LIFETIME + 1)
                         {
                             discard();
                         }
@@ -137,6 +137,12 @@ public class BuildDisappearBlockVisual
         blockDisplay.addTag(DISPLAY_TAG);
 
         if (!event.level().addFreshEntity(blockDisplay)) return;
+
+        Constants.SCHEDULER.schedule(() ->
+        {
+            if (blockDisplay != null)
+                blockDisplay.discard();
+        }, SHRINK_BLOCK_DISPLAY_LIFETIME + 2);
     }
 
     private Transformation createTransformation(float scale)

@@ -46,7 +46,7 @@ public class MainNeoForge
 
     private void onServerStarting(ServerStartingEvent event)
     {
-        MainCommon.onServerStarting(event.getServer());
+        MainCommon.ensureServerRuntimeStarted(event.getServer());
     }
 
     private void onJoin(EntityJoinLevelEvent event)
@@ -58,6 +58,6 @@ public class MainNeoForge
 
     private void onRegisterCommands(RegisterCommandsEvent event)
     {
-        MainCommon.registerCommands(event.getDispatcher());
+        MainCommon.onRegisterCommands(event.getDispatcher());
     }
 }

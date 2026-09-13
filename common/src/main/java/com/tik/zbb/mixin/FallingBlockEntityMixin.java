@@ -1,5 +1,6 @@
 package com.tik.zbb.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.tik.zbb.Constants;
@@ -16,7 +17,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FallingBlockEntity.class)
 public abstract class FallingBlockEntityMixin
@@ -27,14 +27,15 @@ public abstract class FallingBlockEntityMixin
     @Unique
     private CompoundTag zbb$landingOldNbt;
 
-    @Inject(method = "fall", at = @At("HEAD"))
-    private static void zbb$onFallStarted(Level level, BlockPos pos, BlockState state,
-                                          CallbackInfoReturnable<FallingBlockEntity> cir)
+    @ModifyExpressionValue(method = "fall", at = @At(value = "NEW", target = "Lnet/minecraft/world/entity/item/FallingBlockEntity;"))
+    private static FallingBlockEntity zbb$onFallStarted(FallingBlockEntity entity, Level level, BlockPos pos, BlockState state)
     {
         if (level instanceof ServerLevel serverLevel)
         {
-            Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockStartedEvent(serverLevel, pos.immutable(), state));
+            Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockStartedEvent(serverLevel, entity));
         }
+
+        return entity;
     }
 
     @Inject(method = "tick", at = @At("RETURN"))
@@ -45,9 +46,7 @@ public abstract class FallingBlockEntityMixin
 
         Constants.EVENT_BUS.post(new MixinEvents.OnFallingBlockFinishedEvent(
                 serverLevel,
-                entity.getStartPos().immutable(),
-                entity.blockPosition().immutable(),
-                entity.getBlockState(),
+                entity,
                 zbb$landingOldState,
                 zbb$landingOldNbt
         ));

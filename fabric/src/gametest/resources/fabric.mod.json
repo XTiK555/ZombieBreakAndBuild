@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "${portability_test_mod_id}",
+  "version": "${version}",
+  "name": "ZBB Portability GameTests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      {
+        "adapter": "portability-suite",
+        "value": "selected"
+      }
+    ]
+  },
+  "languageAdapters": {
+    "portability-suite": "com.tik.zbb.gametest.FabricPortabilityGameTests"
+  },
+  "depends": {
+    "${mod_id}": "*"
+  }
+}

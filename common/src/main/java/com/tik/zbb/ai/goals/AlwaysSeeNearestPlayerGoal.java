@@ -31,11 +31,12 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
     @Override
     public boolean canUse()
     {
+        if (mob.getTarget() != null) return false;
+
         ConfigSnapshot configSnapshot = ConfigManager.getConfigSnapshot();
 
         if (!configSnapshot.game().ai().alwaysSeeNearestPlayer()) return false;
         if (!ShouldApplyToMobUtility.matchesFullZbbMobFilter(mob, configSnapshot)) return false;
-        if (mob.getTarget() != null) return false;
 
         target = findNearestValidPlayer();
         return target != null;
@@ -73,11 +74,11 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
         for (int i = 0, size = players.size(); i < size; i++)
         {
             ServerPlayer player = players.get(i);
-            if (player == null || !player.isAlive()) continue;
+            if (player == null) continue;
 
             double distanceSq = player.distanceToSqr(mob);
-            if (distanceSq >= bestDistanceSq) continue;
 
+            if (distanceSq >= bestDistanceSq) continue;
             if (!isValidPlayer(mob, level, player)) continue;
 
             bestDistanceSq = distanceSq;
@@ -89,6 +90,7 @@ public class AlwaysSeeNearestPlayerGoal extends Goal
 
     private boolean isValidPlayer(Mob mob, ServerLevel level, ServerPlayer player)
     {
+        if (!player.isAlive()) return false;
         if (!EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(player)) return false;
         if (!mob.canAttack(player)) return false;
         if (mob instanceof NeutralMob neutral && !neutral.isAngryAt(player, level)) return false;

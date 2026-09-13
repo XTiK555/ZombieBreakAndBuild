@@ -4,8 +4,9 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.ai.action.IMobAction;
 import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.config.ConfigGame;
+import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorageEntry;
 import com.tik.zbb.config.ConfigSnapshot;
+import com.tik.zbb.utilities.BlockHealthCalculator;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -25,9 +26,8 @@ public class BreakAction implements IMobAction<BreakRequest>
     public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
                                                ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
-    public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state,
-                                ConfigSnapshot configSnapshot, PathfinderMob mob, int totalDamage, int blockHealth,
-                                int newDamage, int blockId) {}
+    public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state, ConfigSnapshot configSnapshot, PathfinderMob mob, int blockHealth,
+                                int newDamage, DamageBlockStorageEntry storageEntry) {}
 
 
     @Override
@@ -38,18 +38,17 @@ public class BreakAction implements IMobAction<BreakRequest>
         if (context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher()
                 .matches(context.mobId(), context.mob().getType().getCategory())) return false;
         if (BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos())) return false;
+        if (context.level().getBlockState(request.pos()).isAir()) return false;
 
-        BlockState state = context.level().getBlockState(request.pos());
-        if (state.isAir()) return false;
-
-        return getBlockHealth(state, request.pos(), context.level(), context.configSnapshot()) != Integer.MAX_VALUE;
+        boolean unbreakable = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
+        return !unbreakable;
     }
 
     @Override
     public boolean execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
-        int blockHealth = getBlockHealth(state, request.pos(), context.level(), context.configSnapshot());
+        int blockHealth = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot());
         int newDamage = getDamageToBlocks(context, state);
         int totalDamage = saturatingAdd(
                 BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()),
@@ -65,6 +64,9 @@ public class BreakAction implements IMobAction<BreakRequest>
             try
             {
                 Constants.EVENT_BUS.post(new OnAnyBlockWillBrokeEvent(context.level(), request.pos(), state, context.configSnapshot(), context.mob()));
+
+                state = context.level().getBlockState(request.pos());
+
                 destroyed = context.level().destroyBlock(request.pos(), dropLoot);
 
                 if (destroyed)
@@ -82,37 +84,14 @@ public class BreakAction implements IMobAction<BreakRequest>
         }
         else
         {
-            int blockId = BlockStorages.ID_MANAGER.getOrCreate(context.level(), request.pos());
+            DamageBlockStorageEntry addedDamageStorageEntry = BlockStorages.DAMAGE_MANAGER.addDamageRecord(context.level(), request.pos(), totalDamage);
 
-            BlockStorages.DAMAGE_MANAGER.addDamageRecord(context.level(), request.pos(), totalDamage, blockId);
-
-            Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), totalDamage, blockHealth, newDamage, blockId));
+            Constants.EVENT_BUS.post(new OnAnyBlockHit(context.level(), request.pos(), state, context.configSnapshot(), context.mob(), blockHealth, newDamage, addedDamageStorageEntry));
         }
 
 
         context.aiTimers().setBreakCooldownUntil(context.level().getGameTime() + SecondsToTicksUtility.toTicks(context.configSnapshot().game().balance().cooldowns().breakCooldown(), 1));
         return succeeded;
-    }
-
-    private int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
-    {
-        return getBlockHealth(level.getBlockState(blockPos), blockPos, level, configSnapshot);
-    }
-
-    private int getBlockHealth(BlockState blockState, BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
-    {
-        ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
-        Integer blockHealthOverride = blockDamageCfg.blockHealthOverrideMap().get(blockState.getBlock());
-        if (blockHealthOverride != null) return blockHealthOverride;
-
-        float hardness = blockState.getDestroySpeed(level, blockPos);
-        if (hardness < 0) return Integer.MAX_VALUE;
-        if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;
-
-        double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
-        if (health >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
-
-        return Math.max(1, (int) Math.round(health));
     }
 
     private int getDamageToBlocks(MobActionContext context, BlockState state)
@@ -168,10 +147,5 @@ public class BreakAction implements IMobAction<BreakRequest>
         );
 
         return toolMultiplier;
-    }
-
-    private boolean exceedsMaximumBreakableHardness(float hardness, ConfigGame.BlockDamage blockDamage)
-    {
-        return blockDamage.maximumBreakableBlockHardness() > 0.0f && hardness > blockDamage.maximumBreakableBlockHardness();
     }
 }

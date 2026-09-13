@@ -1,7 +1,6 @@
 package com.tik.zbb.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -13,10 +12,8 @@ import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationRegistry;
 import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 import com.tik.zbb.config.edit.*;
-import com.tik.zbb.config.schema.ConfigFieldDescriptor;
-import com.tik.zbb.config.schema.ConfigPath;
-import com.tik.zbb.config.schema.ConfigSchema;
-import com.tik.zbb.config.schema.ConfigValueKind;
+import com.tik.zbb.config.schema.*;
+import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.IdentifierArgument;
@@ -25,6 +22,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.entity.MobCategory;
 
 import java.util.*;
 
@@ -36,8 +34,9 @@ public final class ZbbConfigCommand
     private static final String VALUE_ARGUMENT = "value";
     private static final String ENTRY_ARGUMENT = "entry";
     private static final String KEY_ARGUMENT = "key";
-    private static final SimpleCommandExceptionType EXPECTED_VALUE =
-            new SimpleCommandExceptionType(Component.literal("Expected value"));
+    private static final List<String> MOB_CATEGORY_SUGGESTIONS = Arrays.stream(MobCategory.values())
+            .map(category -> "@" + category.name().toLowerCase(Locale.ROOT))
+            .toList();
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
@@ -109,6 +108,8 @@ public final class ZbbConfigCommand
 
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
+            if (!isCollection(descriptor.kind())) continue;
+
             ConfigPath path = descriptor.path();
             command.then(literal(path.value())
                     .then(literal(ConfigWriteMode.PERSISTENT.commandName())
@@ -149,6 +150,7 @@ public final class ZbbConfigCommand
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
             if (operation != ConfigEditOperation.SET && !isCollection(descriptor.kind())) continue;
+            if (operation == ConfigEditOperation.SET && isCollection(descriptor.kind()) && !isMap(descriptor.kind())) continue;
 
             command.then(literal(descriptor.path().value())
                     .then(editMode(descriptor, ConfigWriteMode.PERSISTENT, operation))
@@ -171,8 +173,21 @@ public final class ZbbConfigCommand
         };
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, String> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
     {
+        if (isMap(descriptor.kind()))
+        {
+            return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
+                    .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                            collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
+                            builder))
+                    .executes(context -> remove(
+                            context,
+                            descriptor.path(),
+                            readArgument(context, KEY_ARGUMENT),
+                            writeMode));
+        }
+
         RequiredArgumentBuilder<CommandSourceStack, String> entry = argument(ENTRY_ARGUMENT, StringArgumentType.greedyString());
 
         entry.suggests((context, builder) ->
@@ -180,7 +195,13 @@ public final class ZbbConfigCommand
                         collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
                         builder));
 
-        return entry.executes(context -> remove(context, descriptor.path(), writeMode));
+        return entry.executes(context -> remove(
+                context,
+                descriptor.path(),
+                descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST
+                        ? readSinglePattern(context, ENTRY_ARGUMENT)
+                        : readRawValue(context, ENTRY_ARGUMENT),
+                writeMode));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, ?> addEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
@@ -200,7 +221,7 @@ public final class ZbbConfigCommand
             return argument(ENTRY_ARGUMENT, identifierArgument(semantics.element()))
                     .executes(context -> add(
                             context,
-                            descriptor.path(),
+                            descriptor,
                             readArgument(context, ENTRY_ARGUMENT),
                             writeMode));
         }
@@ -208,7 +229,7 @@ public final class ZbbConfigCommand
         return argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
                 .executes(context -> add(
                         context,
-                        descriptor.path(),
+                        descriptor,
                         readRawValue(context, ENTRY_ARGUMENT),
                         writeMode));
     }
@@ -225,6 +246,12 @@ public final class ZbbConfigCommand
                 {
                     int offset = patternValueOffset(builder.getRemaining(), 0);
                     String remaining = builder.getRemaining().substring(offset);
+                    if (remaining.startsWith("@"))
+                    {
+                        return SharedSuggestionProvider.suggest(
+                                MOB_CATEGORY_SUGGESTIONS,
+                                builder.createOffset(builder.getStart() + offset));
+                    }
                     if (remaining.indexOf('*') >= 0 || remaining.indexOf(',') >= 0)
                     {
                         return builder.buildFuture();
@@ -236,8 +263,8 @@ public final class ZbbConfigCommand
                 })
                 .executes(context -> add(
                         context,
-                        descriptor.path(),
-                        readSinglePattern(context, ENTRY_ARGUMENT, elementType),
+                        descriptor,
+                        readSinglePattern(context, ENTRY_ARGUMENT),
                         writeMode));
     }
 
@@ -249,7 +276,7 @@ public final class ZbbConfigCommand
                 .then(argument(valueName, mapValueArgumentType(descriptor))
                         .executes(context -> add(
                                 context,
-                                descriptor.path(),
+                                descriptor,
                                 readArgument(context, KEY_ARGUMENT)
                                         + "="
                                         + readArgument(context, valueName),
@@ -273,8 +300,7 @@ public final class ZbbConfigCommand
                     : FloatArgumentType.floatArg((float) range.min(), (float) range.max()), descriptor, writeMode);
             case RESOURCE_LOCATION -> scalarSetValueArgument("id", identifierArgument(valueRegistry(descriptor)), descriptor, writeMode);
             case STRING -> scalarSetValueArgument(VALUE_ARGUMENT, StringArgumentType.greedyString(), descriptor, writeMode);
-            case STRING_LIST -> listSetValueArgument(descriptor, writeMode);
-            case RESOURCE_LOCATION_PATTERN_LIST -> patternListSetValueArgument(descriptor, writeMode);
+            case STRING_LIST, RESOURCE_LOCATION_PATTERN_LIST -> throw new IllegalArgumentException("SET is not supported for list fields");
             case RESOURCE_LOCATION_PAIR_MAP, RESOURCE_LOCATION_INT_PAIR_MAP -> mapSetValueArgument(descriptor, writeMode);
         };
     }
@@ -285,111 +311,30 @@ public final class ZbbConfigCommand
         return argument(name, type).executes(context -> set(context, descriptor.path(), readArgument(context, name), writeMode));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> listSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
-        if (semantics != null && semantics.element() != ResourceLocationRegistry.NONE)
-        {
-            return argument(VALUE_ARGUMENT, identifierArgument(semantics.element()))
-                    .executes(context -> set(
-                            context,
-                            descriptor.path(),
-                            readArgument(context, VALUE_ARGUMENT),
-                            writeMode));
-        }
-
-        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                .executes(context -> set(
-                        context,
-                        descriptor.path(),
-                        readRawValue(context, VALUE_ARGUMENT),
-                        writeMode));
-    }
-
-    private static RequiredArgumentBuilder<CommandSourceStack, String> patternListSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
-        ArgumentType<?> elementType = identifierArgument(semantics == null
-                ? ResourceLocationRegistry.NONE
-                : semantics.element());
-
-        return argument(VALUE_ARGUMENT, StringArgumentType.greedyString())
-                .suggests((context, builder) ->
-                {
-                    int offset = patternValueOffset(builder.getRemaining(), 0);
-                    String remaining = builder.getRemaining().substring(offset);
-                    if (remaining.indexOf('*') >= 0 || remaining.indexOf(',') >= 0)
-                    {
-                        return builder.buildFuture();
-                    }
-
-                    return elementType.listSuggestions(
-                            context,
-                            builder.createOffset(builder.getStart() + offset));
-                })
-                .executes(context -> set(
-                        context,
-                        descriptor.path(),
-                        readSinglePattern(context, VALUE_ARGUMENT, elementType),
-                        writeMode));
-    }
-
     private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
     {
         String valueName = mapValueArgumentTypeName(descriptor.kind());
 
         return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
                 .then(argument(valueName, mapValueArgumentType(descriptor))
-                        .executes(context -> set(
+                        .executes(context -> setMapEntry(
                                 context,
-                                descriptor.path(),
-                                readArgument(context, KEY_ARGUMENT)
-                                        + "="
-                                        + readArgument(context, valueName),
+                                descriptor,
+                                readArgument(context, KEY_ARGUMENT),
+                                readMapValue(context, valueName),
                                 writeMode)));
     }
 
-    private static String readSinglePattern(CommandContext<CommandSourceStack> context, String argument, ArgumentType<?> elementType) throws CommandSyntaxException
+    private static String readSinglePattern(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException
     {
-        String value = readRawValue(context, argument);
-        validatePattern(value, elementType);
-        return value;
-    }
-
-    private static void validatePattern(String value, ArgumentType<?> elementType) throws CommandSyntaxException
-    {
-        int prefixLength = 0;
-        while (prefixLength < value.length() && isPatternModifier(value.charAt(prefixLength)))
+        try
         {
-            prefixLength++;
+            return ResourceLocationPatternListCodec.normalizePattern(readRawValue(context, argument));
         }
-
-        if (prefixLength == value.length())
+        catch (ConfigValidationException e)
         {
-            throw EXPECTED_VALUE.create();
+            throw new SimpleCommandExceptionType(Component.literal(e.getMessage())).create();
         }
-
-        String prefix = value.substring(0, prefixLength)
-                .replace("@", "")
-                .replace("!", "")
-                .replace("*", "x");
-
-        String pattern = value.substring(prefixLength)
-                .replace('*', 'x');
-
-        StringReader validationReader = new StringReader(prefix + pattern);
-        readArgument(validationReader, elementType);
-
-        if (validationReader.canRead())
-        {
-            throw EXPECTED_VALUE.createWithContext(validationReader);
-        }
-    }
-
-    private static String readArgument(StringReader reader, ArgumentType<?> type) throws CommandSyntaxException
-    {
-        Object value = type.parse(reader);
-        return value instanceof ResourceKey<?> key ? key.identifier().toString() : String.valueOf(value).trim();
     }
 
     private static ArgumentType<?> identifierArgument(ResourceLocationRegistry registry)
@@ -459,18 +404,37 @@ public final class ZbbConfigCommand
         return editRaw(context, ConfigEditRequest.set(path, rawValue, writeMode));
     }
 
-    private static int add(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
+    private static int setMapEntry(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String key, Object value,
+                                   ConfigWriteMode writeMode)
     {
-        return editRaw(context, ConfigEditRequest.add(path, entry, writeMode));
+        Object currentValue = ConfigManager.getValueForMode(descriptor, writeMode);
+        if (!(currentValue instanceof java.util.Map<?, ?> currentMap))
+        {
+            return fail(context, descriptor.path() + " is not a map");
+        }
+
+        return edit(context, ConfigEditRequest.set(
+                descriptor.path(),
+                mapWithEntry(currentMap, key, value),
+                writeMode));
     }
 
-    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, ConfigWriteMode writeMode) throws CommandSyntaxException
+    static java.util.Map<String, Object> mapWithEntry(java.util.Map<?, ?> currentMap, String key, Object value)
     {
-        return editRaw(context, ConfigEditRequest.remove(
-                path,
-                readRawValue(context, ENTRY_ARGUMENT),
-                writeMode
-        ));
+        java.util.Map<String, Object> updated = new LinkedHashMap<>();
+        currentMap.forEach((currentKey, currentValue) -> updated.put(String.valueOf(currentKey), currentValue));
+        updated.put(key, value);
+        return updated;
+    }
+
+    private static int add(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String entry, ConfigWriteMode writeMode)
+    {
+        return editRaw(context, ConfigEditRequest.add(descriptor.path(), entry, writeMode));
+    }
+
+    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
+    {
+        return editRaw(context, ConfigEditRequest.remove(path, entry, writeMode));
     }
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -509,7 +473,7 @@ public final class ZbbConfigCommand
                         + ", changed=" + result.affectedCount()
                         + modeSuffix);
 
-        return Math.max(1, result.affectedCount());
+        return result.affectedCount();
     }
 
     private static String operationName(ConfigEditOperation operation)
@@ -575,6 +539,12 @@ public final class ZbbConfigCommand
         return value instanceof ResourceKey<?> key ? key.identifier().toString() : String.valueOf(value).trim();
     }
 
+    private static Object readMapValue(CommandContext<CommandSourceStack> context, String argument)
+    {
+        Object value = context.getArgument(argument, Object.class);
+        return value instanceof ResourceKey<?> key ? key.identifier().toString() : value;
+    }
+
     private static int fail(CommandContext<CommandSourceStack> context, String message)
     {
         context.getSource().sendFailure(Component.literal("ZBB config: " + message));
@@ -604,22 +574,17 @@ public final class ZbbConfigCommand
         return paths;
     }
 
-    private static int patternValueOffset(String value, int offset)
+    static int patternValueOffset(String value, int offset)
     {
         while (offset < value.length() && Character.isWhitespace(value.charAt(offset)))
         {
             offset++;
         }
-        while (offset < value.length() && isPatternModifier(value.charAt(offset)))
+        if (offset < value.length() && value.charAt(offset) == '!')
         {
             offset++;
         }
         return offset;
-    }
-
-    private static boolean isPatternModifier(char value)
-    {
-        return value == '@' || value == '!' || value == '*';
     }
 
     private static ArgumentType<?> mapValueArgumentType(ConfigFieldDescriptor descriptor)

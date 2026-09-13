@@ -11,9 +11,17 @@ repositories {
     }
 }
 
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 neoForge {
     neoFormVersion = neo_form_version
     addModdingDependenciesTo sourceSets.test
+    addModdingDependenciesTo sourceSets.gametest
 
     // Automatically enable AccessTransformers if the file exists
     def at = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -25,12 +33,12 @@ neoForge {
 dependencies {
     def mixinVersion = '0.17.3+mixin.0.8.7'
 
-    compileOnly group: 'net.fabricmc', name: 'sponge-mixin', version: mixinVersion
+    compileOnly "net.fabricmc:sponge-mixin:${mixinVersion}"
     // Minecraft 26.2 uses runtime names directly, so these mixins need neither a refmap nor the Mixin AP.
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
-    compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
-    annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.3.5'
-    
+    compileOnly 'io.github.llamalad7:mixinextras-common:0.3.5'
+    annotationProcessor 'io.github.llamalad7:mixinextras-common:0.3.5'
+
     implementation "com.electronwill.night-config:toml:3.8.3"
     implementation "org.greenrobot:eventbus-java:3.3.1"
 
@@ -60,9 +68,16 @@ configurations {
     }
 }
 
+configurations.named(sourceSets.gametest.implementationConfigurationName) {
+    extendsFrom configurations.implementation
+}
+configurations.named(sourceSets.gametest.runtimeOnlyConfigurationName) {
+    extendsFrom configurations.runtimeOnly
+}
+
 artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+    commonJava file('src/main/java')
+    commonResources file('src/main/resources')
 }
 
 // Implement mcgradleconventions loader attribute
