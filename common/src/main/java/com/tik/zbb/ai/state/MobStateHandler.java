@@ -47,8 +47,9 @@ public class MobStateHandler
         BaseMobState bestState = null;
         Priority bestPriority = null;
 
-        for (BaseMobState state : mobStateList)
+        for (int i = 0, size = mobStateList.size(); i < size; i++)
         {
+            BaseMobState state = mobStateList.get(i);
             Priority priority = state.calculatePriority(mobStateContext);
             if (priority == null) continue;
 
@@ -66,9 +67,9 @@ public class MobStateHandler
 
     public void resetTransientState()
     {
-        for (BaseMobState state : mobStateList)
+        for (int i = 0, size = mobStateList.size(); i < size; i++)
         {
-            state.resetTransientState();
+            mobStateList.get(i).resetTransientState();
         }
     }
 

@@ -19,6 +19,8 @@ import net.minecraft.world.level.block.Block;
 
 public final class ActionExecutor
 {
+    private static final FreezeRequest FREEZE_REQUEST = new FreezeRequest();
+
     private final BreakAction breakAction = new BreakAction();
     private final BuildAction buildAction = new BuildAction();
     private final FreezeAction freezeAction = new FreezeAction();
@@ -61,7 +63,7 @@ public final class ActionExecutor
 
     public boolean canExecuteFreezeAction()
     {
-        return canExecuteAction(freezeAction, new FreezeRequest());
+        return canExecuteAction(freezeAction, FREEZE_REQUEST);
     }
 
     public boolean tryExecuteBreakAction(BlockPos breakPos)
@@ -76,7 +78,7 @@ public final class ActionExecutor
 
     public boolean tryExecuteFreezeAction()
     {
-        return tryExecuteAction(freezeAction, new FreezeRequest());
+        return tryExecuteAction(freezeAction, FREEZE_REQUEST);
     }
 
     private <R> boolean tryExecuteAction(IMobAction<R> action, R request)
