@@ -10,44 +10,42 @@ import com.tik.zbb.utilities.BlockHealthCalculator;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
 {
-    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                           ConfigSnapshot configSnapshot, PathfinderMob mob) {}
+    public record OnAnyBlockWillBrokeEvent(ServerLevel level, BlockPos pos, BlockState state, ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
-    public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState,
-                                        ConfigSnapshot configSnapshot, PathfinderMob mob) {}
+    public record OnAnyBlockBrokenEvent(ServerLevel level, BlockPos pos, BlockState oldState, ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
-    public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state,
-                                               ConfigSnapshot configSnapshot, PathfinderMob mob) {}
+    public record OnAnyBlockFailedToBrokeEvent(ServerLevel level, BlockPos pos, BlockState state, ConfigSnapshot configSnapshot, PathfinderMob mob) {}
 
     public record OnAnyBlockHit(ServerLevel level, BlockPos pos, BlockState state, ConfigSnapshot configSnapshot, PathfinderMob mob, int blockHealth,
                                 int newDamage, DamageBlockStorageEntry storageEntry) {}
-
-
+    
     @Override
     public boolean canExecute(MobActionContext context, BreakRequest request)
     {
         if (!context.aiTimers().breakCooldownPassed(context.level().getGameTime())) return false;
         if (!context.level().isLoaded(request.pos())) return false;
-        if (context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher()
-                .matches(context.mobId(), context.mob().getType().getCategory())) return false;
+        if (context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher().matches(context.mobId(), context.mob().getType().getCategory())) return false;
         if (BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos())) return false;
-        if (context.level().getBlockState(request.pos()).isAir()) return false;
 
-        boolean unbreakable = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
-        return !unbreakable;
+        BlockState blockState = context.level().getBlockState(request.pos());
+
+        if (blockState.isAir()) return false;
+
+        return !BlockHealthCalculator.isUnbreakableBlock(blockState, request.pos(), context.level(), context.configSnapshot());
     }
 
     @Override
     public boolean execute(MobActionContext context, BreakRequest request)
     {
         BlockState state = context.level().getBlockState(request.pos());
-        int blockHealth = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot());
+        int blockHealth = BlockHealthCalculator.getBlockHealth(state, request.pos(), context.level(), context.configSnapshot());
         int newDamage = getDamageToBlocks(context, state);
         int totalDamage = saturatingAdd(
                 BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()),
@@ -118,8 +116,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         double width = context.mob().getBbWidth();
         double height = context.mob().getBbHeight();
 
-        double zombieWidth = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().width();
-        double zombieHeight = net.minecraft.world.entity.EntityType.ZOMBIE.getDimensions().height();
+        double zombieWidth = EntityType.ZOMBIE.getDimensions().width();
+        double zombieHeight = EntityType.ZOMBIE.getDimensions().height();
         double baseVolume = zombieWidth * zombieWidth * zombieHeight;
 
         double mobVolume = width * width * height;
