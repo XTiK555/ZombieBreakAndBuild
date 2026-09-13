@@ -58,10 +58,15 @@ public final class ShouldApplyToMobUtility
             return calculateAffectedEntityType(mob, configSnapshot);
         }
 
-        return cache.matchesByType().computeIfAbsent(
-                mob.getType(),
-                _ -> calculateAffectedEntityType(mob, configSnapshot)
-        );
+        Boolean match = cache.matchesByType().get(mob.getType());
+        if (match != null)
+        {
+            return match;
+        }
+
+        boolean result = calculateAffectedEntityType(mob, configSnapshot);
+        cache.matchesByType().put(mob.getType(), result);
+        return result;
     }
 
     private static boolean calculateAffectedEntityType(Mob mob, ConfigSnapshot configSnapshot)
