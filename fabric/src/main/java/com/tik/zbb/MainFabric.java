@@ -22,6 +22,6 @@ public class MainFabric implements ModInitializer
         {
             if (entity instanceof Mob mob) MainCommon.onJoin(mob);
         });
-        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> MainCommon.registerCommands(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, selection) -> MainCommon.onRegisterCommands(dispatcher));
     }
 }
