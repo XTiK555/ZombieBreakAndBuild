@@ -33,9 +33,10 @@ public class DamageBlockStorageManager
     {
         int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
         DamageBlockStorageEntry newEntry = new DamageBlockStorageEntry(damage, blockId);
+        BlockState blockState = level.getBlockState(pos);
 
         damageBlockStorage.put(level, pos, newEntry);
-        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, level.getBlockState(pos), BlockHealthCalculator.getBlockHealth(pos, level, ConfigManager.getConfigSnapshot()), newEntry));
+        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, blockState, BlockHealthCalculator.getBlockHealth(blockState, pos, level, ConfigManager.getConfigSnapshot()), newEntry));
 
         return newEntry;
     }
@@ -44,9 +45,10 @@ public class DamageBlockStorageManager
     {
         int blockId = BlockStorages.ID_MANAGER.getOrCreate(level, pos);
         var timedStorageEntry = new ExpiringBlockStorage.TimedEntry<>(new DamageBlockStorageEntry(damageTimedIntegerEntry.data(), blockId), damageTimedIntegerEntry.storedAtTick());
+        BlockState blockState = level.getBlockState(pos);
 
         damageBlockStorage.putTimed(level, pos, timedStorageEntry);
-        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, level.getBlockState(pos), BlockHealthCalculator.getBlockHealth(pos, level, ConfigManager.getConfigSnapshot()), timedStorageEntry.data()));
+        Constants.EVENT_BUS.post(new OnEntryAdded(level, pos, blockState, BlockHealthCalculator.getBlockHealth(blockState, pos, level, ConfigManager.getConfigSnapshot()), timedStorageEntry.data()));
     }
 
     public int getTotalBlockDamage(ServerLevel level, BlockPos pos)
