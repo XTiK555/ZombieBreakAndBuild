@@ -8,10 +8,14 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class BlockHealthCalculator
 {
-    public static int getBlockHealth(BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
+    public static boolean isUnbreakableBlock(BlockState blockState, BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
+    {
+        return getBlockHealth(blockState, blockPos, level, configSnapshot) == Integer.MAX_VALUE;
+    }
+
+    public static int getBlockHealth(BlockState blockState, BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
     {
         ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
-        BlockState blockState = level.getBlockState(blockPos);
         Integer blockHealthOverride = blockDamageCfg.blockHealthOverrideMap().get(blockState.getBlock());
         float hardness = blockState.getDestroySpeed(level, blockPos);
         double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
