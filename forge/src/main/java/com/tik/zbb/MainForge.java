@@ -62,6 +62,6 @@ public class MainForge
 
     private void onRegisterCommands(RegisterCommandsEvent event)
     {
-        MainCommon.registerCommands(event.getDispatcher());
+        MainCommon.onRegisterCommands(event.getDispatcher());
     }
 }

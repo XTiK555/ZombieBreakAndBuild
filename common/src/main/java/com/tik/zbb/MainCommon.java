@@ -90,7 +90,7 @@ public class MainCommon
         }
     }
 
-    public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher)
+    public static void onRegisterCommands(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         ZbbConfigCommand.register(dispatcher);
     }
