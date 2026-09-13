@@ -18,9 +18,9 @@ public class DefaultState extends BaseMobState
     @Override
     public void tick(MobStateContext context)
     {
-        for (IMobTactic mobTactic : mobTactics)
+        for (int i = 0, size = mobTactics.size(); i < size; i++)
         {
-            mobTactic.execute(context);
+            mobTactics.get(i).execute(context);
         }
     }
 

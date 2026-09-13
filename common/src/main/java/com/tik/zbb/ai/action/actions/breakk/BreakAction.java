@@ -33,16 +33,15 @@ public class BreakAction implements IMobAction<BreakRequest>
     @Override
     public boolean canExecute(MobActionContext context, BreakRequest request)
     {
+        if (!context.aiTimers().breakCooldownPassed(context.level().getGameTime())) return false;
         if (!context.level().isLoaded(request.pos())) return false;
+        if (context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher()
+                .matches(context.mobId(), context.mob().getType().getCategory())) return false;
+        if (BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos())) return false;
+        if (context.level().getBlockState(request.pos()).isAir()) return false;
 
-        boolean isAir = context.level().getBlockState(request.pos()).isAir();
-        boolean cooldownPassed = context.aiTimers().breakCooldownPassed(context.level().getGameTime());
-        boolean notRecentlyBuilt = !BlockStorages.BUILD_PROTECTION_MANAGER.contains(context.level(), request.pos());
         boolean unbreakable = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot()) == Integer.MAX_VALUE;
-        boolean canMobBreak = !context.configSnapshot().game().ai().ignoreBreakEntityIdMatcher()
-                .matches(context.mobId(), context.mob().getType().getCategory());
-
-        return cooldownPassed && notRecentlyBuilt && !isAir && !unbreakable && canMobBreak;
+        return !unbreakable;
     }
 
     @Override
@@ -50,7 +49,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     {
         BlockState state = context.level().getBlockState(request.pos());
         int blockHealth = BlockHealthCalculator.getBlockHealth(request.pos(), context.level(), context.configSnapshot());
-        int newDamage = getDamageToBlocks(context, request.pos());
+        int newDamage = getDamageToBlocks(context, state);
         int totalDamage = saturatingAdd(
                 BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()),
                 newDamage
@@ -94,12 +93,11 @@ public class BreakAction implements IMobAction<BreakRequest>
         return succeeded;
     }
 
-
-    private int getDamageToBlocks(MobActionContext context, BlockPos breakPos)
+    private int getDamageToBlocks(MobActionContext context, BlockState state)
     {
         int baseDamage = context.configSnapshot().game().balance().blockDamage().damageToBlocks();
         double hitboxMultiplier = getHitboxSizeMultiplier(context);
-        double itemMultiplier = getItemMultiplier(context, breakPos);
+        double itemMultiplier = getItemMultiplier(context, state);
 
         double damage = baseDamage * hitboxMultiplier * itemMultiplier;
         if (damage >= Integer.MAX_VALUE)
@@ -107,7 +105,7 @@ public class BreakAction implements IMobAction<BreakRequest>
             return Integer.MAX_VALUE;
         }
 
-        return Math.max(0, (int) Math.round(baseDamage * hitboxMultiplier * itemMultiplier));
+        return Math.max(0, (int) Math.round(damage));
     }
 
     private int saturatingAdd(int left, int right)
@@ -135,11 +133,10 @@ public class BreakAction implements IMobAction<BreakRequest>
         return finalMultiplier;
     }
 
-    private double getItemMultiplier(MobActionContext context, BlockPos breakPos)
+    private double getItemMultiplier(MobActionContext context, BlockState state)
     {
         ItemStack mainHandItem = context.mob().getMainHandItem();
         ItemStack offhandItem = context.mob().getOffhandItem();
-        BlockState state = context.level().getBlockState(breakPos);
         float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
         float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
         float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
