@@ -15,9 +15,9 @@ public abstract class BaseMobState
 
     public void resetTransientState()
     {
-        for (IMobTactic mobTactic : mobTactics)
+        for (int i = 0, size = mobTactics.size(); i < size; i++)
         {
-            mobTactic.resetTransientState();
+            mobTactics.get(i).resetTransientState();
         }
     }
 }
