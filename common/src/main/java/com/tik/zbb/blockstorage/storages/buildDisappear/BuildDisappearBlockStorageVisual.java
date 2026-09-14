@@ -113,7 +113,7 @@ public class BuildDisappearBlockStorageVisual
 
                             DisplayAccessor accessor = (DisplayAccessor) (Object) this;
                             accessor.zbb$setTransformationInterpolationDuration(1);
-                            accessor.zbb$setTransformation(createTransformation(scale));
+                            accessor.zbb$setTransformation(BuildDisappearBlockStorageVisual.this.createTransformation(scale));
                             accessor.zbb$setTransformationInterpolationDelay(0);
                         }
 
