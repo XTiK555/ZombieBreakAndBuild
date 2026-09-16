@@ -6,24 +6,22 @@ public record ConfigEditResult(
         ConfigEditOperation operation,
         ConfigPath path,
         Object effectiveValue,
-        ConfigWriteMode writeMode,
-        boolean persisted,
         int affectedCount,
         String message
 )
 {
-    public static ConfigEditResult success(ConfigEditRequest request, Object effectiveValue, boolean persisted, int affectedCount, String message)
+    public static ConfigEditResult success(ConfigEditRequest request, Object effectiveValue, int affectedCount, String message)
     {
-        return new ConfigEditResult(true, request.operation(), request.path(), effectiveValue, request.writeMode(), persisted, affectedCount, message);
+        return new ConfigEditResult(true, request.operation(), request.path(), effectiveValue, affectedCount, message);
     }
 
-    public static ConfigEditResult unchanged(ConfigEditRequest request, Object effectiveValue, boolean persisted)
+    public static ConfigEditResult unchanged(ConfigEditRequest request, Object effectiveValue)
     {
-        return new ConfigEditResult(true, request.operation(), request.path(), effectiveValue, request.writeMode(), persisted, 0, "updated 0 elements");
+        return new ConfigEditResult(true, request.operation(), request.path(), effectiveValue, 0, "updated 0 elements");
     }
 
     public static ConfigEditResult failure(ConfigEditRequest request, String error)
     {
-        return new ConfigEditResult(false, request.operation(), request.path(), null, request.writeMode(), false, 0, error);
+        return new ConfigEditResult(false, request.operation(), request.path(), null, 0, error);
     }
 }
