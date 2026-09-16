@@ -24,7 +24,7 @@ public final class GoalAndPathingGameTests
     {
         GameTestConfig.accelerateActions(helper);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", "minecraft:dirt", 1);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", "minecraft:dirt", 1);
         WorldGameTest.corridor(helper, 0, 7, 2, 1);
         WorldGameTest.barrier(helper, 3, 2, Blocks.DIRT);
         ServerPlayer player = GameTestEntities.serverPlayer(helper, new BlockPos(6, 2, 2), GameType.SURVIVAL);

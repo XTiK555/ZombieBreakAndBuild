@@ -31,7 +31,7 @@ public class BuildAction implements IMobAction<BuildRequest>
     public boolean execute(MobActionContext context, BuildRequest request)
     {
         BlockState oldState = context.level().getBlockState(request.pos());
-        BlockState placedState = request.bridgeBlock().defaultBlockState();
+        BlockState placedState = request.placeBlock().defaultBlockState();
         BlockEntity oldBlockEntity = context.level().getBlockEntity(request.pos());
         CompoundTag oldNbt = oldBlockEntity != null ? oldBlockEntity.saveWithFullMetadata(context.level().registryAccess()) : null;
 
