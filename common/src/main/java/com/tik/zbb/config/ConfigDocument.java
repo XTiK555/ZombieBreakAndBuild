@@ -27,7 +27,7 @@ public class ConfigDocument
         @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.DIMENSION, value = ResourceLocationRegistry.BLOCK)
         @Comment("Build block by dimension: dimension ID = block ID")
-        public Map<String, String> dimensionPlaceBlockIdList = linkedMap(List.of(
+        public Map<String, String> dimensionPlaceBlockIdMap = linkedMap(List.of(
                 Map.entry("minecraft:overworld", "minecraft:dirt"),
                 Map.entry("minecraft:the_nether", "minecraft:netherrack"),
                 Map.entry("minecraft:the_end", "minecraft:end_stone")
@@ -36,7 +36,7 @@ public class ConfigDocument
         @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.ENTITY, value = ResourceLocationRegistry.BLOCK)
         @Comment("Build block by mob: entity ID = block ID. Overrides dimension and fallback settings")
-        public Map<String, String> mobPlaceBlockIdOverrideList = new LinkedHashMap<>();
+        public Map<String, String> mobPlaceBlockIdOverrideMap = new LinkedHashMap<>();
 
         @ResourceLocationString
         @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
@@ -75,7 +75,7 @@ public class ConfigDocument
     {
         public Tactics tactics = new Tactics();
 
-        @Comment("Affected mobs can see the nearest player no matter what.")
+        @Comment("Affected mobs can see the nearest player regardless of distance or line of sight.")
         public boolean alwaysSeeNearestPlayer = false;
 
         @Comment("Affected mobs can find a new target through blocks")
@@ -144,8 +144,8 @@ public class ConfigDocument
         public int dangerousBlocksSearchRadius = 1;
 
         @Range(min = 1, max = 1000000)
-        @Comment("Distance from an unreachable path end at which break/build tactics become high priority (blocks)")
-        public int pathEndBreakBuildDistance = 6;
+        @Comment("Distance threshold used to switch break/build behavior to high priority when target is unreachable through normal path (blocks)")
+        public int breakBuildActivationDistance = 6;
 
         @Range(min = 1, max = 1000000)
         @Comment("How long block damage data is stored (seconds)")
@@ -158,7 +158,7 @@ public class ConfigDocument
         public static class BlockDamage
         {
             @Range(min = 0, max = 1000000)
-            @Comment("Maximum breakable vanilla block hardness; 0 = no limit.")
+            @Comment("Maximum breakable block hardness; 0 = no limit.")
             public float maximumBreakableBlockHardness = 0.0f;
 
             @Range(min = 0, max = 1000000)
@@ -167,7 +167,7 @@ public class ConfigDocument
 
             @Range(min = 0, max = 1000000)
             @Comment("Hardness exponent for block health: 1 = linear, <1 reduces differences, >1 increases them")
-            public float blockHardnessContrast = 0.85f;
+            public float blockHardnessExponent = 0.85f;
 
             @Range(min = 0, max = 1000000)
             @Comment("Multiplier applied to block health after the hardness exponent.")
@@ -176,21 +176,21 @@ public class ConfigDocument
             @ResourceLocationIntPairMap
             @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
             @Comment("Per-block health overrides: block ID = health. Overrides the hardness-based calculation (min 1)")
-            public Map<String, Integer> blockHealthOverrideList = new LinkedHashMap<>();
+            public Map<String, Integer> blockHealthOverrideMap = new LinkedHashMap<>();
 
             @Range(min = 0, max = 1000000)
             @Comment("Strength of held-tool damage scaling: 0 = ignore tools, 1 = full destroy-speed multiplier")
-            public float itemDamageMultiplierStrength = 0.5f;
+            public float itemDamageMultiplierExponent = 0.5f;
 
             @Range(min = 0, max = 1000000)
             @Comment("Strength of mob-size damage scaling relative to a zombie: 0 = ignore size, 1 = full volume ratio")
-            public double hitboxSizeMultiplierStrength = 0.5;
+            public double hitboxSizeMultiplierExponent = 0.5;
         }
 
         public static class Cooldowns
         {
             @Range(min = 0, max = 1000000)
-            @Comment("Delay between block-breaking actions (seconds)")
+            @Comment("Delay between block-damaging/breaking actions (seconds)")
             public double breakCooldown = 1.0D;
 
             @Range(min = 0, max = 1000000)
@@ -241,12 +241,12 @@ public class ConfigDocument
         public boolean brokenReappearSound = true;
 
         @Comment("[BuiltDisappear] Show a shrinking block animation when a mob-placed block disappears")
-        public boolean builtDisappearBlockDisplay = true;
+        public boolean builtDisappearShrinkAnimation = true;
 
         @Comment("[BuiltDisappear] Play the shrink sound when a mob-placed block starts disappearing")
         public boolean builtDisappearShrinkSound = true;
 
         @Comment("[BuiltDisappear] Play the final sound after a mob-placed block disappears")
-        public boolean builtDisappearSound = true;
+        public boolean builtDisappearFinalSound = true;
     }
 }
