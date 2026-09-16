@@ -30,7 +30,7 @@ public final class PortabilityGameTestLifecycle
     {
         install(PortabilityGameTestReporter.xmlReporter());
         GameTestEntities.cleanupTracked(helper);
-        GameTestConfig.restoreRuntimeDefaults(helper);
+        GameTestConfig.restoreDefaults(helper);
         ensureDifficulty(helper, difficulty);
     }
 
@@ -84,7 +84,7 @@ public final class PortabilityGameTestLifecycle
                 }
                 finally
                 {
-                    GameTestConfig.restoreRuntimeDefaults(helper);
+                    GameTestConfig.restoreDefaults(helper);
                 }
             }
         }
