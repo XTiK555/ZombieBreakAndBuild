@@ -6,13 +6,12 @@ import com.tik.zbb.ai.action.MobActionContext;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.blockstorage.storages.damage.DamageBlockStorageEntry;
 import com.tik.zbb.config.ConfigSnapshot;
+import com.tik.zbb.utilities.BlockDamageCalculator;
 import com.tik.zbb.utilities.BlockHealthCalculator;
 import com.tik.zbb.utilities.SecondsToTicksUtility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class BreakAction implements IMobAction<BreakRequest>
@@ -46,7 +45,7 @@ public class BreakAction implements IMobAction<BreakRequest>
     {
         BlockState state = context.level().getBlockState(request.pos());
         int blockHealth = BlockHealthCalculator.getBlockHealth(state, request.pos(), context.level(), context.configSnapshot());
-        int newDamage = getDamageToBlocks(context, state);
+        int newDamage = BlockDamageCalculator.getDamageToBlocks(context.mob(), state, context.configSnapshot());
         int totalDamage = saturatingAdd(
                 BlockStorages.DAMAGE_MANAGER.getTotalBlockDamage(context.level(), request.pos()),
                 newDamage
@@ -90,58 +89,8 @@ public class BreakAction implements IMobAction<BreakRequest>
         return succeeded;
     }
 
-    private int getDamageToBlocks(MobActionContext context, BlockState state)
-    {
-        int baseDamage = context.configSnapshot().game().balance().blockDamage().damageToBlocks();
-        double hitboxMultiplier = getHitboxSizeMultiplier(context);
-        double itemMultiplier = getItemMultiplier(context, state);
-
-        double damage = baseDamage * hitboxMultiplier * itemMultiplier;
-        if (damage >= Integer.MAX_VALUE)
-        {
-            return Integer.MAX_VALUE;
-        }
-
-        return Math.max(0, (int) Math.round(damage));
-    }
-
     private int saturatingAdd(int left, int right)
     {
         return (int) Math.min(Integer.MAX_VALUE, (long) left + right);
-    }
-
-    private double getHitboxSizeMultiplier(MobActionContext context)
-    {
-        double width = context.mob().getBbWidth();
-        double height = context.mob().getBbHeight();
-
-        double zombieWidth = EntityType.ZOMBIE.getDimensions().width;
-        double zombieHeight = EntityType.ZOMBIE.getDimensions().height;
-        double baseVolume = zombieWidth * zombieWidth * zombieHeight;
-
-        double mobVolume = width * width * height;
-
-        double hitboxRatio = mobVolume / baseVolume;
-        double finalMultiplier = Math.pow(
-                hitboxRatio,
-                context.configSnapshot().game().balance().blockDamage().hitboxSizeMultiplierStrength()
-        );
-
-        return finalMultiplier;
-    }
-
-    private double getItemMultiplier(MobActionContext context, BlockState state)
-    {
-        ItemStack mainHandItem = context.mob().getMainHandItem();
-        ItemStack offhandItem = context.mob().getOffhandItem();
-        float mainHandDestroySpeed = mainHandItem.getDestroySpeed(state);
-        float offhandDestroySpeed = offhandItem.getDestroySpeed(state);
-        float destroySpeed = Math.max(mainHandDestroySpeed, offhandDestroySpeed);
-        double toolMultiplier = Math.pow(
-                destroySpeed,
-                context.configSnapshot().game().balance().blockDamage().itemDamageMultiplierStrength()
-        );
-
-        return toolMultiplier;
     }
 }
