@@ -10,7 +10,6 @@ import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.*;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,18 +39,6 @@ public final class ConfigEditService
     public Object effectiveValue(ConfigFieldDescriptor descriptor)
     {
         return repository.effectiveValue(descriptor);
-    }
-
-    public Object valueForMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        return writeMode == ConfigWriteMode.PERSISTENT
-                ? repository.persistedValue(descriptor)
-                : repository.effectiveValue(descriptor);
-    }
-
-    public Map<ConfigPath, Object> runtimeOverrides()
-    {
-        return repository.runtimeOverrides();
     }
 
     public synchronized ConfigReloadResult bootstrapFromFile()
@@ -136,15 +123,12 @@ public final class ConfigEditService
             case CLEAR -> clear(request);
             case RESET_TO_DEFAULT -> reset(request);
             case RESET_ALL_TO_DEFAULTS -> resetAll(request);
-            case REVERT_TO_PERSISTED -> discard(request);
-            case DISCARD_ALL_OVERRIDES -> discardAll(request);
         };
     }
 
     public synchronized ConfigEditResult editRaw(ConfigEditRequest request)
     {
-        if (request.operation() == ConfigEditOperation.RESET_ALL_TO_DEFAULTS
-                || request.operation() == ConfigEditOperation.DISCARD_ALL_OVERRIDES)
+        if (request.operation() == ConfigEditOperation.RESET_ALL_TO_DEFAULTS)
         {
             return edit(request);
         }
@@ -163,8 +147,7 @@ public final class ConfigEditService
                         request.withValue(descriptor.codec().parseText(descriptor, String.valueOf(request.value())));
                 case ADD -> request.withValue(externalEntry(descriptor, request.value()));
                 case REMOVE -> request.withValue(externalRemovalEntry(descriptor, request.value()));
-                case CLEAR, RESET_TO_DEFAULT, RESET_ALL_TO_DEFAULTS, REVERT_TO_PERSISTED, DISCARD_ALL_OVERRIDES ->
-                        request;
+                case CLEAR, RESET_TO_DEFAULT, RESET_ALL_TO_DEFAULTS -> request;
             };
             return edit(typedRequest);
         }
@@ -235,79 +218,35 @@ public final class ConfigEditService
 
     private ConfigEditResult resetAll(ConfigEditRequest request)
     {
-        if (request.writeMode() == ConfigWriteMode.PERSISTENT)
+        ConfigDocument defaults = new ConfigDocument();
+        ConfigDocument persisted = repository.persistedDocument();
+        Set<ConfigPath> changedPaths = new LinkedHashSet<>();
+
+        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
-            ConfigDocument defaults = new ConfigDocument();
-            ConfigDocument persisted = repository.persistedDocument();
-            Map<ConfigPath, Object> runtimeOverrides = repository.runtimeOverrides();
-            Set<ConfigPath> changedPaths = new LinkedHashSet<>();
-            boolean persistedChanged = false;
-
-            for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
+            if (!Objects.equals(descriptor.getValue(persisted), descriptor.defaultValue()))
             {
-                if (!Objects.equals(descriptor.getValue(persisted), descriptor.defaultValue()))
-                {
-                    persistedChanged = true;
-                    changedPaths.add(descriptor.path());
-                }
-                if (runtimeOverrides.containsKey(descriptor.path()))
-                {
-                    changedPaths.add(descriptor.path());
-                }
+                changedPaths.add(descriptor.path());
             }
-
-            if (changedPaths.isEmpty())
-            {
-                return ConfigEditResult.unchanged(request, null, true);
-            }
-
-            try
-            {
-                if (persistedChanged)
-                {
-                    storage.save(defaults);
-                    repository.replacePersisted(defaults);
-                }
-                else
-                {
-                    repository.discardAll();
-                }
-            }
-            catch (ConfigStorageException e)
-            {
-                Constants.LOG.error("Failed to save config", e);
-                return ConfigEditResult.failure(request, "Failed to save config: " + e.getMessage());
-            }
-
-            return ConfigEditResult.success(request, null, true, changedPaths.size(), "reset all");
         }
 
-        int count = repository.resetRuntimeOverrides();
-        return countResult(request, count, "reset all temporary value(s)");
-    }
-
-    private ConfigEditResult discard(ConfigEditRequest request)
-    {
-        if (!ConfigSchema.hasPathOrSection(request.path()))
+        if (changedPaths.isEmpty())
         {
-            return ConfigEditResult.failure(request, "Unknown config path or section: " + request.path());
+            return ConfigEditResult.unchanged(request, null);
         }
 
-        int count = repository.discard(request.path());
-        return countResult(request, count, "discarded " + count + " temporary value(s)");
-    }
+        try
+        {
+            storage.save(defaults);
+            repository.replacePersisted(defaults);
+        }
+        catch (ConfigStorageException e)
+        {
+            Constants.LOG.error("Failed to save config", e);
+            return ConfigEditResult.failure(request, "Failed to save config: " + e.getMessage());
+        }
 
-    private ConfigEditResult discardAll(ConfigEditRequest request)
-    {
-        int count = repository.discardAll();
-        return countResult(request, count, "discarded " + count + " temporary value(s)");
-    }
-
-    private ConfigEditResult countResult(ConfigEditRequest request, int count, String message)
-    {
-        return count == 0
-                ? ConfigEditResult.unchanged(request, null, false)
-                : ConfigEditResult.success(request, null, false, count, message);
+        return ConfigEditResult.success(request, null, changedPaths.size(), "reset all");
     }
 
     private ConfigEditResult applyValue(
@@ -318,19 +257,12 @@ public final class ConfigEditService
     {
         try
         {
-            ConfigMutationResult mutationResult = request.writeMode() == ConfigWriteMode.PERSISTENT
-                    ? updatePersistent(descriptor, mutation)
-                    : updateRuntime(descriptor, mutation);
+            ConfigMutationResult mutationResult = updatePersistent(descriptor, mutation);
             if (!mutationResult.changed())
             {
-                return ConfigEditResult.unchanged(
-                        request,
-                        mutationResult.effectiveValue(),
-                        request.writeMode() == ConfigWriteMode.PERSISTENT
-                );
+                return ConfigEditResult.unchanged(request, mutationResult.effectiveValue());
             }
-            return ConfigEditResult.success(request, mutationResult.effectiveValue(),
-                    request.writeMode() == ConfigWriteMode.PERSISTENT, 1, "updated");
+            return ConfigEditResult.success(request, mutationResult.effectiveValue(), 1, "updated");
         }
         catch (ConfigValidationException e)
         {
@@ -350,25 +282,12 @@ public final class ConfigEditService
         Object value = validateValue(descriptor, mutation.apply(newPersisted, descriptor));
         if (Objects.equals(descriptor.getValue(newPersisted), value))
         {
-            boolean discardedRuntimeOverride = repository.discard(descriptor.path()) > 0;
-            return new ConfigMutationResult(repository.effectiveValue(descriptor), discardedRuntimeOverride);
+            return new ConfigMutationResult(repository.effectiveValue(descriptor), false);
         }
 
         descriptor.setValue(newPersisted, value);
         storage.save(newPersisted);
         return new ConfigMutationResult(repository.replacePersisted(newPersisted, descriptor), true);
-    }
-
-    private ConfigMutationResult updateRuntime(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
-            throws ConfigValidationException
-    {
-        ConfigDocument newEffective = repository.effectiveDocument();
-        Object value = validateValue(descriptor, mutation.apply(newEffective, descriptor));
-        if (Objects.equals(descriptor.getValue(newEffective), value))
-        {
-            return new ConfigMutationResult(repository.effectiveValue(descriptor), false);
-        }
-        return new ConfigMutationResult(repository.updateRuntime(descriptor, value), true);
     }
 
     private Object validateValue(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException

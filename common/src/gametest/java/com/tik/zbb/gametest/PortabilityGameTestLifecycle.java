@@ -73,7 +73,7 @@ public final class PortabilityGameTestLifecycle
                 }
                 finally
                 {
-                    GameTestConfig.restoreRuntimeDefaults(helper);
+                    GameTestConfig.restoreDefaults(helper);
                 }
             }
         }

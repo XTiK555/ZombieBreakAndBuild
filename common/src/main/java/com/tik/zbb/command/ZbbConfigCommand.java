@@ -44,7 +44,6 @@ public final class ZbbConfigCommand
                         .requires(source -> source.hasPermission(2))
                         .then(listCommand())
                         .then(getCommand())
-                        .then(runtimeOverridesCommand())
                         .then(editCommand(ConfigEditOperation.SET))
                         .then(editCommand(ConfigEditOperation.ADD))
                         .then(editCommand(ConfigEditOperation.REMOVE))
@@ -83,24 +82,6 @@ public final class ZbbConfigCommand
         return command;
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> runtimeOverridesCommand()
-    {
-        LiteralArgumentBuilder<CommandSourceStack> discard = literal("discard")
-                .executes(context -> edit(context, ConfigEditRequest.discardAll()));
-
-        for (String path : pathAndSectionSuggestions())
-        {
-            ConfigPath configPath = new ConfigPath(path);
-            discard.then(literal(path)
-                    .executes(context -> edit(context, ConfigEditRequest.discard(configPath))));
-        }
-
-        return literal("runtime_overrides")
-                .then(literal("get")
-                        .executes(ZbbConfigCommand::getRuntimeOverrides))
-                .then(discard);
-    }
-
     private static LiteralArgumentBuilder<CommandSourceStack> clearCommand()
     {
         LiteralArgumentBuilder<CommandSourceStack> command = literal("clear");
@@ -111,10 +92,7 @@ public final class ZbbConfigCommand
 
             ConfigPath path = descriptor.path();
             command.then(literal(path.value())
-                    .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                            .executes(context -> edit(context, ConfigEditRequest.clear(path, ConfigWriteMode.PERSISTENT))))
-                    .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                            .executes(context -> edit(context, ConfigEditRequest.clear(path, ConfigWriteMode.RUNTIME_ONLY)))));
+                    .executes(context -> edit(context, ConfigEditRequest.clear(path))));
         }
 
         return command;
@@ -124,19 +102,13 @@ public final class ZbbConfigCommand
     {
         LiteralArgumentBuilder<CommandSourceStack> command = literal("reset")
                 .then(literal("all")
-                        .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.PERSISTENT))))
-                        .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                                .executes(context -> edit(context, ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY)))));
+                        .executes(context -> edit(context, ConfigEditRequest.resetAll())));
 
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
         {
             ConfigPath path = descriptor.path();
             command.then(literal(path.value())
-                    .then(literal(ConfigWriteMode.PERSISTENT.commandName())
-                            .executes(context -> edit(context, ConfigEditRequest.reset(path, ConfigWriteMode.PERSISTENT))))
-                    .then(literal(ConfigWriteMode.RUNTIME_ONLY.commandName())
-                            .executes(context -> edit(context, ConfigEditRequest.reset(path, ConfigWriteMode.RUNTIME_ONLY)))));
+                    .executes(context -> edit(context, ConfigEditRequest.reset(path))));
         }
 
         return command;
@@ -152,46 +124,42 @@ public final class ZbbConfigCommand
             if (operation == ConfigEditOperation.SET && isCollection(descriptor.kind()) && !isMap(descriptor.kind())) continue;
 
             command.then(literal(descriptor.path().value())
-                    .then(editMode(descriptor, ConfigWriteMode.PERSISTENT, operation))
-                    .then(editMode(descriptor, ConfigWriteMode.RUNTIME_ONLY, operation)));
+                    .then(editArguments(descriptor, operation)));
         }
 
         return command;
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> editMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode, ConfigEditOperation operation)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> editArguments(ConfigFieldDescriptor descriptor, ConfigEditOperation operation)
     {
-        var mode = literal(writeMode.commandName());
-
         return switch (operation)
         {
-            case SET -> mode.then(setValueArgument(descriptor, writeMode));
-            case ADD -> mode.then(addEntryArgument(descriptor, writeMode));
-            case REMOVE -> mode.then(removeEntryArgument(descriptor, writeMode));
+            case SET -> setValueArgument(descriptor);
+            case ADD -> addEntryArgument(descriptor);
+            case REMOVE -> removeEntryArgument(descriptor);
             default -> throw new IllegalArgumentException("Unsupported operation: " + operation);
         };
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> removeEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> removeEntryArgument(ConfigFieldDescriptor descriptor)
     {
         if (isMap(descriptor.kind()))
         {
             return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
                     .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                            collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
+                            collectionEntries(ConfigManager.getEffectiveValue(descriptor)),
                             builder))
                     .executes(context -> remove(
                             context,
                             descriptor.path(),
-                            readArgument(context, KEY_ARGUMENT),
-                            writeMode));
+                            readArgument(context, KEY_ARGUMENT)));
         }
 
         RequiredArgumentBuilder<CommandSourceStack, String> entry = argument(ENTRY_ARGUMENT, StringArgumentType.greedyString());
 
         entry.suggests((context, builder) ->
                 SharedSuggestionProvider.suggest(
-                        collectionEntries(ConfigManager.getValueForMode(descriptor, writeMode)),
+                        collectionEntries(ConfigManager.getEffectiveValue(descriptor)),
                         builder));
 
         return entry.executes(context -> remove(
@@ -199,19 +167,18 @@ public final class ZbbConfigCommand
                 descriptor.path(),
                 descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST
                         ? readSinglePattern(context, ENTRY_ARGUMENT)
-                        : readRawValue(context, ENTRY_ARGUMENT),
-                writeMode));
+                        : readRawValue(context, ENTRY_ARGUMENT)));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> addEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> addEntryArgument(ConfigFieldDescriptor descriptor)
     {
         if (isMap(descriptor.kind()))
         {
-            return mapAddEntryArgument(descriptor, writeMode);
+            return mapAddEntryArgument(descriptor);
         }
         if (descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST)
         {
-            return patternAddEntryArgument(descriptor, writeMode);
+            return patternAddEntryArgument(descriptor);
         }
 
         ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
@@ -221,19 +188,17 @@ public final class ZbbConfigCommand
                     .executes(context -> add(
                             context,
                             descriptor,
-                            readArgument(context, ENTRY_ARGUMENT),
-                            writeMode));
+                            readArgument(context, ENTRY_ARGUMENT)));
         }
 
         return argument(ENTRY_ARGUMENT, StringArgumentType.greedyString())
                 .executes(context -> add(
                         context,
                         descriptor,
-                        readRawValue(context, ENTRY_ARGUMENT),
-                        writeMode));
+                        readRawValue(context, ENTRY_ARGUMENT)));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, String> patternAddEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, String> patternAddEntryArgument(ConfigFieldDescriptor descriptor)
     {
         ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
         ArgumentType<?> elementType = identifierArgument(semantics == null
@@ -263,11 +228,10 @@ public final class ZbbConfigCommand
                 .executes(context -> add(
                         context,
                         descriptor,
-                        readSinglePattern(context, ENTRY_ARGUMENT),
-                        writeMode));
+                        readSinglePattern(context, ENTRY_ARGUMENT)));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapAddEntryArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapAddEntryArgument(ConfigFieldDescriptor descriptor)
     {
         String valueName = mapValueArgumentTypeName(descriptor.kind());
 
@@ -278,39 +242,38 @@ public final class ZbbConfigCommand
                                 descriptor,
                                 readArgument(context, KEY_ARGUMENT)
                                         + "="
-                                        + readArgument(context, valueName),
-                                writeMode)));
+                                        + readArgument(context, valueName))));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> setValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> setValueArgument(ConfigFieldDescriptor descriptor)
     {
         Range range = descriptor.range();
         return switch (descriptor.kind())
         {
-            case BOOLEAN -> scalarSetValueArgument("boolean", BoolArgumentType.bool(), descriptor, writeMode);
+            case BOOLEAN -> scalarSetValueArgument("boolean", BoolArgumentType.bool(), descriptor);
             case INT -> scalarSetValueArgument("integer", range == null
                     ? IntegerArgumentType.integer()
-                    : IntegerArgumentType.integer((int) Math.ceil(range.min()), (int) Math.floor(range.max())), descriptor, writeMode);
+                    : IntegerArgumentType.integer((int) Math.ceil(range.min()), (int) Math.floor(range.max())), descriptor);
             case DOUBLE -> scalarSetValueArgument("number", range == null
                     ? DoubleArgumentType.doubleArg()
-                    : DoubleArgumentType.doubleArg(range.min(), range.max()), descriptor, writeMode);
+                    : DoubleArgumentType.doubleArg(range.min(), range.max()), descriptor);
             case FLOAT -> scalarSetValueArgument("number", range == null
                     ? FloatArgumentType.floatArg()
-                    : FloatArgumentType.floatArg((float) range.min(), (float) range.max()), descriptor, writeMode);
-            case RESOURCE_LOCATION -> scalarSetValueArgument("id", identifierArgument(valueRegistry(descriptor)), descriptor, writeMode);
-            case STRING -> scalarSetValueArgument(VALUE_ARGUMENT, StringArgumentType.greedyString(), descriptor, writeMode);
+                    : FloatArgumentType.floatArg((float) range.min(), (float) range.max()), descriptor);
+            case RESOURCE_LOCATION -> scalarSetValueArgument("id", identifierArgument(valueRegistry(descriptor)), descriptor);
+            case STRING -> scalarSetValueArgument(VALUE_ARGUMENT, StringArgumentType.greedyString(), descriptor);
             case STRING_LIST, RESOURCE_LOCATION_PATTERN_LIST -> throw new IllegalArgumentException("SET is not supported for list fields");
-            case RESOURCE_LOCATION_PAIR_MAP, RESOURCE_LOCATION_INT_PAIR_MAP -> mapSetValueArgument(descriptor, writeMode);
+            case RESOURCE_LOCATION_PAIR_MAP, RESOURCE_LOCATION_INT_PAIR_MAP -> mapSetValueArgument(descriptor);
         };
     }
 
     private static <T> RequiredArgumentBuilder<CommandSourceStack, T> scalarSetValueArgument
-            (String name, ArgumentType<T> type, ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+            (String name, ArgumentType<T> type, ConfigFieldDescriptor descriptor)
     {
-        return argument(name, type).executes(context -> set(context, descriptor.path(), readArgument(context, name), writeMode));
+        return argument(name, type).executes(context -> set(context, descriptor.path(), readArgument(context, name)));
     }
 
-    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
+    private static RequiredArgumentBuilder<CommandSourceStack, ?> mapSetValueArgument(ConfigFieldDescriptor descriptor)
     {
         String valueName = mapValueArgumentTypeName(descriptor.kind());
 
@@ -320,8 +283,7 @@ public final class ZbbConfigCommand
                                 context,
                                 descriptor,
                                 readArgument(context, KEY_ARGUMENT),
-                                readMapValue(context, valueName),
-                                writeMode)));
+                                readMapValue(context, valueName))));
     }
 
     private static String readSinglePattern(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException
@@ -387,26 +349,14 @@ public final class ZbbConfigCommand
         return 1;
     }
 
-    private static int getRuntimeOverrides(CommandContext<CommandSourceStack> context)
+    private static int set(CommandContext<CommandSourceStack> context, ConfigPath path, String rawValue)
     {
-        Map<ConfigPath, Object> overrides = ConfigManager.getRuntimeOverrides();
-        success(context, "runtime overrides (" + overrides.size() + ")");
-        for (Map.Entry<ConfigPath, Object> entry : overrides.entrySet())
-        {
-            success(context, entry.getKey() + " = " + format(entry.getValue()));
-        }
-        return overrides.size();
+        return editRaw(context, ConfigEditRequest.set(path, rawValue));
     }
 
-    private static int set(CommandContext<CommandSourceStack> context, ConfigPath path, String rawValue, ConfigWriteMode writeMode)
+    private static int setMapEntry(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String key, Object value)
     {
-        return editRaw(context, ConfigEditRequest.set(path, rawValue, writeMode));
-    }
-
-    private static int setMapEntry(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String key, Object value,
-                                   ConfigWriteMode writeMode)
-    {
-        Object currentValue = ConfigManager.getValueForMode(descriptor, writeMode);
+        Object currentValue = ConfigManager.getEffectiveValue(descriptor);
         if (!(currentValue instanceof java.util.Map<?, ?> currentMap))
         {
             return fail(context, descriptor.path() + " is not a map");
@@ -414,8 +364,7 @@ public final class ZbbConfigCommand
 
         return edit(context, ConfigEditRequest.set(
                 descriptor.path(),
-                mapWithEntry(currentMap, key, value),
-                writeMode));
+                mapWithEntry(currentMap, key, value)));
     }
 
     static java.util.Map<String, Object> mapWithEntry(java.util.Map<?, ?> currentMap, String key, Object value)
@@ -426,14 +375,14 @@ public final class ZbbConfigCommand
         return updated;
     }
 
-    private static int add(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String entry, ConfigWriteMode writeMode)
+    private static int add(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String entry)
     {
-        return editRaw(context, ConfigEditRequest.add(descriptor.path(), entry, writeMode));
+        return editRaw(context, ConfigEditRequest.add(descriptor.path(), entry));
     }
 
-    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, String entry, ConfigWriteMode writeMode)
+    private static int remove(CommandContext<CommandSourceStack> context, ConfigPath path, String entry)
     {
-        return editRaw(context, ConfigEditRequest.remove(path, entry, writeMode));
+        return editRaw(context, ConfigEditRequest.remove(path, entry));
     }
 
     private static int edit(CommandContext<CommandSourceStack> context, ConfigEditRequest request)
@@ -457,20 +406,15 @@ public final class ZbbConfigCommand
                 ? ""
                 : " = " + formatResultValue(result);
 
-        String modeSuffix = result.writeMode() == null
-                ? ""
-                : ", mode=" + result.writeMode().commandName();
-
         String pathSuffix = result.path() == null
-                ? result.operation() == ConfigEditOperation.DISCARD_ALL_OVERRIDES ? "" : " all"
+                ? " all"
                 : " " + result.path();
 
         success(context,
                 operationName(result.operation())
                         + pathSuffix
                         + valueSuffix
-                        + ", changed=" + result.affectedCount()
-                        + modeSuffix);
+                        + ", changed=" + result.affectedCount());
 
         return result.affectedCount();
     }
@@ -480,7 +424,6 @@ public final class ZbbConfigCommand
         return switch (operation)
         {
             case RESET_TO_DEFAULT, RESET_ALL_TO_DEFAULTS -> "reset";
-            case REVERT_TO_PERSISTED, DISCARD_ALL_OVERRIDES -> "runtime_overrides discard";
             default -> operation.name().toLowerCase();
         };
     }
@@ -523,7 +466,7 @@ public final class ZbbConfigCommand
         {
             return fail(context, result.message());
         }
-        success(context, result.message() + " and discarded temporary values");
+        success(context, result.message());
         return 1;
     }
 

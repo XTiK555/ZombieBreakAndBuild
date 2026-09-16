@@ -95,7 +95,7 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void floatCodecAcceptsNumericRuntimeValues()
+    void floatCodecAcceptsNumericValues()
     {
         ConfigEditService service =
                 service(tempDir.resolve("zbb.toml"));
@@ -105,8 +105,7 @@ class ConfigEditServiceTest
                         new ConfigPath(
                                 "balance.blockDamage.blockHardnessExponent"
                         ),
-                        0.5D,
-                        ConfigWriteMode.RUNTIME_ONLY
+                        0.5D
                 )
         );
 
@@ -142,8 +141,7 @@ class ConfigEditServiceTest
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("balance.breakBuildActivationDistance"),
-                0,
-                ConfigWriteMode.RUNTIME_ONLY
+                0
         ));
 
         assertFalse(result.success());
@@ -151,14 +149,13 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void persistentSaveFailureRollsBackEffectiveState()
+    void saveFailureRollsBackEffectiveState()
     {
         ConfigEditService service = service(new FailingConfigFileStore(tempDir.resolve("zbb.toml")));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                true,
-                ConfigWriteMode.PERSISTENT
+                true
         ));
 
         assertFalse(result.success());
@@ -166,7 +163,7 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void persistentEditsSerializeReadSaveAndPublish() throws Exception
+    void editsSerializeReadSaveAndPublish() throws Exception
     {
         BlockingSaveStorage storage = new BlockingSaveStorage();
         ConfigEditService service = service(storage);
@@ -175,15 +172,13 @@ class ConfigEditServiceTest
         {
             Future<ConfigEditResult> first = executor.submit(() -> service.edit(ConfigEditRequest.set(
                     new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                    true,
-                    ConfigWriteMode.PERSISTENT
+                    true
             )));
             assertTrue(storage.firstSaveStarted.await(1, TimeUnit.SECONDS));
 
             Future<ConfigEditResult> second = executor.submit(() -> service.edit(ConfigEditRequest.set(
                     new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                    false,
-                    ConfigWriteMode.PERSISTENT
+                    false
             )));
 
             assertFalse(storage.secondSaveStarted.await(200, TimeUnit.MILLISECONDS));
@@ -252,78 +247,40 @@ class ConfigEditServiceTest
         assertThrows(IllegalArgumentException.class, () -> new ConfigEditRequest(
                 ConfigEditOperation.SET,
                 null,
-                true,
-                ConfigWriteMode.RUNTIME_ONLY
+                true
         ));
         assertThrows(IllegalArgumentException.class, () -> new ConfigEditRequest(
-                ConfigEditOperation.DISCARD_ALL_OVERRIDES,
+                ConfigEditOperation.RESET_ALL_TO_DEFAULTS,
                 new ConfigPath("ai"),
-                null,
-                ConfigWriteMode.RUNTIME_ONLY
+                null
         ));
     }
 
     @Test
-    void writeModeParserUsesCommandNamesWithoutModePrefix()
-    {
-        assertEquals(java.util.Optional.of(ConfigWriteMode.RUNTIME_ONLY), ConfigWriteMode.parse("runtime_only"));
-        assertEquals(java.util.Optional.of(ConfigWriteMode.PERSISTENT), ConfigWriteMode.parse("persistent"));
-        assertTrue(ConfigWriteMode.parse("mode_runtime_only").isEmpty());
-        assertTrue(ConfigWriteMode.parse("mode_persistent").isEmpty());
-    }
-
-    @Test
-    void runtimeOverrideDoesNotLeakIntoLaterPersistentSave()
-    {
-        Path path = tempDir.resolve("zbb.toml");
-        ConfigEditService service = service(path);
-
-        assertTrue(service.edit(ConfigEditRequest.set(
-                new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                true,
-                ConfigWriteMode.RUNTIME_ONLY
-        )).success());
-
-        assertTrue(service.edit(ConfigEditRequest.set(
-                new ConfigPath("balance.breakBuildActivationDistance"),
-                7,
-                ConfigWriteMode.PERSISTENT
-        )).success());
-
-        assertTrue(service.snapshot().document().ai.alwaysSeeNearestPlayer);
-        assertEquals(7, service.snapshot().document().balance.breakBuildActivationDistance);
-
-        service.reloadFromFile();
-
-        assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
-        assertEquals(7, service.snapshot().document().balance.breakBuildActivationDistance);
-    }
-
-    @Test
-    void runtimeResetAllOverridesEveryDescriptorWithItsDefault()
+    void resetAllPersistsDefaults()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
         assertTrue(service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                true,
-                ConfigWriteMode.PERSISTENT
+                true
         )).success());
         assertTrue(service.edit(ConfigEditRequest.set(
                 new ConfigPath("balance.breakBuildActivationDistance"),
-                10,
-                ConfigWriteMode.RUNTIME_ONLY
+                10
         )).success());
 
-        ConfigEditResult result = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
+        ConfigEditResult result = service.edit(ConfigEditRequest.resetAll());
 
         assertTrue(result.success());
-        assertEquals(ConfigSchema.descriptors().size(), result.affectedCount());
-        assertEquals(ConfigSchema.descriptors().size(), service.runtimeOverrides().size());
+        assertEquals(2, result.affectedCount());
+        assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
+        assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
+        assertTrue(service.reloadFromFile().success());
         assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
         assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
 
-        ConfigEditResult repeated = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
+        ConfigEditResult repeated = service.edit(ConfigEditRequest.resetAll());
         assertTrue(repeated.success());
         assertEquals(0, repeated.affectedCount());
     }
@@ -334,65 +291,34 @@ class ConfigEditServiceTest
         LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigRepairReport());
         ConfigEditService service = service(storage);
 
-        ConfigEditResult persistentSet = service.edit(ConfigEditRequest.set(
+        ConfigEditResult set = service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                false,
-                ConfigWriteMode.PERSISTENT
-        ));
-        ConfigEditResult runtimeSet = service.edit(ConfigEditRequest.set(
-                new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                false,
-                ConfigWriteMode.RUNTIME_ONLY
+                false
         ));
         ConfigEditResult removeMissing = service.edit(ConfigEditRequest.remove(
                 new ConfigPath("ai.ignoreBreakEntityIdList"),
-                "minecraft:zombie",
-                ConfigWriteMode.RUNTIME_ONLY
+                "minecraft:zombie"
         ));
         ConfigEditResult clearEmpty = service.edit(ConfigEditRequest.clear(
-                new ConfigPath("balance.blockDamage.blockHealthOverrideMap"),
-                ConfigWriteMode.PERSISTENT
+                new ConfigPath("balance.blockDamage.blockHealthOverrideMap")
         ));
         ConfigEditResult addDuplicate = service.edit(ConfigEditRequest.add(
                 new ConfigPath("ai.affectedEntityIdList"),
-                "@MONSTER",
-                ConfigWriteMode.RUNTIME_ONLY
+                "@MONSTER"
         ));
 
         assertAll(
-                () -> assertTrue(persistentSet.success()),
-                () -> assertEquals(0, persistentSet.affectedCount()),
-                () -> assertEquals("updated 0 elements", persistentSet.message()),
-                () -> assertTrue(runtimeSet.success()),
-                () -> assertEquals(0, runtimeSet.affectedCount()),
+                () -> assertTrue(set.success()),
+                () -> assertEquals(0, set.affectedCount()),
+                () -> assertEquals("updated 0 elements", set.message()),
                 () -> assertTrue(removeMissing.success()),
                 () -> assertEquals(0, removeMissing.affectedCount()),
                 () -> assertTrue(clearEmpty.success()),
                 () -> assertEquals(0, clearEmpty.affectedCount()),
                 () -> assertTrue(addDuplicate.success()),
                 () -> assertEquals(0, addDuplicate.affectedCount()),
-                () -> assertEquals(0, storage.saveCount),
-                () -> assertTrue(service.runtimeOverrides().isEmpty())
+                () -> assertEquals(0, storage.saveCount)
         );
-    }
-
-    @Test
-    void runtimeOverridesAreExposedAsDefensiveReadOnlyValues()
-    {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
-        ConfigPath path = new ConfigPath("ai.ignoreBreakEntityIdList");
-
-        assertTrue(service.edit(ConfigEditRequest.add(
-                path,
-                "minecraft:zombie",
-                ConfigWriteMode.RUNTIME_ONLY
-        )).success());
-
-        java.util.Map<ConfigPath, Object> overrides = service.runtimeOverrides();
-        assertThrows(UnsupportedOperationException.class, overrides::clear);
-        ((java.util.List<?>) overrides.get(path)).clear();
-
-        assertEquals(java.util.List.of("minecraft:zombie"), service.runtimeOverrides().get(path));
     }
 
     @Test
@@ -415,8 +341,7 @@ class ConfigEditServiceTest
 
         assertTrue(service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
-                true,
-                ConfigWriteMode.RUNTIME_ONLY
+                true
         )).success());
 
         ConfigSnapshot snapshot = service.snapshot();
@@ -433,8 +358,7 @@ class ConfigEditServiceTest
 
         ConfigEditResult result = service.editRaw(ConfigEditRequest.add(
                 new ConfigPath("blocks.mobPlaceBlockIdOverrideMap"),
-                java.util.Map.of("minecraft:zombie", "minecraft:dirt"),
-                ConfigWriteMode.RUNTIME_ONLY
+                java.util.Map.of("minecraft:zombie", "minecraft:dirt")
         ));
 
         assertTrue(result.success(), result.message());
@@ -442,14 +366,13 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void persistentMapEditStoresTheNormalizedIntegerMap()
+    void mapEditStoresTheNormalizedIntegerMap()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("balance.blockDamage.blockHealthOverrideMap"),
-                java.util.Map.of("minecraft:dirt", "5"),
-                ConfigWriteMode.PERSISTENT
+                java.util.Map.of("minecraft:dirt", "5")
         ));
 
         assertTrue(result.success(), result.message());
@@ -466,18 +389,15 @@ class ConfigEditServiceTest
 
         assertFalse(service.edit(ConfigEditRequest.set(
                 path,
-                java.util.Map.of("minecraft:dirt", 1.5D),
-                ConfigWriteMode.RUNTIME_ONLY
+                java.util.Map.of("minecraft:dirt", 1.5D)
         )).success());
         assertFalse(service.edit(ConfigEditRequest.set(
                 path,
-                java.util.Map.of("minecraft:dirt", 2_147_483_648L),
-                ConfigWriteMode.RUNTIME_ONLY
+                java.util.Map.of("minecraft:dirt", 2_147_483_648L)
         )).success());
         assertFalse(service.editRaw(ConfigEditRequest.add(
                 path,
-                "minecraft:dirt",
-                ConfigWriteMode.RUNTIME_ONLY
+                "minecraft:dirt"
         )).success());
     }
 
@@ -488,14 +408,12 @@ class ConfigEditServiceTest
         ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideMap");
         assertTrue(service.edit(ConfigEditRequest.set(
                 path,
-                java.util.Map.of("minecraft:dirt", 5),
-                ConfigWriteMode.RUNTIME_ONLY
+                java.util.Map.of("minecraft:dirt", 5)
         )).success());
 
         ConfigEditResult result = service.editRaw(ConfigEditRequest.remove(
                 path,
-                "minecraft:dirt",
-                ConfigWriteMode.RUNTIME_ONLY
+                "minecraft:dirt"
         ));
 
         assertTrue(result.success(), result.message());
@@ -520,8 +438,7 @@ class ConfigEditServiceTest
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("blocks.fallbackPlaceBlockId"),
-                "minecraft:not_a_real_block",
-                ConfigWriteMode.RUNTIME_ONLY
+                "minecraft:not_a_real_block"
         ));
 
         assertFalse(result.success());
