@@ -15,11 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,14 +38,14 @@ class ConfigEditServiceTest
     @Test
     void codecStrictCommandsRejectValuesThatFileRepairCanFix() throws Exception
     {
-        ConfigFieldDescriptor descriptor = descriptor("balance.pathEndBreakBuildDistance");
+        ConfigFieldDescriptor descriptor = descriptor("balance.breakBuildActivationDistance");
 
         assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "0"));
 
-        Object fixed = new ConfigDocumentNormalizer(DESERIALIZER).normalize(configWithRaw("balance", "pathEndBreakBuildDistance", 0))
+        Object fixed = new ConfigDocumentNormalizer(DESERIALIZER).normalize(configWithRaw("balance", "breakBuildActivationDistance", 0))
                 .document()
                 .balance
-                .pathEndBreakBuildDistance;
+                .breakBuildActivationDistance;
 
         assertEquals(6, fixed);
     }
@@ -57,7 +53,7 @@ class ConfigEditServiceTest
     @Test
     void numericCodecsRejectNonFiniteValues()
     {
-        ConfigFieldDescriptor descriptor = descriptor("balance.blockDamage.blockHardnessContrast");
+        ConfigFieldDescriptor descriptor = descriptor("balance.blockDamage.blockHardnessExponent");
 
         assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "NaN"));
         assertThrows(ConfigValidationException.class, () -> descriptor.codec().parseText(descriptor, "Infinity"));
@@ -66,7 +62,7 @@ class ConfigEditServiceTest
     @Test
     void integerCodecRejectsFractionsAndOverflowBeforeRangeValidation()
     {
-        ConfigFieldDescriptor descriptor = descriptor("balance.pathEndBreakBuildDistance");
+        ConfigFieldDescriptor descriptor = descriptor("balance.breakBuildActivationDistance");
 
         assertThrows(ConfigValidationException.class, () -> descriptor.codec().decodeDocumentValue(descriptor, 1.5D));
         assertThrows(ConfigValidationException.class, () -> descriptor.codec().decodeDocumentValue(descriptor, Double.NaN));
@@ -117,7 +113,7 @@ class ConfigEditServiceTest
         ConfigEditResult result = service.edit(
                 ConfigEditRequest.set(
                         new ConfigPath(
-                                "balance.blockDamage.blockHardnessContrast"
+                                "balance.blockDamage.blockHardnessExponent"
                         ),
                         0.5D,
                         ConfigWriteMode.RUNTIME_ONLY
@@ -131,7 +127,7 @@ class ConfigEditServiceTest
                         .document()
                         .balance
                         .blockDamage
-                        .blockHardnessContrast
+                        .blockHardnessExponent
         );
     }
 
@@ -155,13 +151,13 @@ class ConfigEditServiceTest
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
-                new ConfigPath("balance.pathEndBreakBuildDistance"),
+                new ConfigPath("balance.breakBuildActivationDistance"),
                 0,
                 ConfigWriteMode.RUNTIME_ONLY
         ));
 
         assertFalse(result.success());
-        assertEquals(6, service.snapshot().document().balance.pathEndBreakBuildDistance);
+        assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
     }
 
     @Test
@@ -299,18 +295,18 @@ class ConfigEditServiceTest
         )).success());
 
         assertTrue(service.edit(ConfigEditRequest.set(
-                new ConfigPath("balance.pathEndBreakBuildDistance"),
+                new ConfigPath("balance.breakBuildActivationDistance"),
                 7,
                 ConfigWriteMode.PERSISTENT
         )).success());
 
         assertTrue(service.snapshot().document().ai.alwaysSeeNearestPlayer);
-        assertEquals(7, service.snapshot().document().balance.pathEndBreakBuildDistance);
+        assertEquals(7, service.snapshot().document().balance.breakBuildActivationDistance);
 
         service.reloadFromFile();
 
         assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
-        assertEquals(7, service.snapshot().document().balance.pathEndBreakBuildDistance);
+        assertEquals(7, service.snapshot().document().balance.breakBuildActivationDistance);
     }
 
     @Test
@@ -324,7 +320,7 @@ class ConfigEditServiceTest
                 ConfigWriteMode.PERSISTENT
         )).success());
         assertTrue(service.edit(ConfigEditRequest.set(
-                new ConfigPath("balance.pathEndBreakBuildDistance"),
+                new ConfigPath("balance.breakBuildActivationDistance"),
                 10,
                 ConfigWriteMode.RUNTIME_ONLY
         )).success());
@@ -335,7 +331,7 @@ class ConfigEditServiceTest
         assertEquals(ConfigSchema.descriptors().size(), result.affectedCount());
         assertEquals(ConfigSchema.descriptors().size(), service.runtimeOverrides().size());
         assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
-        assertEquals(6, service.snapshot().document().balance.pathEndBreakBuildDistance);
+        assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
 
         ConfigEditResult repeated = service.edit(ConfigEditRequest.resetAll(ConfigWriteMode.RUNTIME_ONLY));
         assertTrue(repeated.success());
@@ -364,7 +360,7 @@ class ConfigEditServiceTest
                 ConfigWriteMode.RUNTIME_ONLY
         ));
         ConfigEditResult clearEmpty = service.edit(ConfigEditRequest.clear(
-                new ConfigPath("balance.blockDamage.blockHealthOverrideList"),
+                new ConfigPath("balance.blockDamage.blockHealthOverrideMap"),
                 ConfigWriteMode.PERSISTENT
         ));
         ConfigEditResult addDuplicate = service.edit(ConfigEditRequest.add(
@@ -446,13 +442,13 @@ class ConfigEditServiceTest
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.editRaw(ConfigEditRequest.add(
-                new ConfigPath("blocks.mobPlaceBlockIdOverrideList"),
+                new ConfigPath("blocks.mobPlaceBlockIdOverrideMap"),
                 java.util.Map.of("minecraft:zombie", "minecraft:dirt"),
                 ConfigWriteMode.RUNTIME_ONLY
         ));
 
         assertTrue(result.success(), result.message());
-        assertEquals("minecraft:dirt", service.snapshot().document().blocks.mobPlaceBlockIdOverrideList.get("minecraft:zombie"));
+        assertEquals("minecraft:dirt", service.snapshot().document().blocks.mobPlaceBlockIdOverrideMap.get("minecraft:zombie"));
     }
 
     @Test
@@ -461,22 +457,22 @@ class ConfigEditServiceTest
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
-                new ConfigPath("balance.blockDamage.blockHealthOverrideList"),
+                new ConfigPath("balance.blockDamage.blockHealthOverrideMap"),
                 java.util.Map.of("minecraft:dirt", "5"),
                 ConfigWriteMode.PERSISTENT
         ));
 
         assertTrue(result.success(), result.message());
-        assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideList.get("minecraft:dirt"));
+        assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideMap.get("minecraft:dirt"));
         assertTrue(service.reloadFromFile().success());
-        assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideList.get("minecraft:dirt"));
+        assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideMap.get("minecraft:dirt"));
     }
 
     @Test
     void integerMapRejectsFractionsOverflowAndEntriesWithoutValues()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
-        ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideList");
+        ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideMap");
 
         assertFalse(service.edit(ConfigEditRequest.set(
                 path,
@@ -499,7 +495,7 @@ class ConfigEditServiceTest
     void rawMapRemovalStillAcceptsAKeyWithoutEquals()
     {
         ConfigEditService service = service(tempDir.resolve("zbb.toml"));
-        ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideList");
+        ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideMap");
         assertTrue(service.edit(ConfigEditRequest.set(
                 path,
                 java.util.Map.of("minecraft:dirt", 5),
@@ -513,7 +509,7 @@ class ConfigEditServiceTest
         ));
 
         assertTrue(result.success(), result.message());
-        assertTrue(service.snapshot().document().balance.blockDamage.blockHealthOverrideList.isEmpty());
+        assertTrue(service.snapshot().document().balance.blockDamage.blockHealthOverrideMap.isEmpty());
     }
 
     @Test
@@ -624,16 +620,16 @@ class ConfigEditServiceTest
         copy.blocks.dangerousBlockIdList.clear();
         copy.ai.affectedEntityIdList.add("minecraft:test");
         copy.ai.ignoreBuildEntityIdList.add("minecraft:test");
-        copy.balance.blockDamage.blockHealthOverrideList.put("minecraft:dirt", 5);
+        copy.balance.blockDamage.blockHealthOverrideMap.put("minecraft:dirt", 5);
 
         assertFalse(original.blocks.dangerousBlockIdList.isEmpty());
         assertFalse(original.ai.affectedEntityIdList.contains("minecraft:test"));
         assertFalse(original.ai.ignoreBuildEntityIdList.contains("minecraft:test"));
-        assertTrue(original.balance.blockDamage.blockHealthOverrideList.isEmpty());
+        assertTrue(original.balance.blockDamage.blockHealthOverrideMap.isEmpty());
     }
 
     @Test
-    void normalizerRejectsUnpublishedLegacyPairLists()
+    void normalizerIgnoresLegacyPairLists()
     {
         CommentedConfig raw = defaultsConfig();
         raw.set("blocks.dimensionPlaceBlockIdList", java.util.List.of("minecraft:overworld=minecraft:dirt"));
@@ -641,10 +637,9 @@ class ConfigEditServiceTest
 
         ConfigDocumentNormalizer.NormalizedConfig normalized = normalizer().normalize(raw);
 
-        assertEquals(new ConfigDocument().blocks.dimensionPlaceBlockIdList, normalized.document().blocks.dimensionPlaceBlockIdList);
-        assertTrue(normalized.document().balance.blockDamage.blockHealthOverrideList.isEmpty());
-        assertTrue(normalized.repairReport().entries().stream()
-                .anyMatch(entry -> entry.contains("Expected table")));
+        assertEquals(new ConfigDocument().blocks.dimensionPlaceBlockIdMap, normalized.document().blocks.dimensionPlaceBlockIdMap);
+        assertTrue(normalized.document().balance.blockDamage.blockHealthOverrideMap.isEmpty());
+        assertTrue(normalized.repairReport().entries().isEmpty());
     }
 
     private static ConfigFieldDescriptor descriptor(String path)

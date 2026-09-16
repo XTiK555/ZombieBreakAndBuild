@@ -37,9 +37,9 @@ public class BuildDisappearBlockStorageVisual
     {
         ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
-        if (visualEffects.builtDisappearBlockDisplay()) playShrinkBlockDisplayEffect(event);
+        if (visualEffects.builtDisappearShrinkAnimation()) playShrinkBlockDisplayEffect(event);
         if (visualEffects.builtDisappearShrinkSound()) playShrinkSound(event);
-        if (visualEffects.builtDisappearSound())
+        if (visualEffects.builtDisappearFinalSound())
             Constants.SCHEDULER.schedule(() -> playDisappearSound(event), SHRINK_BLOCK_START_DELAY + SHRINK_BLOCK_INTERPOLATION_DURATION);
     }
 

@@ -77,7 +77,7 @@ public final class BlockStorageGameTests
         configureBuilding(helper);
         GameTestConfig.set(helper, "blockRestoration.builtBlocksDisappearing", true);
         GameTestConfig.set(helper, "blockRestoration.builtBlocksDisappearTime", 2.0);
-        GameTestConfig.set(helper, "visualEffects.builtDisappearBlockDisplay", true);
+        GameTestConfig.set(helper, "visualEffects.builtDisappearShrinkAnimation", true);
 
         ServerLevel level = helper.getLevel();
         BlockPos origin = helper.absolutePos(BlockPos.ZERO);
@@ -345,7 +345,7 @@ public final class BlockStorageGameTests
     public static void fallingBuildDisappearMovesTrackingAndRestoresLandingOldState(GameTestHelper helper)
     {
         configureBuilding(helper);
-        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideList", "minecraft:zombie", "minecraft:sand");
+        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie", "minecraft:sand");
         GameTestConfig.set(helper, "blockRestoration.builtBlocksDisappearing", true);
         GameTestConfig.set(helper, "blockRestoration.builtBlocksDisappearTime", 1.0);
         WorldGameTest.GapLane lane = WorldGameTest.twoBlockGapLane(helper, 2, 3);
@@ -371,7 +371,7 @@ public final class BlockStorageGameTests
     {
         GameTestConfig.accelerateActions(helper);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", "minecraft:dirt", 1);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", "minecraft:dirt", 1);
         GameTestConfig.set(helper, "blockRestoration.brokenBlocksRestoring", false);
         GameTestConfig.set(helper, "blockRestoration.brokenBlocksRestoreTime", 0.5);
         WorldGameTest.corridor(helper, 0, 6, 2, 1);
@@ -436,7 +436,7 @@ public final class BlockStorageGameTests
     {
         GameTestConfig.accelerateActions(helper);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", blockId, 1);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", blockId, 1);
         GameTestConfig.set(helper, "blockRestoration.brokenBlocksRestoring", true);
         GameTestConfig.set(helper, "blockRestoration.brokenBlocksRestoreTime", 0.5);
         WorldGameTest.BarrierLane lane = WorldGameTest.barrierLane(helper, 2, block);
