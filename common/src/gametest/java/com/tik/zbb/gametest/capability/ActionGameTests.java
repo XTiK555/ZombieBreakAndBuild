@@ -24,7 +24,7 @@ public final class ActionGameTests
         GameTestConfig.accelerateActions(helper);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
         GameTestConfig.set(helper, "balance.blockDamage.maximumBreakableBlockHardness", 10);
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", "minecraft:stone", 1);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", "minecraft:stone", 1);
         WorldGameTest.corridor(helper, 0, 7, 2, 1);
         WorldGameTest.corridor(helper, 0, 7, 7, 1);
         WorldGameTest.barrier(helper, 3, 2, Blocks.STONE);
@@ -50,7 +50,7 @@ public final class ActionGameTests
         GameTestConfig.set(helper, "ai.alwaysSeeNearestPlayer", true);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
         GameTestConfig.set(helper, "balance.blockDamage.damageToBlocks", 1);
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", "minecraft:stone", 3);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", "minecraft:stone", 3);
         GameTestConfig.set(helper, "balance.cooldowns.breakCooldown", 0.5);
         WorldGameTest.corridor(helper, 0, 6, 2, 1);
         WorldGameTest.barrier(helper, 3, 2, Blocks.STONE);
@@ -142,8 +142,8 @@ public final class ActionGameTests
         GameTestConfig.set(helper, "ai.alwaysSeeNearestPlayer", true);
         GameTestConfig.add(helper, "ai.ignoreBuildEntityIdList", "minecraft:zombie");
         GameTestConfig.set(helper, "balance.blockDamage.damageToBlocks", 1);
-        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideList", "minecraft:stone", 20);
-        GameTestConfig.set(helper, "balance.blockDamage.itemDamageMultiplierStrength", 1);
+        GameTestConfig.put(helper, "balance.blockDamage.blockHealthOverrideMap", "minecraft:stone", 20);
+        GameTestConfig.set(helper, "balance.blockDamage.itemDamageMultiplierExponent", 1);
         GameTestConfig.set(helper, "balance.cooldowns.breakCooldown", 0.25);
         WorldGameTest.corridor(helper, 0, 7, 2, 1);
         WorldGameTest.corridor(helper, 0, 7, 7, 1);
@@ -257,7 +257,7 @@ public final class ActionGameTests
         GameTestConfig.set(helper, "ai.tactics.adjustHeightToTarget", false);
         GameTestConfig.set(helper, "ai.tactics.clearObstaclesToTarget", false);
         GameTestConfig.set(helper, "ai.tactics.mitigateDangerousBlocks", false);
-        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideList", "minecraft:zombie", "minecraft:gold_block");
+        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie", "minecraft:gold_block");
         WorldGameTest.GapLane lane = WorldGameTest.twoBlockGapLane(helper, 2, 3);
         ServerPlayer player = GameTestEntities.serverPlayer(helper, lane.target(), GameType.SURVIVAL);
         Zombie zombie = GameTestEntities.zombie(helper, lane.mobStart());
@@ -285,7 +285,7 @@ public final class ActionGameTests
         GameTestConfig.set(helper, "ai.tactics.adjustHeightToTarget", false);
         GameTestConfig.set(helper, "ai.tactics.clearObstaclesToTarget", false);
         GameTestConfig.set(helper, "ai.tactics.mitigateDangerousBlocks", false);
-        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideList", "minecraft:zombie", "minecraft:dirt");
+        GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie", "minecraft:dirt");
         WorldGameTest.GapLane lane = WorldGameTest.twoBlockGapLane(helper, 2, 3);
         ServerPlayer player = GameTestEntities.serverPlayer(helper, lane.target(), GameType.SURVIVAL);
         Zombie zombie = GameTestEntities.zombie(helper, lane.mobStart());
@@ -316,7 +316,7 @@ public final class ActionGameTests
                     "The existing zombie did not use dirt before the runtime config update");
             firstBuilt.set(built);
             firstBuiltAt.set(helper.getLevel().getGameTime());
-            GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideList", "minecraft:zombie", "minecraft:cobblestone");
+            GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie", "minecraft:cobblestone");
         });
         helper.succeedWhen(() ->
         {

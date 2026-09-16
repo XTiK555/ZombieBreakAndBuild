@@ -70,7 +70,7 @@ public class BreakAndBuildState extends BaseMobState
 
         if (endNode == null) return Priority.High;
 
-        int breakBuildDistance = context.getConfigSnapshot().game().balance().pathEndBreakBuildDistance();
+        int breakBuildDistance = context.getConfigSnapshot().game().balance().breakBuildActivationDistance();
         double breakBuildDistanceSq = (double) breakBuildDistance * breakBuildDistance;
         double mobToEndNodeDistanceSq = context.getMob().distanceToSqr(endNode.x + 0.5D, endNode.y, endNode.z + 0.5D);
 

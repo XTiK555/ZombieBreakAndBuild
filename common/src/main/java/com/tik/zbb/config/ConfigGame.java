@@ -44,8 +44,8 @@ public record ConfigGame(
         {
             return new Blocks(
                     ResourceLocationPatternMatcher.compile(data.blocks.dangerousBlockIdList),
-                    idBlockMap(data.blocks.dimensionPlaceBlockIdList, blockResolver),
-                    idBlockMap(data.blocks.mobPlaceBlockIdOverrideList, blockResolver),
+                    idBlockMap(data.blocks.dimensionPlaceBlockIdMap, blockResolver),
+                    idBlockMap(data.blocks.mobPlaceBlockIdOverrideMap, blockResolver),
                     blockResolver.resolve(data.blocks.fallbackPlaceBlockId, net.minecraft.world.level.block.Blocks.STONE)
             );
         }
@@ -100,7 +100,7 @@ public record ConfigGame(
     public record Balance(
             double builtBlocksProtectionTime,
             int dangerousBlocksSearchRadius,
-            int pathEndBreakBuildDistance,
+            int breakBuildActivationDistance,
             double damageStoreTime,
             BlockDamage blockDamage,
             Cooldowns cooldowns
@@ -111,7 +111,7 @@ public record ConfigGame(
             return new Balance(
                     data.balance.builtBlocksProtectionTime,
                     data.balance.dangerousBlocksSearchRadius,
-                    data.balance.pathEndBreakBuildDistance,
+                    data.balance.breakBuildActivationDistance,
                     data.balance.damageStoreTime,
                     BlockDamage.create(data, blockResolver),
                     Cooldowns.create(data)
@@ -122,11 +122,11 @@ public record ConfigGame(
     public record BlockDamage(
             float maximumBreakableBlockHardness,
             int damageToBlocks,
-            float blockHardnessContrast,
+            float blockHardnessExponent,
             float blockHardnessMultiplier,
             Map<Block, Integer> blockHealthOverrideMap,
-            float itemDamageMultiplierStrength,
-            double hitboxSizeMultiplierStrength
+            float itemDamageMultiplierExponent,
+            double hitboxSizeMultiplierExponent
     )
     {
         private static BlockDamage create(ConfigDocument data, BlockResolver blockResolver)
@@ -134,11 +134,11 @@ public record ConfigGame(
             return new BlockDamage(
                     data.balance.blockDamage.maximumBreakableBlockHardness,
                     data.balance.blockDamage.damageToBlocks,
-                    data.balance.blockDamage.blockHardnessContrast,
+                    data.balance.blockDamage.blockHardnessExponent,
                     data.balance.blockDamage.blockHardnessMultiplier,
-                    blockIntMap(data.balance.blockDamage.blockHealthOverrideList, blockResolver),
-                    data.balance.blockDamage.itemDamageMultiplierStrength,
-                    data.balance.blockDamage.hitboxSizeMultiplierStrength
+                    blockIntMap(data.balance.blockDamage.blockHealthOverrideMap, blockResolver),
+                    data.balance.blockDamage.itemDamageMultiplierExponent,
+                    data.balance.blockDamage.hitboxSizeMultiplierExponent
             );
         }
     }
@@ -184,9 +184,9 @@ public record ConfigGame(
             boolean brokenReappearMarkerParticle,
             boolean brokenReappearChargeSound,
             boolean brokenReappearSound,
-            boolean builtDisappearBlockDisplay,
+            boolean builtDisappearShrinkAnimation,
             boolean builtDisappearShrinkSound,
-            boolean builtDisappearSound
+            boolean builtDisappearFinalSound
     )
     {
         private static VisualEffects create(ConfigDocument data)
@@ -198,9 +198,9 @@ public record ConfigGame(
                     data.visualEffects.brokenReappearMarkerParticle,
                     data.visualEffects.brokenReappearChargeSound,
                     data.visualEffects.brokenReappearSound,
-                    data.visualEffects.builtDisappearBlockDisplay,
+                    data.visualEffects.builtDisappearShrinkAnimation,
                     data.visualEffects.builtDisappearShrinkSound,
-                    data.visualEffects.builtDisappearSound
+                    data.visualEffects.builtDisappearFinalSound
             );
         }
     }

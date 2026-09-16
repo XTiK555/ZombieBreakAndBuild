@@ -93,13 +93,13 @@ class ZbbConfigCommandTest
     @Test
     void mapSetTakesSuggestedRegistryKeyThenTypedValue()
     {
-        assertParses("zbb config set blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:dirt");
-        assertParses("zbb config set blocks.mobPlaceBlockIdOverrideList runtime_only minecraft:zombie minecraft:stone");
-        assertParses("zbb config set balance.blockDamage.blockHealthOverrideList persistent minecraft:stone 20");
-        assertDoesNotParse("zbb config set blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:dirt");
+        assertParses("zbb config set blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:dirt");
+        assertParses("zbb config set blocks.mobPlaceBlockIdOverrideMap runtime_only minecraft:zombie minecraft:stone");
+        assertParses("zbb config set balance.blockDamage.blockHealthOverrideMap persistent minecraft:stone 20");
+        assertDoesNotParse("zbb config set blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:dirt");
 
         CommandNode<CommandSourceStack> key = configCommand("set")
-                .getChild("blocks.dimensionPlaceBlockIdList")
+                .getChild("blocks.dimensionPlaceBlockIdMap")
                 .getChild("persistent")
                 .getChild("key");
         assertInstanceOf(ResourceKeyArgument.class, ((ArgumentCommandNode<?, ?>) key).getType());
@@ -119,25 +119,25 @@ class ZbbConfigCommandTest
         assertNull(configCommand("add").getChild("path"));
         assertNull(configCommand("remove").getChild("path"));
         assertNotNull(configCommand("add").getChild("ai.affectedEntityIdList"));
-        assertNotNull(configCommand("remove").getChild("blocks.dimensionPlaceBlockIdList"));
+        assertNotNull(configCommand("remove").getChild("blocks.dimensionPlaceBlockIdMap"));
         assertNull(configCommand("add").getChild("ai.alwaysSeeNearestPlayer"));
     }
 
     @Test
     void mapAddTakesSuggestedRegistryKeyThenTypedValue()
     {
-        assertParses("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:stone");
-        assertDoesNotParse("zbb config add blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
+        assertParses("zbb config add blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:stone");
+        assertDoesNotParse("zbb config add blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:stone");
     }
 
     @Test
     void mapRemoveAcceptsOnlyTypedKey()
     {
-        assertParses("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld");
-        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld=minecraft:stone");
-        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdList persistent minecraft:overworld minecraft:stone");
+        assertParses("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:stone");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:stone");
 
-        Object type = argumentType(configCommand("remove"), "blocks.dimensionPlaceBlockIdList", "key");
+        Object type = argumentType(configCommand("remove"), "blocks.dimensionPlaceBlockIdMap", "key");
         assertInstanceOf(ResourceKeyArgument.class, type);
     }
 
