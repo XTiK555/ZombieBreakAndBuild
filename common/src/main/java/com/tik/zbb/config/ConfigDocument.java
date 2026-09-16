@@ -163,7 +163,7 @@ public class ConfigDocument
 
             @Range(min = 0, max = 1000000)
             @Comment("Base block damage, before tool and mob-size multipliers")
-            public int damageToBlocks = 1;
+            public int damageToBlocks = 2;
 
             @Range(min = 0, max = 1000000)
             @Comment("Hardness exponent for block health: 1 = linear, <1 reduces differences, >1 increases them")
@@ -171,7 +171,7 @@ public class ConfigDocument
 
             @Range(min = 0, max = 1000000)
             @Comment("Multiplier applied to block health after the hardness exponent.")
-            public float blockHardnessMultiplier = 2.0f;
+            public float blockHardnessMultiplier = 4.0f;
 
             @ResourceLocationIntPairMap
             @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
