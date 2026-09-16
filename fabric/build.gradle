@@ -37,6 +37,9 @@ loom {
         defaultRefmapName.set("${mod_id}.refmap.json")
     }
     mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
         "${portabilityTestModId}" {
             sourceSet sourceSets.gametest
         }
@@ -46,6 +49,7 @@ loom {
             server()
             setConfigName("Fabric Game Test")
             ideConfigGenerated(true)
+            source sourceSets.main
             source sourceSets.gametest
             vmArg "-Dfabric-api.gametest"
             vmArg "-Dfabric-api.gametest.report-file=${layout.buildDirectory.file('fabric-gametest.xml').get().asFile.absolutePath}"

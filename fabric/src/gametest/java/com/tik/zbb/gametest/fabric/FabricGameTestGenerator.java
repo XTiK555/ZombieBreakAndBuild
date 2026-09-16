@@ -35,7 +35,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
                     @Override
                     public <T> T create(ModContainer mod, String value, Class<T> type) throws LanguageAdapterException
                     {
-                        PortabilityGameTestLifecycle.install(PortabilityGameTestReporter.xmlReporter());
                         return type.cast(SUITES.get(PortabilityGameTestScenarios.selectedSuite().id()));
                     }
 

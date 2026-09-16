@@ -25,6 +25,12 @@ public final class WorldGameTest
     {
         floor(helper, minX, maxX, centerZ - 1, centerZ + 1, floorY);
         corridorWalls(helper, minX, maxX, centerZ, floorY);
+        for (int y = floorY + 1; y <= floorY + 3; y++)
+            for (int z = centerZ - 1; z <= centerZ + 1; z++)
+            {
+                helper.setBlock(new BlockPos(minX, y, z), Blocks.OBSIDIAN);
+                helper.setBlock(new BlockPos(maxX, y, z), Blocks.OBSIDIAN);
+            }
     }
 
     public static void corridorWalls(GameTestHelper helper, int minX, int maxX, int centerZ, int floorY)

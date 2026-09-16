@@ -19,12 +19,12 @@ public final class DisplayProbes
 
     public static int transformationInterpolationDuration(Display display)
     {
-        return invoke(Display.class, display, "getTransformationInterpolationDuration", new Class<?>[0]);
+        return invoke(Display.class, display, "getInterpolationDuration", new Class<?>[0]);
     }
 
     public static int transformationInterpolationDelay(Display display)
     {
-        return invoke(Display.class, display, "getTransformationInterpolationDelay", new Class<?>[0]);
+        return invoke(Display.class, display, "getInterpolationDelay", new Class<?>[0]);
     }
 
     public static BlockState blockState(Display.BlockDisplay display)

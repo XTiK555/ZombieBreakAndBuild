@@ -47,7 +47,7 @@ legacyForge {
             gameDirectory = layout.buildDirectory.dir('portability-gametest-run').get().asFile
             programArgument "--mixin.config=${mod_id}.mixins.json"
             programArgument "--mixin.config=${mod_id}.forge.mixins.json"
-            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
             sourceSet = sourceSets.gametest
         }
 
@@ -56,7 +56,7 @@ legacyForge {
             gameDirectory = layout.buildDirectory.dir('functional-gametest-run').get().asFile
             programArgument "--mixin.config=${mod_id}.mixins.json"
             programArgument "--mixin.config=${mod_id}.forge.mixins.json"
-            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(functionalSuite)
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
             sourceSet = sourceSets.gametest
         }
 
@@ -65,7 +65,7 @@ legacyForge {
             gameDirectory = layout.buildDirectory.dir('mixin-compatibility-gametest-run').get().asFile
             programArgument "--mixin.config=${mod_id}.mixins.json"
             programArgument "--mixin.config=${mod_id}.forge.mixins.json"
-            systemProperty 'forge.enabledGameTestNamespaces', portabilityGameTestNamespace(mixinCompatibilitySuite)
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
             sourceSet = sourceSets.gametest
         }
 

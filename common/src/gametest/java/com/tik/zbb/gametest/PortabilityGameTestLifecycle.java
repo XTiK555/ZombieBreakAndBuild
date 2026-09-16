@@ -15,12 +15,23 @@ import java.util.Map;
 public final class PortabilityGameTestLifecycle
 {
     private static final Map<MinecraftServer, Difficulty> ORIGINAL_DIFFICULTIES = new IdentityHashMap<>();
+    private static boolean installed;
 
     private PortabilityGameTestLifecycle() {}
 
-    public static void install(TestReporter reporter)
+    public static synchronized void install(TestReporter reporter)
     {
+        if (installed) return;
         GlobalTestReporter.replaceWith(new CleanupReporter(reporter));
+        installed = true;
+    }
+
+    static void beginTest(GameTestHelper helper, Difficulty difficulty)
+    {
+        install(PortabilityGameTestReporter.xmlReporter());
+        GameTestEntities.cleanupTracked(helper);
+        GameTestConfig.restoreRuntimeDefaults(helper);
+        ensureDifficulty(helper, difficulty);
     }
 
     static void ensureDifficulty(GameTestHelper helper, Difficulty difficulty)

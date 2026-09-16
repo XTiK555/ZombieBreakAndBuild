@@ -1,8 +1,6 @@
 package com.tik.zbb.gametest.forge;
 
 import com.tik.zbb.Constants;
-import com.tik.zbb.gametest.PortabilityGameTestLifecycle;
-import com.tik.zbb.gametest.PortabilityGameTestReporter;
 import com.tik.zbb.gametest.PortabilityGameTestScenarios;
 import net.minecraft.gametest.framework.GameTestGenerator;
 import net.minecraft.gametest.framework.TestFunction;
@@ -15,11 +13,6 @@ import java.util.Collection;
 @GameTestHolder(Constants.MOD_ID)
 public final class ForgePortabilityGameTests
 {
-    static
-    {
-        PortabilityGameTestLifecycle.install(PortabilityGameTestReporter.xmlReporter());
-    }
-
     @GameTestGenerator
     public static Collection<TestFunction> tests()
     {

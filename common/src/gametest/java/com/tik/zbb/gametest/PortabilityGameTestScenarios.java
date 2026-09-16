@@ -208,7 +208,7 @@ public final class PortabilityGameTestScenarios
 
         public void run(Scenario scenario, GameTestHelper helper)
         {
-            PortabilityGameTestLifecycle.ensureDifficulty(helper, difficulty);
+            PortabilityGameTestLifecycle.beginTest(helper, difficulty);
             scenario.test().accept(helper);
         }
 
