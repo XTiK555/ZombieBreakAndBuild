@@ -58,7 +58,7 @@ public final class ActionExecutor
 
     public boolean canExecuteBuildAction(BlockPos buildPos)
     {
-        return canExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
+        return canExecuteAction(buildAction, new BuildRequest(buildPos, configCache.placeBlock));
     }
 
     public boolean canExecuteFreezeAction()
@@ -73,7 +73,7 @@ public final class ActionExecutor
 
     public boolean tryExecuteBuildAction(BlockPos buildPos)
     {
-        return tryExecuteAction(buildAction, new BuildRequest(buildPos, configCache.bridgeBlock));
+        return tryExecuteAction(buildAction, new BuildRequest(buildPos, configCache.placeBlock));
     }
 
     public boolean tryExecuteFreezeAction()
@@ -125,10 +125,10 @@ public final class ActionExecutor
     {
         if (configCache == null) configCache = new ConfigCache();
 
-        configCache.bridgeBlock = selectBridgeBlock(level, configSnapshot);
+        configCache.placeBlock = selectPlaceBlock(level, configSnapshot);
     }
 
-    private Block selectBridgeBlock(ServerLevel level, ConfigSnapshot configSnapshot)
+    private Block selectPlaceBlock(ServerLevel level, ConfigSnapshot configSnapshot)
     {
         Block mobBlock = mobActionContext.mobId() == null
                 ? null
@@ -149,6 +149,6 @@ public final class ActionExecutor
 
     private class ConfigCache
     {
-        public Block bridgeBlock;
+        public Block placeBlock;
     }
 }

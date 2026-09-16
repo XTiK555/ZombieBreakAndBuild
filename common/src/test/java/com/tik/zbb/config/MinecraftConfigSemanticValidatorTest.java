@@ -47,7 +47,7 @@ class MinecraftConfigSemanticValidatorTest
         assertEquals(ids, repaired);
 
         ConfigFieldDescriptor mapDescriptor = ConfigSchema.find(
-                new ConfigPath("blocks.mobPlaceBlockIdOverrideList")
+                new ConfigPath("blocks.mobPlaceBlockIdOverrideMap")
         ).orElseThrow();
         Map<String, String> overrides = Map.of("othermod:mob", "othermod:block");
 
