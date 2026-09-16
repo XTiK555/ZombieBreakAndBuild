@@ -50,7 +50,7 @@ public final class PlatformWiringGameTests
                     "The excluded zombie built before the runtime config change"
             );
 
-            GameTestConfig.runConfigCommandExpectingChange(helper, "reset ai.ignoreBuildEntityIdList runtime_only");
+            GameTestConfig.runConfigCommandExpectingChange(helper, "reset ai.ignoreBuildEntityIdList");
             zombie.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(movementSpeed);
             zombie.setTarget(player);
         });

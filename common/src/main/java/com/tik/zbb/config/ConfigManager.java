@@ -5,18 +5,15 @@ import com.tik.zbb.Constants;
 import com.tik.zbb.config.edit.ConfigEditRequest;
 import com.tik.zbb.config.edit.ConfigEditResult;
 import com.tik.zbb.config.edit.ConfigEditService;
-import com.tik.zbb.config.edit.ConfigWriteMode;
 import com.tik.zbb.config.edit.MinecraftConfigSemanticValidator;
 import com.tik.zbb.config.io.ConfigDocumentNormalizer;
 import com.tik.zbb.config.io.ConfigFileStore;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
-import com.tik.zbb.config.schema.ConfigPath;
 import com.tik.zbb.platform.Services;
 import net.minecraft.server.MinecraftServer;
 
 import java.nio.file.Path;
-import java.util.Map;
 
 public final class ConfigManager
 {
@@ -54,16 +51,6 @@ public final class ConfigManager
     public static Object getEffectiveValue(ConfigFieldDescriptor descriptor)
     {
         return service().effectiveValue(descriptor);
-    }
-
-    public static Object getValueForMode(ConfigFieldDescriptor descriptor, ConfigWriteMode writeMode)
-    {
-        return service().valueForMode(descriptor, writeMode);
-    }
-
-    public static Map<ConfigPath, Object> getRuntimeOverrides()
-    {
-        return service().runtimeOverrides();
     }
 
     public static ConfigEditResult edit(ConfigEditRequest request)
