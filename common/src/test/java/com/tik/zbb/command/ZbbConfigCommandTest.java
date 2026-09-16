@@ -62,14 +62,12 @@ class ZbbConfigCommandTest
     }
 
     @Test
-    void valueCommandsRequireModeBeforeValue()
+    void valueCommandsTakeValuesWithoutAMode()
     {
-        assertParses("zbb config set ai.alwaysSeeNearestPlayer persistent true");
-        assertParses("zbb config set ai.alwaysSeeNearestPlayer runtime_only true");
-        assertParses("zbb config add ai.affectedEntityIdList runtime_only minecraft:zombie");
-        assertParses("zbb config remove ai.affectedEntityIdList persistent minecraft:zombie");
-        assertDoesNotParse("zbb config set ai.alwaysSeeNearestPlayer true");
-        assertDoesNotParse("zbb config add ai.affectedEntityIdList minecraft:zombie");
+        assertParses("zbb config set ai.alwaysSeeNearestPlayer true");
+        assertParses("zbb config add ai.affectedEntityIdList minecraft:zombie");
+        assertParses("zbb config remove ai.affectedEntityIdList minecraft:zombie");
+        assertDoesNotParse("zbb config set ai.alwaysSeeNearestPlayer persistent true");
     }
 
     @Test
@@ -85,7 +83,7 @@ class ZbbConfigCommandTest
         assertEquals(16, radius.getMaximum());
         assertInstanceOf(ResourceKeyArgument.class, argumentType(set, "blocks.fallbackPlaceBlockId", "id"));
         assertTrue(dispatcher.getCompletionSuggestions(
-                        dispatcher.parse("zbb config set ai.alwaysSeeNearestPlayer persistent ", null))
+                        dispatcher.parse("zbb config set ai.alwaysSeeNearestPlayer ", null))
                 .join().getList().stream().map(suggestion -> suggestion.getText()).toList()
                 .containsAll(List.of("false", "true")));
     }
@@ -93,14 +91,13 @@ class ZbbConfigCommandTest
     @Test
     void mapSetTakesSuggestedRegistryKeyThenTypedValue()
     {
-        assertParses("zbb config set blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:dirt");
-        assertParses("zbb config set blocks.mobPlaceBlockIdOverrideMap runtime_only minecraft:zombie minecraft:stone");
-        assertParses("zbb config set balance.blockDamage.blockHealthOverrideMap persistent minecraft:stone 20");
-        assertDoesNotParse("zbb config set blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:dirt");
+        assertParses("zbb config set blocks.dimensionPlaceBlockIdMap minecraft:overworld minecraft:dirt");
+        assertParses("zbb config set blocks.mobPlaceBlockIdOverrideMap minecraft:zombie minecraft:stone");
+        assertParses("zbb config set balance.blockDamage.blockHealthOverrideMap minecraft:stone 20");
+        assertDoesNotParse("zbb config set blocks.dimensionPlaceBlockIdMap minecraft:overworld=minecraft:dirt");
 
         CommandNode<CommandSourceStack> key = configCommand("set")
                 .getChild("blocks.dimensionPlaceBlockIdMap")
-                .getChild("persistent")
                 .getChild("key");
         assertInstanceOf(ResourceKeyArgument.class, ((ArgumentCommandNode<?, ?>) key).getType());
         assertInstanceOf(ResourceKeyArgument.class, ((ArgumentCommandNode<?, ?>) key.getChild("id")).getType());
@@ -126,16 +123,16 @@ class ZbbConfigCommandTest
     @Test
     void mapAddTakesSuggestedRegistryKeyThenTypedValue()
     {
-        assertParses("zbb config add blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:stone");
-        assertDoesNotParse("zbb config add blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:stone");
+        assertParses("zbb config add blocks.dimensionPlaceBlockIdMap minecraft:overworld minecraft:stone");
+        assertDoesNotParse("zbb config add blocks.dimensionPlaceBlockIdMap minecraft:overworld=minecraft:stone");
     }
 
     @Test
     void mapRemoveAcceptsOnlyTypedKey()
     {
-        assertParses("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld");
-        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld=minecraft:stone");
-        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap persistent minecraft:overworld minecraft:stone");
+        assertParses("zbb config remove blocks.dimensionPlaceBlockIdMap minecraft:overworld");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap minecraft:overworld=minecraft:stone");
+        assertDoesNotParse("zbb config remove blocks.dimensionPlaceBlockIdMap minecraft:overworld minecraft:stone");
 
         Object type = argumentType(configCommand("remove"), "blocks.dimensionPlaceBlockIdMap", "key");
         assertInstanceOf(ResourceKeyArgument.class, type);
@@ -144,11 +141,11 @@ class ZbbConfigCommandTest
     @Test
     void patternListsAcceptCodecCategoriesAndSuggestMobCategories()
     {
-        assertParses("zbb config add ai.ignoreBreakEntityIdList persistent @MONSTER");
-        assertParses("zbb config remove ai.ignoreBreakEntityIdList persistent !@CREATURE");
+        assertParses("zbb config add ai.ignoreBreakEntityIdList @MONSTER");
+        assertParses("zbb config remove ai.ignoreBreakEntityIdList !@CREATURE");
 
         List<String> suggestions = dispatcher.getCompletionSuggestions(
-                        dispatcher.parse("zbb config add ai.ignoreBreakEntityIdList persistent @m", null))
+                        dispatcher.parse("zbb config add ai.ignoreBreakEntityIdList @m", null))
                 .join().getList().stream().map(suggestion -> suggestion.getText()).toList();
         assertTrue(suggestions.contains("@monster"));
     }
@@ -175,22 +172,23 @@ class ZbbConfigCommandTest
     }
 
     @Test
-    void commandsWithoutValuesAcceptModesWithoutModeLiteral()
+    void commandsWithoutValuesDoNotRequireAMode()
     {
-        assertParses("zbb config clear ai.affectedEntityIdList runtime_only");
-        assertParses("zbb config reset all persistent");
-        assertParses("zbb config reset ai.alwaysSeeNearestPlayer runtime_only");
+        assertParses("zbb config clear ai.affectedEntityIdList");
+        assertParses("zbb config reset all");
+        assertParses("zbb config reset ai.alwaysSeeNearestPlayer");
         assertNull(configCommand("clear").getChild("ai.alwaysSeeNearestPlayer"));
     }
 
     @Test
-    void obsoleteModeLiteralIsNotPartOfTheCommandGrammar()
+    void modeNamesAndRuntimeOverridesAreNotPartOfTheCommandGrammar()
     {
-        assertDoesNotParse("zbb config clear ai.affectedEntityIdList mode runtime_only");
-        assertDoesNotParse("zbb config reset all mode persistent");
-        assertNoModeLiteralUnderValueCommand("set");
-        assertNoModeLiteralUnderValueCommand("add");
-        assertNoModeLiteralUnderValueCommand("remove");
+        assertDoesNotParse("zbb config clear ai.affectedEntityIdList runtime_only");
+        assertDoesNotParse("zbb config reset all persistent");
+        assertNull(configCommand("runtime_overrides"));
+        assertNoModeNamesUnderValueCommand("set");
+        assertNoModeNamesUnderValueCommand("add");
+        assertNoModeNamesUnderValueCommand("remove");
     }
 
     private void assertParses(String command)
@@ -212,13 +210,14 @@ class ZbbConfigCommandTest
         assertFalse(completeExecutableCommand, "Unexpectedly parsed: " + command);
     }
 
-    private void assertNoModeLiteralUnderValueCommand(String command)
+    private void assertNoModeNamesUnderValueCommand(String command)
     {
         String path = command.equals("set") ? "ai.alwaysSeeNearestPlayer" : "ai.affectedEntityIdList";
         CommandNode<CommandSourceStack> pathNode = configCommand(command).getChild(path);
 
         assertNotNull(pathNode);
-        assertTrue(pathNode.getChildren().stream().noneMatch(child -> child.getName().equals("mode")));
+        assertNull(pathNode.getChild("persistent"));
+        assertNull(pathNode.getChild("runtime_only"));
     }
 
     private CommandNode<CommandSourceStack> configCommand(String command)
@@ -231,6 +230,6 @@ class ZbbConfigCommandTest
 
     private Object argumentType(CommandNode<CommandSourceStack> parent, String path, String argument)
     {
-        return ((ArgumentCommandNode<?, ?>) parent.getChild(path).getChild("persistent").getChild(argument)).getType();
+        return ((ArgumentCommandNode<?, ?>) parent.getChild(path).getChild(argument)).getType();
     }
 }
