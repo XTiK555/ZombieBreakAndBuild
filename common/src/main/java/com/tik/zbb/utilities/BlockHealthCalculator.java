@@ -18,7 +18,7 @@ public class BlockHealthCalculator
         ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
         Integer blockHealthOverride = blockDamageCfg.blockHealthOverrideMap().get(blockState.getBlock());
         float hardness = blockState.getDestroySpeed(level, blockPos);
-        double health = Math.pow(hardness, blockDamageCfg.blockHardnessContrast()) * blockDamageCfg.blockHardnessMultiplier();
+        double health = Math.pow(hardness, blockDamageCfg.blockHardnessExponent()) * blockDamageCfg.blockHardnessMultiplier();
 
         if (blockHealthOverride != null) return Math.max(1, blockHealthOverride);
         if (exceedsMaximumBreakableHardness(hardness, blockDamageCfg)) return Integer.MAX_VALUE;

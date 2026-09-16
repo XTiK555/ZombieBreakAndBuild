@@ -28,7 +28,7 @@ public class BlockDamageCalculator
         double baseVolume = zombieWidth * zombieWidth * zombieHeight;
         double mobVolume = mob.getBbWidth() * mob.getBbWidth() * mob.getBbHeight();
 
-        return Math.pow(mobVolume / baseVolume, blockDamageCfg.hitboxSizeMultiplierStrength());
+        return Math.pow(mobVolume / baseVolume, blockDamageCfg.hitboxSizeMultiplierExponent());
     }
 
     private static double getItemMultiplier(PathfinderMob mob, BlockState state, ConfigGame.BlockDamage blockDamageCfg)
@@ -37,6 +37,6 @@ public class BlockDamageCalculator
         ItemStack offhandItem = mob.getOffhandItem();
         double destroySpeed = Math.max(mainHandItem.getDestroySpeed(state), offhandItem.getDestroySpeed(state));
 
-        return Math.pow(destroySpeed, blockDamageCfg.itemDamageMultiplierStrength());
+        return Math.pow(destroySpeed, blockDamageCfg.itemDamageMultiplierExponent());
     }
 }
