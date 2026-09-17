@@ -1,7 +1,7 @@
 package com.tik.zbb.config.io;
 
 import com.tik.zbb.config.ConfigDocument;
-import com.tik.zbb.config.schema.ConfigRepairReport;
+import com.tik.zbb.config.schema.ConfigFileReport;
 
 public interface ConfigStorage
 {
@@ -11,7 +11,7 @@ public interface ConfigStorage
 
     RecoveryResult recoverAfterLoadFailure(ConfigDocument fallbackDocument) throws ConfigStorageException;
 
-    record LoadedConfig(ConfigDocument document, ConfigRepairReport repairReport) {}
+    record LoadedConfig(ConfigDocument document, ConfigFileReport fileReport) {}
 
     record RecoveryResult(boolean fallbackSaved, String message) {}
 }

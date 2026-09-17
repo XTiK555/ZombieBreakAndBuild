@@ -2,8 +2,8 @@ package com.tik.zbb.config.edit;
 
 import com.tik.zbb.config.annotations.ResourceLocationRegistry;
 import com.tik.zbb.config.annotations.ResourceLocationSemantics;
+import com.tik.zbb.config.runtime.ConfigAvailabilityReport;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
-import com.tik.zbb.config.schema.ConfigRepairReport;
 import com.tik.zbb.config.schema.ConfigValidationException;
 import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.core.RegistryAccess;
@@ -46,27 +46,22 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
     }
 
     @Override
-    public Object repairValue(
-            ConfigFieldDescriptor descriptor,
-            Object value,
-            Object defaultValue,
-            ConfigRepairReport report
-    )
+    public Object resolveValue(ConfigFieldDescriptor descriptor, Object value, Object defaultValue, ConfigAvailabilityReport report)
     {
         ResourceLocationSemantics semantics = descriptor.resourceLocationSemantics();
         if (semantics == null) return value;
 
         if (semantics.element() != ResourceLocationRegistry.NONE)
         {
-            return repairExactPatterns(descriptor, value, semantics.element(), defaultValue, report);
+            return resolveExactPatterns(descriptor, value, semantics.element(), defaultValue, report);
         }
 
         if (value instanceof Map<?, ?> map)
         {
-            return repairMapEntries(descriptor, map, semantics, value, report);
+            return resolveMapEntries(descriptor, map, semantics, value, report);
         }
 
-        return ConfigSemanticValidator.super.repairValue(descriptor, value, defaultValue, report);
+        return ConfigSemanticValidator.super.resolveValue(descriptor, value, defaultValue, report);
     }
 
     private void requireMapEntries(Map<?, ?> map, ResourceLocationSemantics semantics) throws ConfigValidationException
@@ -84,16 +79,11 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         }
     }
 
-    private Object repairMapEntries(
-            ConfigFieldDescriptor descriptor,
-            Map<?, ?> map,
-            ResourceLocationSemantics semantics,
-            Object rawValue,
-            ConfigRepairReport report
-    )
+    private Object resolveMapEntries(ConfigFieldDescriptor descriptor, Map<?, ?> map, ResourceLocationSemantics semantics, Object rawValue,
+                                     ConfigAvailabilityReport report)
     {
-        Map<Object, Object> repairedMap = new LinkedHashMap<>();
-        boolean repaired = false;
+        Map<Object, Object> availableEntries = new LinkedHashMap<>();
+        boolean unavailableEntryFound = false;
 
         for (Map.Entry<?, ?> entry : map.entrySet())
         {
@@ -101,25 +91,24 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
             {
                 if (semantics.key() != ResourceLocationRegistry.NONE)
                 {
-                    requireValidId(String.valueOf(entry.getKey()));
+                    requireExists(String.valueOf(entry.getKey()), semantics.key());
                 }
                 if (semantics.value() != ResourceLocationRegistry.NONE)
                 {
-                    requireValidId(String.valueOf(entry.getValue()));
+                    requireExists(String.valueOf(entry.getValue()), semantics.value());
                 }
-                repairedMap.put(entry.getKey(), entry.getValue());
+                availableEntries.put(entry.getKey(), entry.getValue());
             }
             catch (ConfigValidationException e)
             {
-                repaired = true;
-                report.repaired(descriptor.path(), entry, "<removed>", e.getMessage());
+                unavailableEntryFound = true;
+                report.unavailable(descriptor.path(), entry, e.getMessage());
             }
         }
 
-        if (repaired)
+        if (unavailableEntryFound)
         {
-            report.repaired(descriptor.path(), rawValue, repairedMap, "Repaired table entries");
-            return repairedMap;
+            return availableEntries;
         }
         return rawValue;
     }
@@ -137,41 +126,35 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         }
     }
 
-    private Object repairExactPatterns(
-            ConfigFieldDescriptor descriptor,
-            Object value,
-            ResourceLocationRegistry registry,
-            Object defaultValue,
-            ConfigRepairReport report
-    )
+    private Object resolveExactPatterns(ConfigFieldDescriptor descriptor, Object value, ResourceLocationRegistry registry, Object defaultValue,
+                                        ConfigAvailabilityReport report)
     {
         if (!(value instanceof Iterable<?> patterns))
         {
             Object fixedValue = descriptor.copyValue(defaultValue);
-            report.repaired(descriptor.path(), value, fixedValue, "Expected list");
+            report.unavailable(descriptor.path(), value, "Expected list");
             return fixedValue;
         }
 
-        List<Object> repairedPatterns = new ArrayList<>();
-        boolean repaired = false;
+        List<Object> availablePatterns = new ArrayList<>();
+        boolean unavailablePatternFound = false;
         for (Object rawPattern : patterns)
         {
             try
             {
-                requireValidPattern(rawPattern, registry);
-                repairedPatterns.add(rawPattern);
+                requireExactPatternExists(rawPattern, registry);
+                availablePatterns.add(rawPattern);
             }
             catch (ConfigValidationException e)
             {
-                repaired = true;
-                report.repaired(descriptor.path(), rawPattern, "<removed>", e.getMessage());
+                unavailablePatternFound = true;
+                report.unavailable(descriptor.path(), rawPattern, e.getMessage());
             }
         }
 
-        if (repaired)
+        if (unavailablePatternFound)
         {
-            report.repaired(descriptor.path(), value, repairedPatterns, "Repaired list entries");
-            return repairedPatterns;
+            return availablePatterns;
         }
         return value;
     }
@@ -189,19 +172,6 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
         requireExists(pattern, registry);
     }
 
-    private void requireValidPattern(Object rawPattern, ResourceLocationRegistry registry) throws ConfigValidationException
-    {
-        String pattern = String.valueOf(rawPattern);
-        if (pattern.startsWith("!")) pattern = pattern.substring(1);
-        if (pattern.startsWith("@"))
-        {
-            requireValidCategory(pattern, registry);
-            return;
-        }
-        if (pattern.contains("*")) return;
-        requireValidId(pattern);
-    }
-
     private void requireValidCategory(String pattern, ResourceLocationRegistry registry) throws ConfigValidationException
     {
         if (registry != ResourceLocationRegistry.ENTITY)
@@ -209,14 +179,6 @@ public final class MinecraftConfigSemanticValidator implements ConfigSemanticVal
             throw new ConfigValidationException("Mob categories are only valid for entity lists");
         }
         ResourceLocationPatternListCodec.normalizePattern(pattern);
-    }
-
-    private void requireValidId(String rawId) throws ConfigValidationException
-    {
-        if (ResourceLocation.tryParse(rawId) == null)
-        {
-            throw new ConfigValidationException("Invalid resource id: " + rawId);
-        }
     }
 
     private void requireExists(String rawId, ResourceLocationRegistry registry) throws ConfigValidationException

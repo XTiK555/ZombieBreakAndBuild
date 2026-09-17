@@ -316,6 +316,7 @@ public final class ActionGameTests
                     "The existing zombie did not use dirt before the runtime config update");
             firstBuilt.set(built);
             firstBuiltAt.set(helper.getLevel().getGameTime());
+            GameTestConfig.remove(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie");
             GameTestConfig.put(helper, "blocks.mobPlaceBlockIdOverrideMap", "minecraft:zombie", "minecraft:cobblestone");
         });
         helper.succeedWhen(() ->

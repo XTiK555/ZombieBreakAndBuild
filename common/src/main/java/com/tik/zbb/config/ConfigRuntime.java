@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Block;
 import java.util.HashMap;
 import java.util.Map;
 
-public record ConfigGame(
+public record ConfigRuntime(
         Blocks blocks,
         Ai ai,
         Balance balance,
@@ -16,14 +16,14 @@ public record ConfigGame(
         VisualEffects visualEffects
 )
 {
-    public static ConfigGame create(ConfigDocument data)
+    public static ConfigRuntime create(ConfigDocument data)
     {
         return create(data, BlockResolver.NONE);
     }
 
-    public static ConfigGame create(ConfigDocument data, BlockResolver blockResolver)
+    public static ConfigRuntime create(ConfigDocument data, BlockResolver blockResolver)
     {
-        return new ConfigGame(
+        return new ConfigRuntime(
                 Blocks.create(data, blockResolver),
                 Ai.create(data),
                 Balance.create(data, blockResolver),

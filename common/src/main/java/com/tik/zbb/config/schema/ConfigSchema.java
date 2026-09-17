@@ -1,13 +1,13 @@
 package com.tik.zbb.config.schema;
 
 import com.tik.zbb.config.ConfigDocument;
-import com.tik.zbb.config.annotations.ResourceLocationIntPairMap;
-import com.tik.zbb.config.annotations.ResourceLocationPairMap;
-import com.tik.zbb.config.annotations.ResourceLocationPatternList;
-import com.tik.zbb.config.annotations.ResourceLocationString;
+import com.tik.zbb.config.annotations.ResourceLocationRegistry;
+import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 import com.tik.zbb.utilities.ConfigUtilities;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public final class ConfigSchema
@@ -80,16 +80,56 @@ public final class ConfigSchema
     private static ConfigValueKind kindOf(Field field)
     {
         Class<?> type = field.getType();
+        ResourceLocationSemantics semantics = field.getAnnotation(ResourceLocationSemantics.class);
+        if (semantics != null) return resourceLocationKindOf(field, semantics);
+
         if (type == boolean.class || type == Boolean.class) return ConfigValueKind.BOOLEAN;
         if (type == int.class || type == Integer.class) return ConfigValueKind.INT;
         if (type == double.class || type == Double.class) return ConfigValueKind.DOUBLE;
         if (type == float.class || type == Float.class) return ConfigValueKind.FLOAT;
-        if (type == String.class && field.isAnnotationPresent(ResourceLocationString.class)) return ConfigValueKind.RESOURCE_LOCATION;
         if (type == String.class) return ConfigValueKind.STRING;
-        if (List.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationPatternList.class)) return ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST;
         if (List.class.isAssignableFrom(type)) return ConfigValueKind.STRING_LIST;
-        if (Map.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationPairMap.class)) return ConfigValueKind.RESOURCE_LOCATION_PAIR_MAP;
-        if (Map.class.isAssignableFrom(type) && field.isAnnotationPresent(ResourceLocationIntPairMap.class)) return ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP;
         throw new IllegalArgumentException("Unsupported config field type: " + field);
+    }
+
+    private static ConfigValueKind resourceLocationKindOf(Field field, ResourceLocationSemantics semantics)
+    {
+        Class<?> type = field.getType();
+        if (type == String.class && semantics.value() != ResourceLocationRegistry.NONE)
+        {
+            return ConfigValueKind.RESOURCE_LOCATION;
+        }
+        if (List.class.isAssignableFrom(type)
+                && typeArgument(field, 0) == String.class
+                && semantics.element() != ResourceLocationRegistry.NONE)
+        {
+            return ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST;
+        }
+        if (Map.class.isAssignableFrom(type)
+                && typeArgument(field, 0) == String.class
+                && semantics.key() != ResourceLocationRegistry.NONE)
+        {
+            Class<?> valueType = typeArgument(field, 1);
+            if (valueType == String.class && semantics.value() != ResourceLocationRegistry.NONE)
+            {
+                return ConfigValueKind.RESOURCE_LOCATION_PAIR_MAP;
+            }
+            if (valueType == Integer.class && semantics.value() == ResourceLocationRegistry.NONE)
+            {
+                return ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP;
+            }
+        }
+        throw new IllegalArgumentException("Invalid resource-location semantics for config field: " + field);
+    }
+
+    private static Class<?> typeArgument(Field field, int index)
+    {
+        Type genericType = field.getGenericType();
+        if (genericType instanceof ParameterizedType parameterizedType)
+        {
+            Type argument = parameterizedType.getActualTypeArguments()[index];
+            if (argument instanceof Class<?> argumentClass) return argumentClass;
+        }
+        throw new IllegalArgumentException("Config field requires concrete generic types: " + field);
     }
 }

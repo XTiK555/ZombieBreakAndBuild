@@ -1,7 +1,7 @@
 package com.tik.zbb.config.schema.codecs;
 
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
-import com.tik.zbb.config.schema.ConfigRepairReport;
+import com.tik.zbb.config.schema.ConfigFileReport;
 import com.tik.zbb.config.schema.ConfigValidationException;
 import com.tik.zbb.config.schema.ConfigValueCodec;
 
@@ -48,12 +48,12 @@ public class StringListValueCodec implements ConfigValueCodec
     }
 
     @Override
-    public Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigRepairReport report)
+    public Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigFileReport report)
     {
         if (!(rawValue instanceof List<?> list))
         {
             Object fixedValue = descriptor.copyValue(defaultValue);
-            report.repaired(descriptor.path(), rawValue, fixedValue, "Expected list");
+            report.invalid(descriptor.path(), rawValue, fixedValue, "Expected list");
             return fixedValue;
         }
 
@@ -75,13 +75,13 @@ public class StringListValueCodec implements ConfigValueCodec
             catch (ConfigValidationException e)
             {
                 repaired = true;
-                report.repaired(descriptor.path(), entry, "<removed>", e.getMessage());
+                report.invalid(descriptor.path(), entry, "<removed>", e.getMessage());
             }
         }
 
         if (repaired)
         {
-            report.repaired(descriptor.path(), rawValue, cleaned, "Repaired list entries");
+            report.invalid(descriptor.path(), rawValue, cleaned, "Repaired list entries");
         }
 
         return cleaned;
@@ -120,7 +120,11 @@ public class StringListValueCodec implements ConfigValueCodec
             throw new ConfigValidationException("Expected string list entry");
         }
         String normalizedEntry = normalizeEntry(s);
-        if (!values.contains(normalizedEntry)) values.add(normalizedEntry);
+        if (values.contains(normalizedEntry))
+        {
+            throw new ConfigValidationException("Entry already exists: " + normalizedEntry);
+        }
+        values.add(normalizedEntry);
         return values;
     }
 

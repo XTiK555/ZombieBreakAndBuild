@@ -1,119 +1,27 @@
 package com.tik.zbb.config.edit;
 
 import com.tik.zbb.Constants;
-import com.tik.zbb.config.ConfigDocument;
-import com.tik.zbb.config.ConfigGame;
-import com.tik.zbb.config.ConfigSnapshot;
-import com.tik.zbb.config.io.ConfigStorage;
 import com.tik.zbb.config.io.ConfigStorageException;
 import com.tik.zbb.config.runtime.ConfigRepository;
-import com.tik.zbb.config.schema.*;
+import com.tik.zbb.config.schema.ConfigFieldDescriptor;
+import com.tik.zbb.config.schema.ConfigPath;
+import com.tik.zbb.config.schema.ConfigSchema;
+import com.tik.zbb.config.schema.ConfigValidationException;
 
-import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+
 
 public final class ConfigEditService
 {
     private final ConfigRepository repository;
-    private final ConfigStorage storage;
-    private ConfigSemanticValidator semanticValidator;
 
-    public ConfigEditService(ConfigRepository repository, ConfigStorage storage)
-    {
-        this(repository, storage, ConfigSemanticValidator.NONE);
-    }
-
-    public ConfigEditService(ConfigRepository repository, ConfigStorage storage, ConfigSemanticValidator semanticValidator)
+    public ConfigEditService(ConfigRepository repository)
     {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.storage = Objects.requireNonNull(storage, "storage");
-        this.semanticValidator = Objects.requireNonNull(semanticValidator, "semanticValidator");
     }
 
-    public ConfigSnapshot snapshot()
-    {
-        return repository.snapshot();
-    }
-
-    public Object effectiveValue(ConfigFieldDescriptor descriptor)
-    {
-        return repository.effectiveValue(descriptor);
-    }
-
-    public synchronized ConfigReloadResult bootstrapFromFile()
-    {
-        return loadFromFile(ConfigSemanticValidator.NONE);
-    }
-
-    public synchronized ConfigReloadResult reloadFromFile()
-    {
-        return loadFromFile(semanticValidator);
-    }
-
-    public synchronized ConfigReloadResult startRuntime(ConfigGame.BlockResolver blockResolver)
-    {
-        return startRuntime(blockResolver, semanticValidator);
-    }
-
-    public synchronized ConfigReloadResult startRuntime(ConfigGame.BlockResolver blockResolver, ConfigSemanticValidator runtimeValidator)
-    {
-        semanticValidator = Objects.requireNonNull(runtimeValidator, "runtimeValidator");
-        ConfigReloadResult result = loadFromFile(semanticValidator);
-        repository.activateBlockResolution(blockResolver);
-        return result;
-    }
-
-    private ConfigReloadResult loadFromFile(ConfigSemanticValidator reloadValidator)
-    {
-        ConfigStorage.LoadedConfig loaded;
-        try
-        {
-            loaded = storage.load();
-        }
-        catch (ConfigStorageException e)
-        {
-            Constants.LOG.error("Failed to parse config, attempting recovery before restoring defaults", e);
-            ConfigDocument defaults = new ConfigDocument();
-            try
-            {
-                ConfigStorage.RecoveryResult recovery = storage.recoverAfterLoadFailure(defaults);
-                repository.replacePersisted(defaults);
-                return new ConfigReloadResult(true, recovery.fallbackSaved(), null, recovery.message());
-            }
-            catch (ConfigStorageException recoveryError)
-            {
-                Constants.LOG.error("Failed to recover broken config; keeping previous in-memory config", recoveryError);
-                return new ConfigReloadResult(false, false, null, "Failed to load config; recovery failed and previous in-memory config was kept");
-            }
-        }
-
-        boolean semanticValuesRepaired = repairSemanticValues(
-                loaded.document(),
-                loaded.repairReport(),
-                reloadValidator
-        );
-        if (!semanticValuesRepaired && !loaded.repairReport().hasEntries())
-        {
-            repository.replacePersisted(loaded.document());
-            return new ConfigReloadResult(true, false, loaded.repairReport(), "Reloaded config");
-        }
-
-        try
-        {
-            storage.save(loaded.document());
-        }
-        catch (ConfigStorageException e)
-        {
-            Constants.LOG.error("Failed to save normalized config", e);
-            return new ConfigReloadResult(false, false, loaded.repairReport(), "Failed to save normalized config; previous in-memory config was kept");
-        }
-
-        repository.replacePersisted(loaded.document());
-        return new ConfigReloadResult(true, true, loaded.repairReport(), "Reloaded config");
-    }
-
-    public synchronized ConfigEditResult edit(ConfigEditRequest request)
+    public ConfigEditResult edit(ConfigEditRequest request)
     {
         return switch (request.operation())
         {
@@ -126,7 +34,7 @@ public final class ConfigEditService
         };
     }
 
-    public synchronized ConfigEditResult editRaw(ConfigEditRequest request)
+    public ConfigEditResult editRaw(ConfigEditRequest request)
     {
         if (request.operation() == ConfigEditOperation.RESET_ALL_TO_DEFAULTS)
         {
@@ -143,8 +51,7 @@ public final class ConfigEditService
         {
             ConfigEditRequest typedRequest = switch (request.operation())
             {
-                case SET ->
-                        request.withValue(descriptor.codec().parseText(descriptor, String.valueOf(request.value())));
+                case SET -> request.withValue(descriptor.codec().parseText(descriptor, String.valueOf(request.value())));
                 case ADD -> request.withValue(externalEntry(descriptor, request.value()));
                 case REMOVE -> request.withValue(externalRemovalEntry(descriptor, request.value()));
                 case CLEAR, RESET_TO_DEFAULT, RESET_ALL_TO_DEFAULTS -> request;
@@ -157,55 +64,38 @@ public final class ConfigEditService
         }
     }
 
-    private boolean repairSemanticValues(ConfigDocument document, ConfigRepairReport report, ConfigSemanticValidator reloadValidator)
-    {
-        boolean repaired = false;
-        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
-        {
-            Object value = descriptor.getValue(document);
-            Object repairedValue = reloadValidator.repairValue(descriptor, value, descriptor.defaultValue(), report);
-            if (!Objects.equals(value, repairedValue))
-            {
-                descriptor.setValue(document, repairedValue);
-                repaired = true;
-            }
-        }
-        return repaired;
-    }
-
     private ConfigEditResult set(ConfigEditRequest request)
     {
         ConfigFieldDescriptor descriptor = findDescriptor(request);
         if (descriptor == null) return ConfigEditResult.failure(request, "Unknown config path: " + request.path());
 
-        return applyValue(request, descriptor, (baseData, currentDescriptor) -> request.value());
+        return applyValue(request, descriptor, currentValue -> request.value());
     }
 
     private ConfigEditResult add(ConfigEditRequest request)
     {
-        ConfigFieldDescriptor descriptor = findListDescriptor(request);
+        ConfigFieldDescriptor descriptor = findCollectionDescriptor(request);
         if (descriptor == null) return ConfigEditResult.failure(request, request.path() + " is not a collection");
 
-        return applyValue(request, descriptor, (baseData, currentDescriptor) ->
-                currentDescriptor.codec().addEntry(currentDescriptor, currentDescriptor.getValue(baseData), request.value()));
+        return applyValue(request, descriptor, currentValue ->
+                descriptor.codec().addEntry(descriptor, currentValue, request.value()));
     }
 
     private ConfigEditResult remove(ConfigEditRequest request)
     {
-        ConfigFieldDescriptor descriptor = findListDescriptor(request);
+        ConfigFieldDescriptor descriptor = findCollectionDescriptor(request);
         if (descriptor == null) return ConfigEditResult.failure(request, request.path() + " is not a collection");
 
-        return applyValue(request, descriptor, (baseData, currentDescriptor) ->
-                currentDescriptor.codec().removeEntry(currentDescriptor, currentDescriptor.getValue(baseData), request.value()));
+        return applyValue(request, descriptor, currentValue ->
+                descriptor.codec().removeEntry(descriptor, currentValue, request.value()));
     }
 
     private ConfigEditResult clear(ConfigEditRequest request)
     {
-        ConfigFieldDescriptor descriptor = findListDescriptor(request);
+        ConfigFieldDescriptor descriptor = findCollectionDescriptor(request);
         if (descriptor == null) return ConfigEditResult.failure(request, request.path() + " is not a collection");
 
-        return applyValue(request, descriptor, (baseData, currentDescriptor) ->
-                currentDescriptor.codec().emptyValue(currentDescriptor));
+        return replaceValue(request, descriptor, descriptor.codec().emptyValue(descriptor));
     }
 
     private ConfigEditResult reset(ConfigEditRequest request)
@@ -213,56 +103,31 @@ public final class ConfigEditService
         ConfigFieldDescriptor descriptor = findDescriptor(request);
         if (descriptor == null) return ConfigEditResult.failure(request, "Unknown config path: " + request.path());
 
-        return applyValue(request, descriptor, (baseData, currentDescriptor) -> currentDescriptor.defaultValue());
+        return replaceValue(request, descriptor, descriptor.defaultValue());
     }
 
     private ConfigEditResult resetAll(ConfigEditRequest request)
     {
-        ConfigDocument defaults = new ConfigDocument();
-        ConfigDocument persisted = repository.persistedDocument();
-        Set<ConfigPath> changedPaths = new LinkedHashSet<>();
-
-        for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
-        {
-            if (!Objects.equals(descriptor.getValue(persisted), descriptor.defaultValue()))
-            {
-                changedPaths.add(descriptor.path());
-            }
-        }
-
-        if (changedPaths.isEmpty())
-        {
-            return ConfigEditResult.unchanged(request, null);
-        }
-
         try
         {
-            storage.save(defaults);
-            repository.replacePersisted(defaults);
+            int changedCount = repository.resetToDefaults();
+            if (changedCount == 0) return ConfigEditResult.unchanged(request, null);
+            return ConfigEditResult.success(request, null, changedCount, "reset all");
         }
         catch (ConfigStorageException e)
         {
             Constants.LOG.error("Failed to save config", e);
             return ConfigEditResult.failure(request, "Failed to save config: " + e.getMessage());
         }
-
-        return ConfigEditResult.success(request, null, changedPaths.size(), "reset all");
     }
 
-    private ConfigEditResult applyValue(
-            ConfigEditRequest request,
-            ConfigFieldDescriptor descriptor,
-            ConfigValueMutation mutation
-    )
+    private ConfigEditResult applyValue(ConfigEditRequest request, ConfigFieldDescriptor descriptor, ConfigRepository.ValueMutation mutation)
     {
         try
         {
-            ConfigMutationResult mutationResult = updatePersistent(descriptor, mutation);
-            if (!mutationResult.changed())
-            {
-                return ConfigEditResult.unchanged(request, mutationResult.effectiveValue());
-            }
-            return ConfigEditResult.success(request, mutationResult.effectiveValue(), 1, "updated");
+            ConfigRepository.UpdateResult result = repository.update(descriptor, mutation);
+            if (!result.changed()) return ConfigEditResult.unchanged(request, result.value());
+            return ConfigEditResult.success(request, result.value(), 1, "updated");
         }
         catch (ConfigValidationException e)
         {
@@ -275,35 +140,24 @@ public final class ConfigEditService
         }
     }
 
-    private ConfigMutationResult updatePersistent(ConfigFieldDescriptor descriptor, ConfigValueMutation mutation)
-            throws ConfigValidationException, ConfigStorageException
+    private ConfigEditResult replaceValue(ConfigEditRequest request, ConfigFieldDescriptor descriptor, Object value)
     {
-        ConfigDocument newPersisted = repository.persistedDocument();
-        Object value = validateValue(descriptor, mutation.apply(newPersisted, descriptor));
-        if (Objects.equals(descriptor.getValue(newPersisted), value))
+        try
         {
-            return new ConfigMutationResult(repository.effectiveValue(descriptor), false);
+            ConfigRepository.UpdateResult result = repository.replaceValue(descriptor, value);
+            if (!result.changed()) return ConfigEditResult.unchanged(request, result.value());
+            return ConfigEditResult.success(request, result.value(), 1, "updated");
         }
-
-        descriptor.setValue(newPersisted, value);
-        storage.save(newPersisted);
-        return new ConfigMutationResult(repository.replacePersisted(newPersisted, descriptor), true);
+        catch (ConfigValidationException e)
+        {
+            return ConfigEditResult.failure(request, descriptor.path() + ": " + e.getMessage());
+        }
+        catch (ConfigStorageException e)
+        {
+            Constants.LOG.error("Failed to save config", e);
+            return ConfigEditResult.failure(request, "Failed to save config: " + e.getMessage());
+        }
     }
-
-    private Object validateValue(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException
-    {
-        Object normalized = descriptor.codec().normalizeValue(descriptor, value);
-        semanticValidator.validate(descriptor, normalized);
-        return normalized;
-    }
-
-    @FunctionalInterface
-    private interface ConfigValueMutation
-    {
-        Object apply(ConfigDocument baseData, ConfigFieldDescriptor descriptor) throws ConfigValidationException;
-    }
-
-    private record ConfigMutationResult(Object effectiveValue, boolean changed) {}
 
     private static Object externalEntry(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException
     {
@@ -311,9 +165,9 @@ public final class ConfigEditService
         {
             return descriptor.codec().parseEntry(descriptor, s);
         }
-        if (value instanceof java.util.Map<?, ?> map && map.size() == 1)
+        if (value instanceof Map<?, ?> map && map.size() == 1)
         {
-            java.util.Map.Entry<?, ?> entry = map.entrySet().iterator().next();
+            Map.Entry<?, ?> entry = map.entrySet().iterator().next();
             return descriptor.codec().parseEntry(descriptor, entry.getKey() + "=" + entry.getValue());
         }
         throw new ConfigValidationException("Expected entry text or single-entry object");
@@ -334,12 +188,10 @@ public final class ConfigEditService
         return path == null ? null : ConfigSchema.find(path).orElse(null);
     }
 
-    private static ConfigFieldDescriptor findListDescriptor(ConfigEditRequest request)
+    private static ConfigFieldDescriptor findCollectionDescriptor(ConfigEditRequest request)
     {
         ConfigFieldDescriptor descriptor = findDescriptor(request);
         if (descriptor == null || !descriptor.codec().supportsCollectionEdits()) return null;
         return descriptor;
     }
-
-    public record ConfigReloadResult(boolean success, boolean saved, ConfigRepairReport repairReport, String message) {}
 }

@@ -1,6 +1,6 @@
 package com.tik.zbb.utilities;
 
-import com.tik.zbb.config.ConfigGame;
+import com.tik.zbb.config.ConfigRuntime;
 import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -15,7 +15,7 @@ public class BlockHealthCalculator
 
     public static int getBlockHealth(BlockState blockState, BlockPos blockPos, ServerLevel level, ConfigSnapshot configSnapshot)
     {
-        ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
+        ConfigRuntime.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
         Integer blockHealthOverride = blockDamageCfg.blockHealthOverrideMap().get(blockState.getBlock());
         float hardness = blockState.getDestroySpeed(level, blockPos);
         double health = Math.pow(hardness, blockDamageCfg.blockHardnessExponent()) * blockDamageCfg.blockHardnessMultiplier();
@@ -28,7 +28,7 @@ public class BlockHealthCalculator
         return Math.max(1, (int) Math.round(health));
     }
 
-    private static boolean exceedsMaximumBreakableHardness(float hardness, ConfigGame.BlockDamage blockDamage)
+    private static boolean exceedsMaximumBreakableHardness(float hardness, ConfigRuntime.BlockDamage blockDamage)
     {
         return blockDamage.maximumBreakableBlockHardness() > 0.0f && hardness > blockDamage.maximumBreakableBlockHardness();
     }
