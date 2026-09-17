@@ -3,8 +3,8 @@ package com.tik.zbb.blockstorage.storages.buildDisappear;
 import com.mojang.math.Transformation;
 import com.tik.zbb.Constants;
 import com.tik.zbb.MainCommon;
-import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigRuntime;
 import com.tik.zbb.mixin.accessor.display.BlockDisplayAccessor;
 import com.tik.zbb.mixin.accessor.display.DisplayAccessor;
 import net.minecraft.server.level.ServerLevel;
@@ -35,7 +35,7 @@ public class BuildDisappearBlockStorageVisual
     @Subscribe
     public void onBuildBlockDisappear(BuildDisappearBlockStorageManager.OnBuildBlockDisappearEvent event)
     {
-        ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
+        ConfigRuntime.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
         if (visualEffects.builtDisappearShrinkAnimation()) playShrinkBlockDisplayEffect(event);
         if (visualEffects.builtDisappearShrinkSound()) playShrinkSound(event);

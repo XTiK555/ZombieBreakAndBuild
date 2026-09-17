@@ -2,7 +2,7 @@ package com.tik.zbb.config.schema.codecs;
 
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
-import com.tik.zbb.config.schema.ConfigRepairReport;
+import com.tik.zbb.config.schema.ConfigFileReport;
 import com.tik.zbb.config.schema.ConfigValidationException;
 import com.tik.zbb.config.schema.ConfigValueCodec;
 import com.tik.zbb.config.schema.ResourceLocationId;
@@ -43,7 +43,7 @@ abstract class ResourceLocationMapCodec implements ConfigValueCodec
     }
 
     @Override
-    public Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigRepairReport report)
+    public Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigFileReport report)
     {
         if (rawValue instanceof UnmodifiableConfig config)
         {
@@ -56,7 +56,7 @@ abstract class ResourceLocationMapCodec implements ConfigValueCodec
         }
 
         Object fixedValue = descriptor.copyValue(defaultValue);
-        report.repaired(descriptor.path(), rawValue, fixedValue, "Expected table");
+        report.invalid(descriptor.path(), rawValue, fixedValue, "Expected table");
         return fixedValue;
     }
 
@@ -95,6 +95,10 @@ abstract class ResourceLocationMapCodec implements ConfigValueCodec
         if (!(entry instanceof ResourceLocationMapEntry mapEntry))
         {
             throw new ConfigValidationException("Expected key=value");
+        }
+        if (values.containsKey(mapEntry.key()))
+        {
+            throw new ConfigValidationException("Entry already exists: " + mapEntry.key());
         }
         values.put(mapEntry.key(), mapEntry.value());
         return values;
@@ -145,7 +149,7 @@ abstract class ResourceLocationMapCodec implements ConfigValueCodec
         return values;
     }
 
-    private Map<String, Object> repairEntries(ConfigFieldDescriptor descriptor, Iterable<?> entries, Object rawValue, ConfigRepairReport report)
+    private Map<String, Object> repairEntries(ConfigFieldDescriptor descriptor, Iterable<?> entries, Object rawValue, ConfigFileReport report)
     {
         Map<String, Object> values = new LinkedHashMap<>();
         boolean repaired = false;
@@ -163,13 +167,13 @@ abstract class ResourceLocationMapCodec implements ConfigValueCodec
             catch (ConfigValidationException e)
             {
                 repaired = true;
-                report.repaired(descriptor.path(), entryObject, "<removed>", e.getMessage());
+                report.invalid(descriptor.path(), entryObject, "<removed>", e.getMessage());
             }
         }
 
         if (repaired)
         {
-            report.repaired(descriptor.path(), rawValue, values, "Repaired table entries");
+            report.invalid(descriptor.path(), rawValue, values, "Repaired table entries");
         }
 
         return values;

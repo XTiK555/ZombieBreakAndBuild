@@ -1,6 +1,6 @@
 package com.tik.zbb.utilities;
 
-import com.tik.zbb.config.ConfigGame;
+import com.tik.zbb.config.ConfigRuntime;
 import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.PathfinderMob;
@@ -11,7 +11,7 @@ public class BlockDamageCalculator
 {
     public static int getDamageToBlocks(PathfinderMob mob, BlockState state, ConfigSnapshot configSnapshot)
     {
-        ConfigGame.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
+        ConfigRuntime.BlockDamage blockDamageCfg = configSnapshot.game().balance().blockDamage();
         int baseDamage = blockDamageCfg.damageToBlocks();
         double damage = baseDamage * getHitboxSizeMultiplier(mob, blockDamageCfg) * getItemMultiplier(mob, state, blockDamageCfg);
 
@@ -21,7 +21,7 @@ public class BlockDamageCalculator
         return Math.max(1, (int) Math.round(damage));
     }
 
-    private static double getHitboxSizeMultiplier(PathfinderMob mob, ConfigGame.BlockDamage blockDamageCfg)
+    private static double getHitboxSizeMultiplier(PathfinderMob mob, ConfigRuntime.BlockDamage blockDamageCfg)
     {
         double zombieWidth = EntityTypes.ZOMBIE.getDimensions().width();
         double zombieHeight = EntityTypes.ZOMBIE.getDimensions().height();
@@ -31,7 +31,7 @@ public class BlockDamageCalculator
         return Math.pow(mobVolume / baseVolume, blockDamageCfg.hitboxSizeMultiplierExponent());
     }
 
-    private static double getItemMultiplier(PathfinderMob mob, BlockState state, ConfigGame.BlockDamage blockDamageCfg)
+    private static double getItemMultiplier(PathfinderMob mob, BlockState state, ConfigRuntime.BlockDamage blockDamageCfg)
     {
         ItemStack mainHandItem = mob.getMainHandItem();
         ItemStack offhandItem = mob.getOffhandItem();
