@@ -1,37 +1,32 @@
 package com.tik.zbb.config;
 
-import com.tik.zbb.config.document.ConfigDocumentCopier;
+import com.tik.zbb.utilities.ConfigUtilities;
 
 public final class ConfigSnapshot
 {
     private final ConfigDocument document;
-    private final ConfigGame game;
+    private final ConfigRuntime game;
     private final long version;
 
-    private ConfigSnapshot(ConfigDocument document, ConfigGame game, long version)
+    private ConfigSnapshot(ConfigDocument document, ConfigRuntime game, long version)
     {
         this.document = document;
         this.game = game;
         this.version = version;
     }
 
-    public static ConfigSnapshot create(ConfigDocument document, long version)
+    public static ConfigSnapshot create(ConfigDocument document, long version, ConfigRuntime.BlockResolver blockResolver)
     {
-        return create(document, version, ConfigGame.BlockResolver.NONE);
-    }
-
-    public static ConfigSnapshot create(ConfigDocument document, long version, ConfigGame.BlockResolver blockResolver)
-    {
-        ConfigDocument documentData = ConfigDocumentCopier.copy(document);
-        return new ConfigSnapshot(documentData, ConfigGame.create(documentData, blockResolver), version);
+        ConfigDocument documentData = ConfigUtilities.copyConfig(document);
+        return new ConfigSnapshot(documentData, ConfigRuntime.create(documentData, blockResolver), version);
     }
 
     public ConfigDocument document()
     {
-        return ConfigDocumentCopier.copy(document);
+        return ConfigUtilities.copyConfig(document);
     }
 
-    public ConfigGame game()
+    public ConfigRuntime game()
     {
         return game;
     }

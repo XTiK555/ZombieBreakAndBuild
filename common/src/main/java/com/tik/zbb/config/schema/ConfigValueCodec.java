@@ -8,7 +8,7 @@ public interface ConfigValueCodec
 
     Object normalizeValue(ConfigFieldDescriptor descriptor, Object value) throws ConfigValidationException;
 
-    default Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigRepairReport report)
+    default Object repairDocumentValue(ConfigFieldDescriptor descriptor, Object rawValue, Object defaultValue, ConfigFileReport report)
     {
         try
         {
@@ -17,7 +17,7 @@ public interface ConfigValueCodec
         catch (ConfigValidationException e)
         {
             Object fixedValue = descriptor.copyValue(defaultValue);
-            report.repaired(descriptor.path(), rawValue, fixedValue, e.getMessage());
+            report.invalid(descriptor.path(), rawValue, fixedValue, e.getMessage());
             return fixedValue;
         }
     }

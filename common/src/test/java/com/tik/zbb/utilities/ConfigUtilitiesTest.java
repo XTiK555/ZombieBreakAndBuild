@@ -1,5 +1,6 @@
 package com.tik.zbb.utilities;
 
+import com.tik.zbb.config.ConfigDocument;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -65,6 +66,23 @@ class ConfigUtilitiesTest
         assertNotSame(original.child, copy.child);
         assertSame(copy.child, copy.alias);
         assertSame(copy, copy.self);
+    }
+
+    @Test
+    void copyConfigDeepCopiesMutableValues()
+    {
+        ConfigDocument original = new ConfigDocument();
+        ConfigDocument copy = ConfigUtilities.copyConfig(original);
+
+        copy.blocks.dangerousBlockIdList.clear();
+        copy.ai.affectedEntityIdList.add("minecraft:test");
+        copy.ai.ignoreBuildEntityIdList.add("minecraft:test");
+        copy.balance.blockDamage.blockHealthOverrideMap.put("minecraft:dirt", 5);
+
+        assertFalse(original.blocks.dangerousBlockIdList.isEmpty());
+        assertFalse(original.ai.affectedEntityIdList.contains("minecraft:test"));
+        assertFalse(original.ai.ignoreBuildEntityIdList.contains("minecraft:test"));
+        assertTrue(original.balance.blockDamage.blockHealthOverrideMap.isEmpty());
     }
 
     private static class ParentConfig
