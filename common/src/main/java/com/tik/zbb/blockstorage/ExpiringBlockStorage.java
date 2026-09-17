@@ -79,8 +79,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
     }
 
     @Override
-    protected final void onStored(ServerLevel level, long posKey, @Nullable StoredEntry<TData> previous,
-                                  StoredEntry<TData> stored)
+    protected final void onStored(ServerLevel level, long posKey, @Nullable StoredEntry<TData> previous, StoredEntry<TData> stored)
     {
         if (previous != null)
         {
@@ -89,7 +88,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
 
         expirationIndex(level).add(stored.storedAtTick(), posKey);
 
-        onEntryStored(level, posKey);
+        onEntryStored(level, posKey, stored.data());
         onEntryChanged(level, posKey, stored);
     }
 
@@ -113,7 +112,7 @@ public abstract class ExpiringBlockStorage<TData> extends BaseBlockStorage<TData
 
     protected void onExpiringSoon(ServerLevel level, long posKey, TData data) {}
 
-    protected void onEntryStored(ServerLevel level, long posKey) {}
+    protected void onEntryStored(ServerLevel level, long posKey, TData data) {}
 
     protected void onEntryDiscarded(ServerLevel level, long posKey) {}
 
