@@ -1,5 +1,7 @@
 package com.tik.zbb.utilities;
 
+import com.tik.zbb.config.ConfigDocument;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -70,6 +72,11 @@ public final class ConfigUtilities
     public static Object deepCopyConfigValue(Object value)
     {
         return deepCopyConfigValue(value, new IdentityHashMap<>());
+    }
+
+    public static ConfigDocument copyConfig(ConfigDocument document)
+    {
+        return (ConfigDocument) deepCopyConfigValue(document);
     }
 
     private static Object deepCopyConfigValue(Object value, IdentityHashMap<Object, Object> copies)

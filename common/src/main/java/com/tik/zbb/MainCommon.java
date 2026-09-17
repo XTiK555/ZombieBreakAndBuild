@@ -5,8 +5,8 @@ import com.tik.zbb.ai.goals.AlwaysSeeNearestPlayerGoal;
 import com.tik.zbb.ai.goals.BreakAndBuildGoal;
 import com.tik.zbb.blockstorage.BlockStorages;
 import com.tik.zbb.command.ZbbConfigCommand;
-import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigRuntime;
 import com.tik.zbb.event.EventRegistrar;
 import com.tik.zbb.mixin.accessor.MobAccessor;
 import com.tik.zbb.utilities.ShouldApplyToMobUtility;
@@ -38,7 +38,7 @@ public class MainCommon
 
     public static void onLevelTickPost(ServerLevel level)
     {
-        ConfigGame config = ConfigManager.getConfigSnapshot().game();
+        ConfigRuntime config = ConfigManager.getConfigSnapshot().game();
 
         BlockStorages.BUILD_PROTECTION_MANAGER.cleanup(level, toTicks(config.balance().builtBlocksProtectionTime()));
         BlockStorages.DAMAGE_MANAGER.cleanup(level, toTicks(config.balance().damageStoreTime()));
@@ -56,7 +56,7 @@ public class MainCommon
     {
         if (isServerStarted) return;
 
-        ConfigManager.startRuntime(server);
+        ConfigManager.activate(server);
 
         isServerStarted = true;
     }

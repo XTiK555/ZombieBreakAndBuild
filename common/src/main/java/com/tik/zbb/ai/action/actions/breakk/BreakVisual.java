@@ -1,6 +1,6 @@
 package com.tik.zbb.ai.action.actions.breakk;
 
-import com.tik.zbb.config.ConfigGame;
+import com.tik.zbb.config.ConfigRuntime;
 import com.tik.zbb.config.ConfigSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -31,7 +31,7 @@ public class BreakVisual
         mobSwing(mob, configSnapshot.game());
     }
 
-    private void mobSwing(PathfinderMob mob, ConfigGame config)
+    private void mobSwing(PathfinderMob mob, ConfigRuntime config)
     {
         if (!config.visualEffects().breakMobSwing()) return;
 
