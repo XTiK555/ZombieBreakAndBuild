@@ -1,15 +1,17 @@
-package com.tik.zbb.config.schema;
+package com.tik.zbb.config.runtime;
+
+import com.tik.zbb.config.schema.ConfigPath;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ConfigRepairReport
+public final class ConfigAvailabilityReport
 {
     private final List<String> entries = new ArrayList<>();
 
-    public void repaired(ConfigPath path, Object originalValue, Object fixedValue, String reason)
+    public void unavailable(ConfigPath path, Object value, String reason)
     {
-        entries.add(path + ": " + reason + " (" + originalValue + " -> " + fixedValue + ")");
+        entries.add(path + ": " + reason + " (ignored " + value + ")");
     }
 
     public boolean hasEntries()
