@@ -2,12 +2,8 @@ package com.tik.zbb.config;
 
 import com.tik.zbb.config.annotations.Comment;
 import com.tik.zbb.config.annotations.Range;
-import com.tik.zbb.config.annotations.ResourceLocationIntPairMap;
-import com.tik.zbb.config.annotations.ResourceLocationPairMap;
-import com.tik.zbb.config.annotations.ResourceLocationPatternList;
 import com.tik.zbb.config.annotations.ResourceLocationRegistry;
 import com.tik.zbb.config.annotations.ResourceLocationSemantics;
-import com.tik.zbb.config.annotations.ResourceLocationString;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,7 +20,6 @@ public class ConfigDocument
 
     public static class Blocks
     {
-        @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.DIMENSION, value = ResourceLocationRegistry.BLOCK)
         @Comment("Build block by dimension: dimension ID = block ID")
         public Map<String, String> dimensionPlaceBlockIdMap = linkedMap(List.of(
@@ -33,17 +28,14 @@ public class ConfigDocument
                 Map.entry("minecraft:the_end", "minecraft:end_stone")
         ));
 
-        @ResourceLocationPairMap
         @ResourceLocationSemantics(key = ResourceLocationRegistry.ENTITY, value = ResourceLocationRegistry.BLOCK)
         @Comment("Build block by mob: entity ID = block ID. Overrides dimension and fallback settings")
         public Map<String, String> mobPlaceBlockIdOverrideMap = new LinkedHashMap<>();
 
-        @ResourceLocationString
-        @ResourceLocationSemantics(value = ResourceLocationRegistry.BLOCK)
+        @ResourceLocationSemantics(ResourceLocationRegistry.BLOCK)
         @Comment("Build block used when no mob or dimension-specific block is configured")
         public String fallbackPlaceBlockId = "minecraft:stone";
 
-        @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.BLOCK)
         @Comment("Blocks that zombies will consider dangerous and attempt to cover or break. Supports wildcards and ! exclusions")
         public List<String> dangerousBlockIdList = new ArrayList<>(List.of(
@@ -92,12 +84,10 @@ public class ConfigDocument
         @Comment("(only if canContinueSeeingTargetsThroughBlocks is true) Maximum solid blocks between a mob and its current target; 0 = unlimited")
         public int continueSeeingTargetsThroughBlocksLimit = 6;
 
-        @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Mob IDs that get ZBB behavior. Supports wildcards, ! exclusions and @categories. (only Pathfinder mobs)")
         public List<String> affectedEntityIdList = new ArrayList<>(List.of("@monster"));
 
-        @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Affected mob types that cannot place blocks. Supports wildcards, ! exclusions and @categories")
         public List<String> ignoreBuildEntityIdList = new ArrayList<>(List.of(
@@ -112,7 +102,6 @@ public class ConfigDocument
                 "minecraft:wither"
         ));
 
-        @ResourceLocationPatternList
         @ResourceLocationSemantics(element = ResourceLocationRegistry.ENTITY)
         @Comment("Affected mob types that cannot break blocks. Supports wildcards, ! exclusions and @categories")
         public List<String> ignoreBreakEntityIdList = new ArrayList<>();
@@ -173,7 +162,6 @@ public class ConfigDocument
             @Comment("Multiplier applied to block health after the hardness exponent.")
             public float blockHardnessMultiplier = 4.0f;
 
-            @ResourceLocationIntPairMap
             @ResourceLocationSemantics(key = ResourceLocationRegistry.BLOCK)
             @Comment("Per-block health overrides: block ID = health. Overrides the hardness-based calculation (min 1)")
             public Map<String, Integer> blockHealthOverrideMap = new LinkedHashMap<>();

@@ -1,6 +1,5 @@
 package com.tik.zbb.config;
 
-import com.electronwill.nightconfig.core.Config;
 import com.tik.zbb.Constants;
 import com.tik.zbb.config.edit.ConfigEditRequest;
 import com.tik.zbb.config.edit.ConfigEditResult;
@@ -8,6 +7,7 @@ import com.tik.zbb.config.edit.ConfigEditService;
 import com.tik.zbb.config.edit.MinecraftConfigSemanticValidator;
 import com.tik.zbb.config.io.ConfigDocumentNormalizer;
 import com.tik.zbb.config.io.ConfigFileStore;
+import com.tik.zbb.config.runtime.ConfigLoadResult;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.platform.Services;
@@ -17,6 +17,7 @@ import java.nio.file.Path;
 
 public final class ConfigManager
 {
+    private static volatile ConfigRepository REPOSITORY;
     private static volatile ConfigEditService EDIT_SERVICE;
 
     public static synchronized void init()
@@ -27,28 +28,29 @@ public final class ConfigManager
                 configPath,
                 new ConfigDocumentNormalizer()
         );
-        ConfigRepository repository = new ConfigRepository(new ConfigDocument());
+        ConfigRepository repository = new ConfigRepository(fileStore);
 
-        EDIT_SERVICE = new ConfigEditService(repository, fileStore);
-        logReloadResult(service().bootstrapFromFile());
+        REPOSITORY = repository;
+        EDIT_SERVICE = new ConfigEditService(repository);
+        logReloadResult(repository().load());
     }
 
-    public static synchronized void startRuntime(MinecraftServer server)
+    public static synchronized void activate(MinecraftServer server)
     {
-        logReloadResult(service().startRuntime(
-                ConfigGame.BlockResolver.MINECRAFT,
+        logReloadResult(repository().activate(
+                ConfigRuntime.BlockResolver.MINECRAFT,
                 new MinecraftConfigSemanticValidator(server.registryAccess())
         ));
     }
 
     public static ConfigSnapshot getConfigSnapshot()
     {
-        return service().snapshot();
+        return repository().snapshot();
     }
 
-    public static Object getEffectiveValue(ConfigFieldDescriptor descriptor)
+    public static Object getValue(ConfigFieldDescriptor descriptor)
     {
-        return service().effectiveValue(descriptor);
+        return repository().value(descriptor);
     }
 
     public static ConfigEditResult edit(ConfigEditRequest request)
@@ -61,21 +63,26 @@ public final class ConfigManager
         return service().editRaw(request);
     }
 
-    public static synchronized ConfigEditService.ConfigReloadResult reload()
+    public static synchronized ConfigLoadResult reload()
     {
-        ConfigEditService.ConfigReloadResult result = service().reloadFromFile();
+        ConfigLoadResult result = repository().reload();
         logReloadResult(result);
         return result;
     }
 
-    private static void logReloadResult(ConfigEditService.ConfigReloadResult result)
+    private static void logReloadResult(ConfigLoadResult result)
     {
-        if (result.repairReport() != null && result.repairReport().hasEntries())
+        for (String entry : result.fileReport().missingValues())
         {
-            for (String entry : result.repairReport().entries())
-            {
-                Constants.LOG.warn("Repaired config: {}", entry);
-            }
+            Constants.LOG.warn("Added missing config value: {}", entry);
+        }
+        for (String entry : result.fileReport().invalidValues())
+        {
+            Constants.LOG.warn("Replaced invalid config value: {}", entry);
+        }
+        for (String entry : result.availabilityReport().entries())
+        {
+            Constants.LOG.warn("Unavailable config value: {}", entry);
         }
 
         if (result.success())
@@ -96,5 +103,15 @@ public final class ConfigManager
             throw new IllegalStateException("ConfigManager used before init");
         }
         return service;
+    }
+
+    private static ConfigRepository repository()
+    {
+        ConfigRepository repository = REPOSITORY;
+        if (repository == null)
+        {
+            throw new IllegalStateException("ConfigManager used before init");
+        }
+        return repository;
     }
 }

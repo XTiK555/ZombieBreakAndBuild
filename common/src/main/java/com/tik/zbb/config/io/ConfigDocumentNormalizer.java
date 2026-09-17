@@ -5,7 +5,7 @@ import com.electronwill.nightconfig.core.UnmodifiableConfig;
 import com.tik.zbb.config.ConfigDocument;
 import com.tik.zbb.config.schema.ConfigFieldDescriptor;
 import com.tik.zbb.config.schema.ConfigPath;
-import com.tik.zbb.config.schema.ConfigRepairReport;
+import com.tik.zbb.config.schema.ConfigFileReport;
 import com.tik.zbb.config.schema.ConfigSchema;
 import com.tik.zbb.utilities.ConfigUtilities;
 
@@ -21,7 +21,7 @@ public final class ConfigDocumentNormalizer
 
     public NormalizedConfig normalize(UnmodifiableConfig rawConfig)
     {
-        ConfigRepairReport report = new ConfigRepairReport();
+        ConfigFileReport report = new ConfigFileReport();
         CommentedConfig normalized = CommentedConfig.inMemory();
 
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
@@ -32,7 +32,7 @@ public final class ConfigDocumentNormalizer
 
             if (rawValue == MISSING)
             {
-                report.repaired(descriptor.path(), "<missing>", defaultValue, "Missing config value");
+                report.missing(descriptor.path(), defaultValue);
                 value = descriptor.copyValue(defaultValue);
             }
             else
@@ -158,5 +158,5 @@ public final class ConfigDocumentNormalizer
         return value;
     }
 
-    public record NormalizedConfig(ConfigDocument document, ConfigRepairReport repairReport) {}
+    public record NormalizedConfig(ConfigDocument document, ConfigFileReport fileReport) {}
 }

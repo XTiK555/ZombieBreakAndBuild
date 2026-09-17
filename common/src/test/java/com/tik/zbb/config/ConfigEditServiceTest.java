@@ -2,11 +2,13 @@ package com.tik.zbb.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.serde.ObjectSerializer;
-import com.tik.zbb.config.document.ConfigDocumentCopier;
 import com.tik.zbb.config.edit.*;
 import com.tik.zbb.config.io.*;
+import com.tik.zbb.config.runtime.ConfigAvailabilityReport;
+import com.tik.zbb.config.runtime.ConfigLoadResult;
 import com.tik.zbb.config.runtime.ConfigRepository;
 import com.tik.zbb.config.schema.*;
+import com.tik.zbb.utilities.ConfigUtilities;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
@@ -103,9 +105,21 @@ class ConfigEditServiceTest
     }
 
     @Test
+    void resourceLocationSemanticsSelectsCodecFromFieldShape()
+    {
+        assertEquals(ConfigValueKind.RESOURCE_LOCATION, descriptor("blocks.fallbackPlaceBlockId").kind());
+        assertEquals(ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST, descriptor("blocks.dangerousBlockIdList").kind());
+        assertEquals(ConfigValueKind.RESOURCE_LOCATION_PAIR_MAP, descriptor("blocks.dimensionPlaceBlockIdMap").kind());
+        assertEquals(
+                ConfigValueKind.RESOURCE_LOCATION_INT_PAIR_MAP,
+                descriptor("balance.blockDamage.blockHealthOverrideMap").kind()
+        );
+    }
+
+    @Test
     void floatCodecAcceptsNumericValues()
     {
-        ConfigEditService service =
+        TestConfig service =
                 service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(
@@ -129,23 +143,26 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void fileNormalizerRepairsAndReportsInvalidValues()
+    void fileNormalizerReportsMissingAndInvalidValuesSeparately()
     {
         CommentedConfig raw = defaultsConfig();
         CommentedConfig ai = raw.get("ai");
         ai.set("alwaysSeeNearestPlayer", "not-a-boolean");
+        ai.remove("affectedEntityIdList");
 
         ConfigDocumentNormalizer.NormalizedConfig normalized = normalizer().normalize(raw);
 
         assertFalse(normalized.document().ai.alwaysSeeNearestPlayer);
-        assertTrue(normalized.repairReport().entries().stream()
+        assertTrue(normalized.fileReport().invalidValues().stream()
                 .anyMatch(entry -> entry.contains("ai.alwaysSeeNearestPlayer")));
+        assertTrue(normalized.fileReport().missingValues().stream()
+                .anyMatch(entry -> entry.contains("ai.affectedEntityIdList")));
     }
 
     @Test
     void strictCommandFailureDoesNotPublishState()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("balance.breakBuildActivationDistance"),
@@ -157,9 +174,9 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void saveFailureRollsBackEffectiveState()
+    void saveFailureDoesNotPublishState()
     {
-        ConfigEditService service = service(new FailingConfigFileStore(tempDir.resolve("zbb.toml")));
+        TestConfig service = service(new FailingConfigFileStore(tempDir.resolve("zbb.toml")));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
@@ -174,7 +191,7 @@ class ConfigEditServiceTest
     void editsSerializeReadSaveAndPublish() throws Exception
     {
         BlockingSaveStorage storage = new BlockingSaveStorage();
-        ConfigEditService service = service(storage);
+        TestConfig service = service(storage);
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try
@@ -210,14 +227,15 @@ class ConfigEditServiceTest
         ConfigDocument initial = new ConfigDocument();
         initial.ai.alwaysSeeNearestPlayer = true;
         ConfigDocument loaded = new ConfigDocument();
-        ConfigRepairReport repairReport = new ConfigRepairReport();
-        repairReport.repaired(new ConfigPath("ai.alwaysSeeNearestPlayer"), "invalid", false, "test repair");
-        ConfigEditService service = new ConfigEditService(
-                new ConfigRepository(initial),
-                new FailingNormalizedSaveStorage(loaded, repairReport)
+        ConfigFileReport fileReport = new ConfigFileReport();
+        fileReport.invalid(new ConfigPath("ai.alwaysSeeNearestPlayer"), "invalid", false, "test repair");
+        TestConfig service = service(
+                initial,
+                new FailingNormalizedSaveStorage(loaded, fileReport),
+                ConfigSemanticValidator.NONE
         );
 
-        ConfigEditService.ConfigReloadResult result = service.reloadFromFile();
+        ConfigLoadResult result = service.reload();
 
         assertFalse(result.success());
         assertFalse(result.saved());
@@ -229,12 +247,13 @@ class ConfigEditServiceTest
     {
         ConfigDocument initial = new ConfigDocument();
         initial.ai.alwaysSeeNearestPlayer = true;
-        ConfigEditService service = new ConfigEditService(
-                new ConfigRepository(initial),
-                new FailingRecoveryStorage()
+        TestConfig service = service(
+                initial,
+                new FailingRecoveryStorage(),
+                ConfigSemanticValidator.NONE
         );
 
-        ConfigEditService.ConfigReloadResult result = service.reloadFromFile();
+        ConfigLoadResult result = service.reload();
 
         assertFalse(result.success());
         assertFalse(result.saved());
@@ -244,10 +263,10 @@ class ConfigEditServiceTest
     @Test
     void reloadDoesNotSaveAnUnchangedDocument()
     {
-        LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigRepairReport());
-        ConfigEditService service = service(storage);
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigFileReport());
+        TestConfig service = service(storage);
 
-        ConfigEditService.ConfigReloadResult result = service.reloadFromFile();
+        ConfigLoadResult result = service.reload();
 
         assertTrue(result.success());
         assertFalse(result.saved());
@@ -272,7 +291,7 @@ class ConfigEditServiceTest
     @Test
     void resetAllPersistsDefaults()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
 
         assertTrue(service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
@@ -289,7 +308,7 @@ class ConfigEditServiceTest
         assertEquals(2, result.affectedCount());
         assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
         assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
-        assertTrue(service.reloadFromFile().success());
+        assertTrue(service.reload().success());
         assertFalse(service.snapshot().document().ai.alwaysSeeNearestPlayer);
         assertEquals(6, service.snapshot().document().balance.breakBuildActivationDistance);
 
@@ -301,8 +320,8 @@ class ConfigEditServiceTest
     @Test
     void unchangedEditsReportZeroAffectedValuesAndAvoidPersistence()
     {
-        LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigRepairReport());
-        ConfigEditService service = service(storage);
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(new ConfigDocument(), new ConfigFileReport());
+        TestConfig service = service(storage);
 
         ConfigEditResult set = service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
@@ -328,7 +347,7 @@ class ConfigEditServiceTest
                 () -> assertEquals(0, removeMissing.affectedCount()),
                 () -> assertTrue(clearEmpty.success()),
                 () -> assertEquals(0, clearEmpty.affectedCount()),
-                () -> assertTrue(addDuplicate.success()),
+                () -> assertFalse(addDuplicate.success()),
                 () -> assertEquals(0, addDuplicate.affectedCount()),
                 () -> assertEquals(0, storage.saveCount)
         );
@@ -337,7 +356,7 @@ class ConfigEditServiceTest
     @Test
     void snapshotDataIsDefensiveCopy()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
         ConfigSnapshot snapshot = service.snapshot();
 
         ConfigDocument copy = snapshot.document();
@@ -350,7 +369,7 @@ class ConfigEditServiceTest
     @Test
     void snapshotGameIsImmutableRuntimeView()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
 
         assertTrue(service.edit(ConfigEditRequest.set(
                 new ConfigPath("ai.alwaysSeeNearestPlayer"),
@@ -367,7 +386,7 @@ class ConfigEditServiceTest
     @Test
     void rawEditConvertsJsonLikeValueWithoutCallerDescriptorLookup()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.editRaw(ConfigEditRequest.add(
                 new ConfigPath("blocks.mobPlaceBlockIdOverrideMap"),
@@ -381,7 +400,7 @@ class ConfigEditServiceTest
     @Test
     void mapEditStoresTheNormalizedIntegerMap()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
 
         ConfigEditResult result = service.edit(ConfigEditRequest.set(
                 new ConfigPath("balance.blockDamage.blockHealthOverrideMap"),
@@ -390,14 +409,14 @@ class ConfigEditServiceTest
 
         assertTrue(result.success(), result.message());
         assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideMap.get("minecraft:dirt"));
-        assertTrue(service.reloadFromFile().success());
+        assertTrue(service.reload().success());
         assertEquals(5, service.snapshot().document().balance.blockDamage.blockHealthOverrideMap.get("minecraft:dirt"));
     }
 
     @Test
     void integerMapRejectsFractionsOverflowAndEntriesWithoutValues()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
         ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideMap");
 
         assertFalse(service.edit(ConfigEditRequest.set(
@@ -417,7 +436,7 @@ class ConfigEditServiceTest
     @Test
     void rawMapRemovalStillAcceptsAKeyWithoutEquals()
     {
-        ConfigEditService service = service(tempDir.resolve("zbb.toml"));
+        TestConfig service = service(tempDir.resolve("zbb.toml"));
         ConfigPath path = new ConfigPath("balance.blockDamage.blockHealthOverrideMap");
         assertTrue(service.edit(ConfigEditRequest.set(
                 path,
@@ -436,8 +455,8 @@ class ConfigEditServiceTest
     @Test
     void semanticValidatorRejectsUnknownBlockIdWithoutPublishingState()
     {
-        ConfigEditService service = new ConfigEditService(
-                new ConfigRepository(new ConfigDocument()),
+        TestConfig service = service(
+                new ConfigDocument(),
                 new ConfigFileStore(tempDir.resolve("zbb.toml")),
                 (descriptor, value) ->
                 {
@@ -459,7 +478,7 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void semanticRepairRemovesOnlyInvalidListEntriesOnReload()
+    void resolutionIgnoresUnavailableListEntriesWithoutSavingThem()
     {
         ConfigDocument loaded = new ConfigDocument();
         loaded.ai.affectedEntityIdList = new java.util.ArrayList<>(java.util.List.of(
@@ -467,63 +486,150 @@ class ConfigEditServiceTest
                 "minecraft:not_a_real_entity",
                 "minecraft:*"
         ));
-        ConfigRepairReport repairReport = new ConfigRepairReport();
+        ConfigFileReport fileReport = new ConfigFileReport();
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(loaded, fileReport);
 
-        ConfigEditService service = new ConfigEditService(
-                new ConfigRepository(new ConfigDocument()),
-                new LoadedDocumentStorage(loaded, repairReport),
+        TestConfig service = unstarted(new ConfigDocument(), storage);
+
+        ConfigLoadResult result = service.repository().activate(
+                ConfigRuntime.BlockResolver.NONE,
                 new RemovingListSemanticValidator()
         );
 
-        ConfigEditService.ConfigReloadResult result = service.reloadFromFile();
-
         assertTrue(result.success());
-        assertTrue(result.saved());
+        assertFalse(result.saved());
+        assertEquals(0, storage.saveCount);
         assertEquals(
                 java.util.List.of("minecraft:zombie", "minecraft:*"),
                 service.snapshot().document().ai.affectedEntityIdList
         );
-        assertTrue(repairReport.entries().stream()
-                .anyMatch(entry -> entry.contains("minecraft:not_a_real_entity") && entry.contains("<removed>")));
+        assertEquals(
+                java.util.List.of("minecraft:zombie", "minecraft:not_a_real_entity", "minecraft:*"),
+                storage.document.ai.affectedEntityIdList
+        );
+        assertTrue(result.availabilityReport().entries().stream()
+                .anyMatch(entry -> entry.contains("minecraft:not_a_real_entity")));
+        assertFalse(fileReport.changed());
+
+        ConfigEditResult addResult = service.edit(ConfigEditRequest.add(
+                new ConfigPath("ai.affectedEntityIdList"),
+                "minecraft:skeleton"
+        ));
+
+        assertTrue(addResult.success(), addResult.message());
+        assertEquals(1, storage.saveCount);
+        assertEquals(
+                java.util.List.of(
+                        "minecraft:zombie",
+                        "minecraft:not_a_real_entity",
+                        "minecraft:*",
+                        "minecraft:skeleton"
+                ),
+                storage.savedDocument.ai.affectedEntityIdList
+        );
     }
 
     @Test
-    void bootstrapDefersRegistryBackedValidationAndResolutionUntilRuntimeStart()
+    void unavailableRegistryMapEntriesDoNotBlockLaterEditsOrDisappearFromFile()
+    {
+        ConfigDocument loaded = new ConfigDocument();
+        loaded.blocks.mobPlaceBlockIdOverrideMap.put("oldmod:mob_a", "oldmod:block_a");
+        loaded.blocks.mobPlaceBlockIdOverrideMap.put("oldmod:mob_b", "oldmod:block_b");
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(loaded, new ConfigFileReport());
+        TestConfig service = unstarted(new ConfigDocument(), storage);
+
+        ConfigLoadResult reload = service.repository().activate(
+                ConfigRuntime.BlockResolver.NONE,
+                new RemovingMapSemanticValidator()
+        );
+        assertTrue(reload.success());
+        assertFalse(reload.saved());
+        assertEquals(java.util.Map.of(), service.snapshot().document().blocks.mobPlaceBlockIdOverrideMap);
+
+        ConfigEditResult add = service.editRaw(ConfigEditRequest.add(
+                new ConfigPath("blocks.mobPlaceBlockIdOverrideMap"),
+                "minecraft:zombie=minecraft:dirt"
+        ));
+
+        assertTrue(add.success(), add.message());
+        assertEquals("oldmod:block_a", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("oldmod:mob_a"));
+        assertEquals("oldmod:block_b", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("oldmod:mob_b"));
+        assertEquals("minecraft:dirt", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("minecraft:zombie"));
+
+        ConfigEditResult set = service.edit(ConfigEditRequest.set(
+                new ConfigPath("blocks.mobPlaceBlockIdOverrideMap"),
+                java.util.Map.of("minecraft:skeleton", "minecraft:stone")
+        ));
+
+        assertTrue(set.success(), set.message());
+        assertEquals("oldmod:block_a", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("oldmod:mob_a"));
+        assertEquals("oldmod:block_b", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("oldmod:mob_b"));
+        assertFalse(storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.containsKey("minecraft:zombie"));
+        assertEquals("minecraft:stone", storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.get("minecraft:skeleton"));
+    }
+
+    @Test
+    void exactReplacementOperationsRemoveUnavailableEntries()
+    {
+        ConfigPath path = new ConfigPath("blocks.mobPlaceBlockIdOverrideMap");
+        for (ConfigEditRequest request : java.util.List.of(
+                ConfigEditRequest.clear(path),
+                ConfigEditRequest.reset(path),
+                ConfigEditRequest.resetAll()
+        ))
+        {
+            ConfigDocument loaded = new ConfigDocument();
+            loaded.blocks.mobPlaceBlockIdOverrideMap.put("oldmod:mob", "oldmod:block");
+            LoadedDocumentStorage storage = new LoadedDocumentStorage(loaded, new ConfigFileReport());
+            TestConfig service = unstarted(new ConfigDocument(), storage);
+            service.repository().activate(ConfigRuntime.BlockResolver.NONE, new RemovingMapSemanticValidator());
+
+            ConfigEditResult result = service.edit(request);
+
+            assertTrue(result.success(), result.message());
+            assertEquals(1, result.affectedCount());
+            assertEquals(1, storage.saveCount);
+            assertTrue(storage.savedDocument.blocks.mobPlaceBlockIdOverrideMap.isEmpty());
+        }
+    }
+
+    @Test
+    void loadDefersRegistryBackedResolutionUntilActivation()
     {
         ConfigDocument loaded = new ConfigDocument();
         loaded.ai.affectedEntityIdList = new java.util.ArrayList<>(java.util.List.of(
                 "minecraft:zombie",
                 "minecraft:not_a_real_entity"
         ));
-        ConfigRepairReport repairReport = new ConfigRepairReport();
-        LoadedDocumentStorage storage = new LoadedDocumentStorage(loaded, repairReport);
-        ConfigEditService service = new ConfigEditService(
-                new ConfigRepository(new ConfigDocument()),
-                storage,
+        ConfigFileReport fileReport = new ConfigFileReport();
+        LoadedDocumentStorage storage = new LoadedDocumentStorage(loaded, fileReport);
+        TestConfig service = unstarted(new ConfigDocument(), storage);
+
+        ConfigLoadResult loadResult = service.repository().load();
+
+        assertTrue(loadResult.success());
+        assertFalse(loadResult.saved());
+        assertEquals(0, storage.saveCount);
+        assertThrows(IllegalStateException.class, service::snapshot);
+        assertEquals(
+                java.util.List.of("minecraft:zombie", "minecraft:not_a_real_entity"),
+                service.repository().value(descriptor("ai.affectedEntityIdList"))
+        );
+        assertFalse(fileReport.changed());
+
+        AtomicInteger blockResolutions = new AtomicInteger();
+        ConfigLoadResult activationResult = service.repository().activate(
+                (rawValue, defaultBlock) ->
+                {
+                    blockResolutions.incrementAndGet();
+                    return defaultBlock;
+                },
                 new RemovingListSemanticValidator()
         );
 
-        ConfigEditService.ConfigReloadResult bootstrapResult = service.bootstrapFromFile();
-
-        assertTrue(bootstrapResult.success());
-        assertFalse(bootstrapResult.saved());
+        assertTrue(activationResult.success());
+        assertFalse(activationResult.saved());
         assertEquals(0, storage.saveCount);
-        assertEquals(
-                java.util.List.of("minecraft:zombie", "minecraft:not_a_real_entity"),
-                service.snapshot().document().ai.affectedEntityIdList
-        );
-        assertTrue(repairReport.entries().isEmpty());
-
-        AtomicInteger blockResolutions = new AtomicInteger();
-        ConfigEditService.ConfigReloadResult reloadResult = service.startRuntime((rawValue, defaultBlock) ->
-        {
-            blockResolutions.incrementAndGet();
-            return defaultBlock;
-        });
-
-        assertTrue(reloadResult.success());
-        assertTrue(reloadResult.saved());
-        assertEquals(1, storage.saveCount);
         assertTrue(blockResolutions.get() > 0);
         assertEquals(
                 java.util.List.of("minecraft:zombie"),
@@ -532,34 +638,28 @@ class ConfigEditServiceTest
     }
 
     @Test
-    void configDataCopierDeepCopiesLists()
+    void runtimeStartValidatesLastLoadedDocumentWhenReloadAndRecoveryFail()
     {
-        ConfigDocument original = new ConfigDocument();
-        ConfigDocument copy = ConfigDocumentCopier.copy(original);
+        ConfigDocument loaded = new ConfigDocument();
+        loaded.ai.affectedEntityIdList = new java.util.ArrayList<>(java.util.List.of(
+                "minecraft:zombie",
+                "minecraft:not_a_real_entity"
+        ));
+        BootstrapThenFailingStorage storage = new BootstrapThenFailingStorage(loaded);
+        TestConfig service = unstarted(new ConfigDocument(), storage);
 
-        copy.blocks.dangerousBlockIdList.clear();
-        copy.ai.affectedEntityIdList.add("minecraft:test");
-        copy.ai.ignoreBuildEntityIdList.add("minecraft:test");
-        copy.balance.blockDamage.blockHealthOverrideMap.put("minecraft:dirt", 5);
+        assertTrue(service.repository().load().success());
+        ConfigLoadResult result = service.repository().activate(
+                ConfigRuntime.BlockResolver.NONE,
+                new RemovingListSemanticValidator()
+        );
 
-        assertFalse(original.blocks.dangerousBlockIdList.isEmpty());
-        assertFalse(original.ai.affectedEntityIdList.contains("minecraft:test"));
-        assertFalse(original.ai.ignoreBuildEntityIdList.contains("minecraft:test"));
-        assertTrue(original.balance.blockDamage.blockHealthOverrideMap.isEmpty());
-    }
-
-    @Test
-    void normalizerIgnoresLegacyPairLists()
-    {
-        CommentedConfig raw = defaultsConfig();
-        raw.set("blocks.dimensionPlaceBlockIdList", java.util.List.of("minecraft:overworld=minecraft:dirt"));
-        raw.set("balance.blockDamage.blockHealthOverrideList", java.util.List.of("minecraft:dirt=5"));
-
-        ConfigDocumentNormalizer.NormalizedConfig normalized = normalizer().normalize(raw);
-
-        assertEquals(new ConfigDocument().blocks.dimensionPlaceBlockIdMap, normalized.document().blocks.dimensionPlaceBlockIdMap);
-        assertTrue(normalized.document().balance.blockDamage.blockHealthOverrideMap.isEmpty());
-        assertTrue(normalized.repairReport().entries().isEmpty());
+        assertFalse(result.success());
+        assertEquals(
+                java.util.List.of("minecraft:zombie"),
+                service.snapshot().document().ai.affectedEntityIdList
+        );
+        assertTrue(result.availabilityReport().hasEntries());
     }
 
     private static ConfigFieldDescriptor descriptor(String path)
@@ -587,17 +687,54 @@ class ConfigEditServiceTest
         return new ConfigDocumentNormalizer();
     }
 
-    private static ConfigEditService service(Path path)
+    private static TestConfig service(Path path)
     {
         return service(new ConfigFileStore(path));
     }
 
-    private static ConfigEditService service(ConfigStorage storage)
+    private static TestConfig service(ConfigStorage storage)
     {
-        return new ConfigEditService(
-                new ConfigRepository(new ConfigDocument()),
-                storage
-        );
+        return service(new ConfigDocument(), storage, ConfigSemanticValidator.NONE);
+    }
+
+    private static TestConfig service(
+            ConfigDocument initialDocument,
+            ConfigStorage storage,
+            ConfigSemanticValidator semanticValidator
+    )
+    {
+        TestConfig config = unstarted(initialDocument, storage);
+        config.repository().activate(ConfigRuntime.BlockResolver.NONE, semanticValidator);
+        return config;
+    }
+
+    private static TestConfig unstarted(ConfigDocument initialDocument, ConfigStorage storage)
+    {
+        ConfigRepository repository = new ConfigRepository(initialDocument, storage);
+        return new TestConfig(repository, new ConfigEditService(repository));
+    }
+
+    private record TestConfig(ConfigRepository repository, ConfigEditService editor)
+    {
+        private ConfigEditResult edit(ConfigEditRequest request)
+        {
+            return editor.edit(request);
+        }
+
+        private ConfigEditResult editRaw(ConfigEditRequest request)
+        {
+            return editor.editRaw(request);
+        }
+
+        private ConfigSnapshot snapshot()
+        {
+            return repository.snapshot();
+        }
+
+        private ConfigLoadResult reload()
+        {
+            return repository.reload();
+        }
     }
 
     private static final class FailingConfigFileStore implements ConfigStorage
@@ -609,7 +746,7 @@ class ConfigEditServiceTest
         @Override
         public LoadedConfig load() throws ConfigStorageException
         {
-            return new LoadedConfig(new ConfigDocument(), new ConfigRepairReport());
+            return new LoadedConfig(new ConfigDocument(), new ConfigFileReport());
         }
 
         @Override
@@ -646,21 +783,54 @@ class ConfigEditServiceTest
         }
     }
 
+    private static final class BootstrapThenFailingStorage implements ConfigStorage
+    {
+        private final ConfigDocument document;
+        private int loadCount;
+
+        private BootstrapThenFailingStorage(ConfigDocument document)
+        {
+            this.document = document;
+        }
+
+        @Override
+        public LoadedConfig load() throws ConfigStorageException
+        {
+            if (loadCount++ == 0)
+            {
+                return new LoadedConfig(document, new ConfigFileReport());
+            }
+            throw new ConfigPersistenceException("expected reload failure", new RuntimeException("expected"));
+        }
+
+        @Override
+        public void save(ConfigDocument data)
+        {
+            fail("save should not run");
+        }
+
+        @Override
+        public RecoveryResult recoverAfterLoadFailure(ConfigDocument fallbackDocument) throws ConfigStorageException
+        {
+            throw new ConfigPersistenceException("expected recovery failure", new RuntimeException("expected"));
+        }
+    }
+
     private static final class FailingNormalizedSaveStorage implements ConfigStorage
     {
         private final ConfigDocument document;
-        private final ConfigRepairReport repairReport;
+        private final ConfigFileReport fileReport;
 
-        private FailingNormalizedSaveStorage(ConfigDocument document, ConfigRepairReport repairReport)
+        private FailingNormalizedSaveStorage(ConfigDocument document, ConfigFileReport fileReport)
         {
             this.document = document;
-            this.repairReport = repairReport;
+            this.fileReport = fileReport;
         }
 
         @Override
         public LoadedConfig load()
         {
-            return new LoadedConfig(document, repairReport);
+            return new LoadedConfig(document, fileReport);
         }
 
         @Override
@@ -687,7 +857,7 @@ class ConfigEditServiceTest
         @Override
         public LoadedConfig load()
         {
-            return new LoadedConfig(new ConfigDocument(), new ConfigRepairReport());
+            return new LoadedConfig(new ConfigDocument(), new ConfigFileReport());
         }
 
         @Override
@@ -732,25 +902,27 @@ class ConfigEditServiceTest
     private static final class LoadedDocumentStorage implements ConfigStorage
     {
         private final ConfigDocument document;
-        private final ConfigRepairReport repairReport;
+        private final ConfigFileReport fileReport;
+        private ConfigDocument savedDocument;
         private int saveCount;
 
-        private LoadedDocumentStorage(ConfigDocument document, ConfigRepairReport repairReport)
+        private LoadedDocumentStorage(ConfigDocument document, ConfigFileReport fileReport)
         {
             this.document = document;
-            this.repairReport = repairReport;
+            this.fileReport = fileReport;
         }
 
         @Override
         public LoadedConfig load()
         {
-            return new LoadedConfig(document, repairReport);
+            return new LoadedConfig(document, fileReport);
         }
 
         @Override
         public void save(ConfigDocument data)
         {
             saveCount++;
+            savedDocument = ConfigUtilities.copyConfig(data);
         }
 
         @Override
@@ -772,11 +944,11 @@ class ConfigEditServiceTest
         }
 
         @Override
-        public Object repairValue(
+        public Object resolveValue(
                 ConfigFieldDescriptor descriptor,
                 Object value,
                 Object defaultValue,
-                ConfigRepairReport report
+                ConfigAvailabilityReport report
         )
         {
             if (!(value instanceof java.util.List<?> list) || !list.contains("minecraft:not_a_real_entity"))
@@ -784,11 +956,37 @@ class ConfigEditServiceTest
                 return value;
             }
 
-            java.util.List<Object> repaired = new java.util.ArrayList<>(list);
-            repaired.remove("minecraft:not_a_real_entity");
-            report.repaired(descriptor.path(), "minecraft:not_a_real_entity", "<removed>", "Unknown entity id: minecraft:not_a_real_entity");
-            report.repaired(descriptor.path(), value, repaired, "Repaired list entries");
-            return repaired;
+            java.util.List<Object> resolved = new java.util.ArrayList<>(list);
+            resolved.remove("minecraft:not_a_real_entity");
+            report.unavailable(descriptor.path(), "minecraft:not_a_real_entity", "Unknown entity id");
+            return resolved;
+        }
+    }
+
+    private static final class RemovingMapSemanticValidator implements ConfigSemanticValidator
+    {
+        @Override
+        public void validate(ConfigFieldDescriptor descriptor, Object value)
+        {
+        }
+
+        @Override
+        public Object resolveValue(
+                ConfigFieldDescriptor descriptor,
+                Object value,
+                Object defaultValue,
+                ConfigAvailabilityReport report
+        )
+        {
+            if (!(value instanceof java.util.Map<?, ?> map)
+                    || map.keySet().stream().noneMatch(key -> String.valueOf(key).startsWith("oldmod:")))
+            {
+                return value;
+            }
+
+            java.util.Map<Object, Object> resolved = new java.util.LinkedHashMap<>(map);
+            resolved.keySet().removeIf(key -> String.valueOf(key).startsWith("oldmod:"));
+            return resolved;
         }
     }
 }

@@ -18,12 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ZbbConfigCommandTest
 {
@@ -148,6 +143,11 @@ class ZbbConfigCommandTest
                         dispatcher.parse("zbb config add ai.ignoreBreakEntityIdList @m", null))
                 .join().getList().stream().map(suggestion -> suggestion.getText()).toList();
         assertTrue(suggestions.contains("@monster"));
+
+        List<String> blockSuggestions = dispatcher.getCompletionSuggestions(
+                        dispatcher.parse("zbb config add blocks.dangerousBlockIdList @m", null))
+                .join().getList().stream().map(suggestion -> suggestion.getText()).toList();
+        assertFalse(blockSuggestions.contains("@monster"));
     }
 
     @Test
@@ -175,20 +175,10 @@ class ZbbConfigCommandTest
     void commandsWithoutValuesDoNotRequireAMode()
     {
         assertParses("zbb config clear ai.affectedEntityIdList");
-        assertParses("zbb config reset all");
+        assertParses("zbb config reset *");
+        assertDoesNotParse("zbb config reset all");
         assertParses("zbb config reset ai.alwaysSeeNearestPlayer");
         assertNull(configCommand("clear").getChild("ai.alwaysSeeNearestPlayer"));
-    }
-
-    @Test
-    void modeNamesAndRuntimeOverridesAreNotPartOfTheCommandGrammar()
-    {
-        assertDoesNotParse("zbb config clear ai.affectedEntityIdList runtime_only");
-        assertDoesNotParse("zbb config reset all persistent");
-        assertNull(configCommand("runtime_overrides"));
-        assertNoModeNamesUnderValueCommand("set");
-        assertNoModeNamesUnderValueCommand("add");
-        assertNoModeNamesUnderValueCommand("remove");
     }
 
     private void assertParses(String command)

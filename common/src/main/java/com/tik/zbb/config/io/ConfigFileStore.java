@@ -44,7 +44,7 @@ public class ConfigFileStore implements ConfigStorage
     public LoadedConfig load() throws ConfigPersistenceException
     {
         ConfigDocumentNormalizer.NormalizedConfig normalized = documentNormalizer.normalize(loadRaw());
-        return new LoadedConfig(normalized.document(), normalized.repairReport());
+        return new LoadedConfig(normalized.document(), normalized.fileReport());
     }
 
     private CommentedConfig loadRaw() throws ConfigPersistenceException

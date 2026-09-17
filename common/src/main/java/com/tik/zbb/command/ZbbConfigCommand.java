@@ -5,15 +5,13 @@ import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.tik.zbb.config.ConfigManager;
 import com.tik.zbb.config.annotations.Range;
 import com.tik.zbb.config.annotations.ResourceLocationRegistry;
 import com.tik.zbb.config.annotations.ResourceLocationSemantics;
 import com.tik.zbb.config.edit.*;
+import com.tik.zbb.config.runtime.ConfigLoadResult;
 import com.tik.zbb.config.schema.*;
-import com.tik.zbb.config.schema.codecs.ResourceLocationPatternListCodec;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
@@ -101,7 +99,7 @@ public final class ZbbConfigCommand
     private static LiteralArgumentBuilder<CommandSourceStack> resetCommand()
     {
         LiteralArgumentBuilder<CommandSourceStack> command = literal("reset")
-                .then(literal("all")
+                .then(literal("*")
                         .executes(context -> edit(context, ConfigEditRequest.resetAll())));
 
         for (ConfigFieldDescriptor descriptor : ConfigSchema.descriptors())
@@ -147,7 +145,7 @@ public final class ZbbConfigCommand
         {
             return argument(KEY_ARGUMENT, identifierArgument(keyRegistry(descriptor)))
                     .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                            collectionEntries(ConfigManager.getEffectiveValue(descriptor)),
+                            collectionEntries(ConfigManager.getValue(descriptor)),
                             builder))
                     .executes(context -> remove(
                             context,
@@ -159,15 +157,13 @@ public final class ZbbConfigCommand
 
         entry.suggests((context, builder) ->
                 SharedSuggestionProvider.suggest(
-                        collectionEntries(ConfigManager.getEffectiveValue(descriptor)),
+                        collectionEntries(ConfigManager.getValue(descriptor)),
                         builder));
 
         return entry.executes(context -> remove(
                 context,
                 descriptor.path(),
-                descriptor.kind() == ConfigValueKind.RESOURCE_LOCATION_PATTERN_LIST
-                        ? readSinglePattern(context, ENTRY_ARGUMENT)
-                        : readRawValue(context, ENTRY_ARGUMENT)));
+                readRawValue(context, ENTRY_ARGUMENT)));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, ?> addEntryArgument(ConfigFieldDescriptor descriptor)
@@ -210,7 +206,9 @@ public final class ZbbConfigCommand
                 {
                     int offset = patternValueOffset(builder.getRemaining(), 0);
                     String remaining = builder.getRemaining().substring(offset);
-                    if (remaining.startsWith("@"))
+                    if (semantics != null
+                            && semantics.element() == ResourceLocationRegistry.ENTITY
+                            && remaining.startsWith("@"))
                     {
                         return SharedSuggestionProvider.suggest(
                                 MOB_CATEGORY_SUGGESTIONS,
@@ -228,7 +226,7 @@ public final class ZbbConfigCommand
                 .executes(context -> add(
                         context,
                         descriptor,
-                        readSinglePattern(context, ENTRY_ARGUMENT)));
+                        readRawValue(context, ENTRY_ARGUMENT)));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, ?> mapAddEntryArgument(ConfigFieldDescriptor descriptor)
@@ -286,18 +284,6 @@ public final class ZbbConfigCommand
                                 readMapValue(context, valueName))));
     }
 
-    private static String readSinglePattern(CommandContext<CommandSourceStack> context, String argument) throws CommandSyntaxException
-    {
-        try
-        {
-            return ResourceLocationPatternListCodec.normalizePattern(readRawValue(context, argument));
-        }
-        catch (ConfigValidationException e)
-        {
-            throw new SimpleCommandExceptionType(Component.literal(e.getMessage())).create();
-        }
-    }
-
     private static ArgumentType<?> identifierArgument(ResourceLocationRegistry registry)
     {
         return switch (registry)
@@ -332,7 +318,7 @@ public final class ZbbConfigCommand
         success(context, "list " + (path == null ? "all" : path) + " (" + descriptors.size() + ")");
         for (ConfigFieldDescriptor descriptor : descriptors)
         {
-            success(context, descriptor.path() + " = " + format(ConfigManager.getEffectiveValue(descriptor)));
+            success(context, descriptor.path() + " = " + format(ConfigManager.getValue(descriptor)));
         }
         return descriptors.size();
     }
@@ -345,7 +331,7 @@ public final class ZbbConfigCommand
             return fail(context, "Unknown config path: " + path);
         }
 
-        success(context, descriptor.path() + " = " + format(ConfigManager.getEffectiveValue(descriptor)));
+        success(context, descriptor.path() + " = " + format(ConfigManager.getValue(descriptor)));
         return 1;
     }
 
@@ -356,7 +342,7 @@ public final class ZbbConfigCommand
 
     private static int setMapEntry(CommandContext<CommandSourceStack> context, ConfigFieldDescriptor descriptor, String key, Object value)
     {
-        Object currentValue = ConfigManager.getEffectiveValue(descriptor);
+        Object currentValue = ConfigManager.getValue(descriptor);
         if (!(currentValue instanceof java.util.Map<?, ?> currentMap))
         {
             return fail(context, descriptor.path() + " is not a map");
@@ -401,7 +387,7 @@ public final class ZbbConfigCommand
             return fail(context, result.message());
         }
 
-        String valueSuffix = result.effectiveValue() == null
+        String valueSuffix = result.value() == null
                 ? ""
                 : " = " + formatResultValue(result);
 
@@ -429,10 +415,10 @@ public final class ZbbConfigCommand
 
     private static String formatResultValue(ConfigEditResult result)
     {
-        if (result.path() == null) return String.valueOf(result.effectiveValue());
+        if (result.path() == null) return String.valueOf(result.value());
         return ConfigSchema.find(result.path())
-                .map(descriptor -> format(result.effectiveValue()))
-                .orElse(String.valueOf(result.effectiveValue()));
+                .map(descriptor -> format(result.value()))
+                .orElse(String.valueOf(result.value()));
     }
 
     private static String format(Object value)
@@ -460,7 +446,7 @@ public final class ZbbConfigCommand
 
     private static int reload(CommandContext<CommandSourceStack> context)
     {
-        ConfigEditService.ConfigReloadResult result = ConfigManager.reload();
+        ConfigLoadResult result = ConfigManager.reload();
         if (!result.success())
         {
             return fail(context, result.message());

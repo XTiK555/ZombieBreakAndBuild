@@ -2,8 +2,8 @@ package com.tik.zbb.blockstorage.storages.broken;
 
 import com.tik.zbb.Constants;
 import com.tik.zbb.blockstorage.BlockStorages;
-import com.tik.zbb.config.ConfigGame;
 import com.tik.zbb.config.ConfigManager;
+import com.tik.zbb.config.ConfigRuntime;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -46,7 +46,7 @@ public class BrokenReappearBlockStorageVisual
     @Subscribe
     public void onBrokenBlockWillReappear(BrokenReappearBlockStorageManager.OnBrokenBlockWillReappearEvent event)
     {
-        ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
+        ConfigRuntime.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
         if (visualEffects.brokenReappearParticles()) playReappearAssemblingBlockEffect(event);
         if (visualEffects.brokenReappearChargeSound()) playReappearChargeSound(event);
@@ -55,7 +55,7 @@ public class BrokenReappearBlockStorageVisual
     @Subscribe
     public void onBrokenBlockReappear(BrokenReappearBlockStorageManager.OnBrokenBlockReappearEvent event)
     {
-        ConfigGame.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
+        ConfigRuntime.VisualEffects visualEffects = ConfigManager.getConfigSnapshot().game().visualEffects();
 
         if (visualEffects.brokenReappearSound()) playReappearSound(event);
     }
