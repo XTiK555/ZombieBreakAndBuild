@@ -119,6 +119,12 @@ public class BrokenReappearBlockStorageManager
         Constants.EVENT_BUS.post(new OnBrokenBlockWillReappearEvent(event.level(), event.pos(), event.entry().oldState()));
     }
 
+    @Subscribe
+    public void onBrokenBlockStorageStored(BrokenReappearBlockStorage.OnStoredEvent event)
+    {
+        Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(event.level(), event.pos(), event.entry()));
+    }
+
     public boolean contains(ServerLevel level, BlockPos pos)
     {
         return brokenReappearBlockStorage.contains(level, pos);
@@ -265,7 +271,6 @@ public class BrokenReappearBlockStorageManager
     private void putEntry(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry)
     {
         brokenReappearBlockStorage.put(level, pos, entry);
-        Constants.EVENT_BUS.post(new OnBrokenBlockStoredEvent(level, pos, entry));
     }
 
     private boolean brokenBlockStorageAddConditions(ConfigSnapshot configSnapshot, ServerLevel level, BlockPos pos)
