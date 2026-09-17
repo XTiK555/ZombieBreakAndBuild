@@ -13,6 +13,8 @@ public class BrokenReappearBlockStorage extends PersistentExpiringBlockStorage<B
 {
     public record OnWillRemoveEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
 
+    public record OnStoredEvent(ServerLevel level, BlockPos pos, BrokenReappearBlockStorageEntry entry) {}
+
     public static final class OnRemovedEvent
     {
         private final ServerLevel level;
@@ -60,9 +62,10 @@ public class BrokenReappearBlockStorage extends PersistentExpiringBlockStorage<B
     }
 
     @Override
-    protected void onEntryStored(ServerLevel level, long posKey)
+    protected void onEntryStored(ServerLevel level, long posKey, BrokenReappearBlockStorageEntry entry)
     {
         clearWarned(level, posKey);
+        Constants.EVENT_BUS.post(new OnStoredEvent(level, BlockPos.of(posKey), entry));
     }
 
     @Override
