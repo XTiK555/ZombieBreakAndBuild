@@ -24,4 +24,5 @@ Zombies Break & Build mod enhances zombies (and optionally other hostile mobs) b
 ## 🛠️Installation
 1. Install a compatible mod loader (Fabric/Forge/NeoForge).
 2. Download the mod (from [Modrinth](https://modrinth.com/mod/zombies-break-and-build) or [CurseForge](https://curseforge.com/minecraft/mc-mods/zombies-break-and-build)).
-3. Place the mod `.jar` in your `minecraft/mods/` folder.
+3. Put the mod's `.jar` in your `minecraft/mods/` folder.
+4. (Optional) Configure config _(The config file is located at `[your server folder]\config\zombies-break-&-build.toml`, or if you are playing in single-player, look in your local `[your minecraft folder]\config\` directory.)_.
