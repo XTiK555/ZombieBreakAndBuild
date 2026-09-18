@@ -1,6 +1,7 @@
 Zombies Break & Build mod enhances zombies (and optionally other hostile mobs) by giving them the ability to break and place blocks.
 
-![An example of zombie actions with this](https://raw.githubusercontent.com/XTiK555/ZombieBreakAndBuild/develop/showcase/example_zombie_actions.gif)
+![An example of zombie break action](https://raw.githubusercontent.com/XTiK555/ZombieBreakAndBuild/develop/showcase/example_zombie_break_action.gif)
+![An example of zombie build action](https://raw.githubusercontent.com/XTiK555/ZombieBreakAndBuild/develop/showcase/example_zombie_build_action.gif)
 
 ---
 
