@@ -35,7 +35,7 @@ public class BreakVisual
     {
         if (!config.visualEffects().breakMobSwing()) return;
 
-        mob.swing(InteractionHand.MAIN_HAND);
-        mob.swing(InteractionHand.OFF_HAND);
+        mob.swingForAttack(InteractionHand.MAIN_HAND);
+        mob.swingForAttack(InteractionHand.OFF_HAND);
     }
 }

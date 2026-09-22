@@ -270,7 +270,7 @@ public final class TargetingGameTests
         GameTestConfig.set(helper, "ai.alwaysSeeNearestPlayer", true);
         WorldGameTest.floor(helper, 0, 6, 1, 3, 1);
         var piglin = helper.spawn(EntityTypes.ZOMBIFIED_PIGLIN, new BlockPos(2, 2, 2), EntitySpawnReason.COMMAND);
-        piglin.setInvulnerable(true);
+        piglin.setPermanentlyInvulnerable(true);
         piglin.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
         ServerPlayer player = GameTestEntities.serverPlayer(helper, new BlockPos(5, 2, 2), GameType.SURVIVAL);
 

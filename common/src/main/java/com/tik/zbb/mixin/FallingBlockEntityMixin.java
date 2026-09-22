@@ -52,14 +52,14 @@ public abstract class FallingBlockEntityMixin
         ));
     }
 
-    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
-    private boolean zbb$captureLandingOldState(Level level, BlockPos pos, BlockState state, int flags, Operation<Boolean> original)
+    @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z"))
+    private boolean zbb$captureLandingOldState(Level level, BlockPos pos, BlockState state, Operation<Boolean> original)
     {
         BlockState oldState = level.getBlockState(pos);
         BlockEntity oldBlockEntity = level.getBlockEntity(pos);
         CompoundTag oldNbt = oldBlockEntity != null ? oldBlockEntity.saveWithFullMetadata(level.registryAccess()) : null;
 
-        boolean result = original.call(level, pos, state, flags);
+        boolean result = original.call(level, pos, state);
 
         if (result)
         {

@@ -32,7 +32,7 @@ public final class GameTestEntities
     {
         Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, pos, EntitySpawnReason.COMMAND);
         zombie.setNoAi(true);
-        zombie.setInvulnerable(true);
+        zombie.setPermanentlyInvulnerable(true);
         return track(helper, zombie);
     }
 
@@ -42,7 +42,7 @@ public final class GameTestEntities
         zombie.getRandom().setSeed(0L);
         zombie.setBaby(false);
         zombie.setPersistenceRequired();
-        zombie.setInvulnerable(true);
+        zombie.setPermanentlyInvulnerable(true);
         return track(helper, zombie);
     }
 

@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Prediction;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -236,7 +237,7 @@ public class BrokenReappearBlockStorageManager
         if (player == null) return false;
         if (player.getInventory().add(stack)) return true;
 
-        return player.drop(stack, false) != null;
+        return player.drop(stack, false, Prediction.SERVER_ONLY) != null;
     }
 
     private boolean placeStoredBlockNearby(ServerLevel level, BlockPos originalPos, BrokenReappearBlockStorageEntry entry, int radius)
